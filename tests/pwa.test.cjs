@@ -1,0 +1,4 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const root=path.join(__dirname,'../dist');
+test('cache inclui gerador, importador, logotipo e recursos relativos',()=>{let c={self:{addEventListener(){}}};vm.createContext(c);vm.runInContext(fs.readFileSync(path.join(root,'sw.js'),'utf8')+';globalThis.files=CORE;',c);for(let file of c.files){if(file==='./')continue;assert.equal(fs.existsSync(path.join(root,file)),true,file);assert.ok(!file.startsWith('/'));}assert.ok(c.files.includes('vendor/docx-9.6.1.js'));assert.ok(c.files.includes('engefex-logo.png'));assert.ok(c.files.includes('importer.js'));});
+test('manifesto abre no subdiretório correto e ícone existe',()=>{let m=JSON.parse(fs.readFileSync(path.join(root,'manifest.webmanifest')));assert.equal(m.start_url,'./');assert.equal(m.scope,'./');assert.ok(fs.existsSync(path.join(root,m.icons[0].src)));});
