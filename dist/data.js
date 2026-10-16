@@ -1,0 +1,1 @@
+window.OBRAS_SEED={"version": 1, "projects": [], "stages": [], "activities": [], "issues": [], "checklists": [], "tasks": [], "materials": [], "stockMoves": [], "costs": [], "quotes": [], "measurements": [], "receipts": [], "diary": [], "teams": [], "history": [], "facts": [], "documents": []};

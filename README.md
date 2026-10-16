@@ -1,56 +1,69 @@
 # Engefex Gerenciamento
 
-Gerenciador independente, inicialmente vazio. Não contém dados de clientes, obras, orçamentos ou registros de exemplo.
+Gerenciador vazio baseado na organização e nas regras de cálculo do aplicativo Obras dos Lagos. Mantém navegação lateral à esquerda e todas as áreas originais, com cadastros adicionais e importação de orçamento XLSX.
 
-## Abrir
+## Áreas preservadas
 
-No GitHub: Settings → Pages → Build and deployment → Source → GitHub Actions. Execute Actions → Verificar e publicar aplicativo → Run workflow se a publicação não iniciar. O aplicativo fica em https://rvpiffer-dev.github.io/engefex_gerenciamento/.
+- Visão geral: contrato, avanço ponderado, custos previstos e caixa.
+- Agenda do engenheiro: dia, semana, todas as tarefas, prioridades, frentes e prazos de compra.
+- Etapas e atividades: quantidades, execução, dependências, equipes, critérios de aceitação e próxima ação.
+- Cronograma: datas de serviços, duração, distribuição mensal e planejamento financeiro mensal.
+- Orçamento e custos: cinco categorias de verba, cotações, comprometido, incorrido, pago e saldo a contratar.
+- Materiais e compras: necessidade, estoque, pedidos, consumo, perdas e prazo de pedido.
+- Medições e recebimentos: preparação, apresentação, aprovação, evidências e entrada efetiva de caixa.
+- Checklist de execução: conferências por fase e etapa.
+- Pendências e riscos: responsáveis, criticidade, prazos e decisões.
+- Diário de obra: descrição, avanço incremental, horas-pessoa, equipe, ocorrências, fotos com legenda e DOCX Engefex.
+- Documentos e diagnóstico: fontes, notas, anexos permanentes locais, pasta de originais e histórico antes/depois.
+- Equipes e produtividade: cadastro de equipes e produtividade por serviço calculada a partir do diário.
 
-Para uso local: `python3 -m http.server 8765 --bind 127.0.0.1`, nesta pasta. Acesse http://127.0.0.1:8765/dist/. Use sempre o mesmo endereço e navegador. Não é necessário instalar dependências ou compilar.
+Obras, etapas, serviços e demais cadastros podem ser adicionados, visualizados, editados e excluídos. A visualização não altera os dados. IDs internos são estáveis. Exclusões de obra e etapa removem os dependentes mediante confirmação; exporte backup antes. Informações removidas ficam registradas no histórico, sem botão de restauração individual.
 
 ## Começar
 
-1. Obras → Adicionar obra. Informe os dados contratuais e responsáveis.
+1. Obras → Nova obra. Informe identificação, contrato, valor e prazos; datas podem permanecer em aberto.
 2. Selecione a obra no topo.
-3. Serviços / Etapas / Orçamentos → Importar Excel. Escolha o arquivo e a aba, confira a prévia e confirme.
-4. Todos os registros oferecem Visualizar, Editar e Excluir. Salvar grava as mudanças; Cancelar descarta o formulário.
-5. Diário de obras → Adicionar registro diário. Inclua efetivo, fotos e legendas, salve e use Gerar DOCX.
-6. Exporte o backup regularmente, incluindo os anexos.
+3. Etapas e atividades ou Orçamento e custos → Importar orçamento Excel.
+4. Confira a aba, a prévia, os valores e o destino. A opção de atualizar o valor contratado da obra fica desmarcada por padrão.
+5. Edite o planejamento e as verbas internas conforme necessário. Todos os serviços importados permanecem editáveis.
+6. Exporte o backup regularmente.
 
-## Importador XLSX
+## Importação XLSX
 
-Padrão Engefex: B código, C descrição, D/E unidade e quantidade (reconhecidas pelo conteúdo), F/G/H unitários de mão de obra/material/equipamento, I/J/K totais por categoria e L total. Cabeçalhos podem ocupar várias linhas. Etapas podem ter subetapas; linhas sem unidade e quantidade são agrupadores. A prévia permite inverter unidade e quantidade.
+Layout Engefex: B código, C descrição, D/E unidade e quantidade (inferidas pelo conteúdo), F/G/H preços unitários de mão de obra/material/equipamento, I/J/K totais por categoria, L total. Linhas e etapas podem variar. Reconhece etapas, subetapas e serviços, sem somar agrupadores novamente no orçamento.
 
-O leitor percorre as linhas disponíveis, sem depender da quantidade de serviços ou posições fixas de totais. Reconhece TOTAL, TRIBUTOS e TOTAL GERAL. Lê fórmulas pelo último resultado gravado no arquivo; salve/recalcule no Excel ou LibreOffice antes de importar. Fórmulas sem resultado ou dados inválidos bloqueiam a confirmação. O arquivo original não é modificado. Importação não calcula fórmulas novas.
+Fórmulas usam o último resultado salvo no arquivo. Recalcule e salve no Excel/LibreOffice antes de importar. Dados inválidos ou fórmulas sem resultado bloqueiam a confirmação. Códigos já existentes na obra são rejeitados para evitar duplicação. Arquivos parciais sem etapas superiores recebem uma etapa de agrupamento. O arquivo original não é alterado.
 
-Os valores por categoria ficam nos serviços e podem ser editados. As verbas de planejamento das etapas são campos próprios. Importar não preenche datas nem substitui o valor contratado da obra. Códigos já existentes são rejeitados para evitar duplicação. Para importar um arquivo parcial sem as etapas superiores, a prévia informa os vínculos ausentes.
+Os preços e totais originais são preservados nos serviços. Orçamento de venda e verba interna de custo são conceitos separados; importar preços não inventa custos ou margens. Etapas calculam sua venda pelos serviços, com opção Manual no editor. Etapas agrupadoras somam subetapas; verbas e contratações registradas diretamente no agrupador são adicionais às subetapas. Datas e distribuição mensal não são inventadas.
 
-## Diário e anexos
+## Migração e backup
 
-O DOCX segue o modelo de diário da Engefex: logotipo, identificação, clima manhã/tarde, efetivo (função, quantidade, empresa e horas), atividades, equipamentos, observações, registro fotográfico e assinaturas. Não preenche assinaturas digitais. Nomes e números de registros anteriores não são pré-cadastrados. Fotos entram no DOCX como imagens incorporadas, com legenda e proporção preservada.
+A versão anterior do Engefex é migrada automaticamente, preservando os registros e os anexos. A chave anterior fica intacta. Também é possível importar seu backup JSON anterior. O aplicativo Obras dos Lagos possui armazenamento independente e não é modificado.
 
-Fotos são reduzidas para até 1.600 pixels e convertidas a JPEG. JPEG e PNG são recomendados. Outros formatos dependem do navegador. Documentos podem receber anexos diversos; o diário aceita imagens. Limite por arquivo: 20 MB. Anexos ficam no IndexedDB e metadados no localStorage, em chaves exclusivas deste aplicativo. O backup JSON contém todos os arquivos ainda vinculados aos registros. Arquivos removidos ficam órfãos no armazenamento e não entram no backup.
+Backup inclui registros, histórico e arquivos anexados. Os registros ficam no localStorage; anexos e fotos ficam no IndexedDB deste navegador. Nada é enviado ao GitHub ou sincronizado entre dispositivos. Banco e regras de acesso serão uma etapa futura. Não publique backups no repositório.
 
-## Funcionamento dos controles
+## Diário de obra
 
-Cadastros de contratação, pagamento, cotação, medição e recebimento são independentes. Não há geração automática de lançamentos. Cotações não comprometem verba. Estoque soma saldo inicial, entradas e ajustes positivos, menos consumos, perdas e ajustes negativos. Pedidos em aberto são atualizados manualmente. Diário não modifica avanço físico: edite a quantidade executada em Serviços.
+Mantém neste momento o diário com fotos e o gerador DOCX no modelo Engefex já disponível neste gerenciador. O repositório separado de diário solicitado para integração completa ainda precisa ser identificado pelo link exato. Esta versão não declara ter copiado um repositório que não pôde ser localizado.
 
-Datas, duração e dependências são editáveis; não há reprogramação automática ou cálculo de caminho crítico nesta versão. Total de serviço é editável, sem recalcular automaticamente ao mudar os unitários. Campos vazios são preservados como desconhecidos; valores zero continuam zero.
+Fotos são incorporadas ao DOCX e ao backup. Efetivo no formulário: uma linha por função, no formato função | quantidade | empresa | horas. Os nomes do efetivo, clima, atividades, equipamentos, observações, fotos e assinaturas são editáveis. O DOCX contém campos de assinatura, sem produzir assinaturas digitais.
 
-Excluir obra remove seus registros mediante confirmação. Excluir etapa, serviço ou material preserva os demais registros e retira seus vínculos diretos. A recuperação de itens excluídos depende de backup anterior. Exporte antes de exclusões amplas.
+Quantidades no diário são incrementais e atualizam o avanço do serviço; editar aplica a diferença. Não repita execução já lançada diretamente na atividade. Produtividade usa somente registros com quantidade e horas-pessoa preenchidas.
 
-## Celular e uso offline
+## Publicação e uso local
 
-Após a primeira carga com internet, aguarde Pronto para uso offline. O botão Instalar no celular explica os passos de Android e iPhone. O service worker guarda os arquivos do aplicativo; os anexos continuam no IndexedDB. A instalação pode usar armazenamento separado em alguns aparelhos: use backup para transferir registros se necessário.
+GitHub Pages: Settings → Pages → Source → GitHub Actions. Actions → Verificar e publicar aplicativo → Run workflow.
 
-## Armazenamento e publicação
+URL: https://rvpiffer-dev.github.io/engefex_gerenciamento/
 
-GitHub Pages hospeda a interface. Registros e fotos ficam neste navegador e não são enviados ao GitHub, sincronizados ou protegidos por login. Banco, regras de acesso e sincronização serão adicionados depois. Não publique backups no repositório. A aplicação usa caminhos relativos e pode rodar em computador ou navegador móvel. A operação por toque em Android/iOS precisa ser conferida no aparelho; a verificação desta entrega cobre lógica e geração de documentos, sem navegador real.
+Local: `python3 -m http.server 8765 --bind 127.0.0.1` nesta pasta; abra http://127.0.0.1:8765/dist/. Use sempre o mesmo endereço e navegador.
 
-## Verificação e bibliotecas
+No celular, o menu lateral abre pelo botão no canto superior esquerdo. Após a primeira carga com internet, aguarde Pronto para uso offline. A instalação usa o menu do Chrome no Android e Safari → Compartilhar → Adicionar à Tela de Início no iPhone. Para carregar uma atualização, feche e reabra a aplicação com internet.
+
+## Verificação
 
 `node --test tests/*.test.cjs`
 
-Testes sem instalação: cadastros vazios, criação/edição/exclusão, preservação de outra obra, vínculos, interpretação XML, hierarquia de importação, totais, dados ausentes, códigos duplicados e renderização lógica das áreas.
+Testes de cálculo, caixa, custos, estoque, diário incremental, medições, recebimentos, dependências, exclusão, migração, hierarquia, importação e renderização lógica das telas e subabas. O arquivo XLSX de referência também foi usado numa verificação local de importação e reconciliação, sem publicar seus dados. Não houve teste em navegador real nesta entrega; a operação por toque deve ser conferida no aparelho.
 
-Bibliotecas distribuídas localmente: docx 9.6.1 (MIT) e JSZip (MIT/GPL, uso sob MIT). Licenças em dist/vendor. Nenhum documento de cliente está incluído.
+Bibliotecas distribuídas localmente: docx 9.6.1 e JSZip, sob suas licenças em dist/vendor. O logotipo é da Engefex. Não há obras ou documentos de cliente pré-cadastrados.
