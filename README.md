@@ -42,6 +42,14 @@ Cronograma → Planilha edita ordem, descrição, datas, duração em dias corri
 
 Tab avança entre células e Enter desce na mesma coluna. Cole blocos tabulados do Excel a partir de uma célula. Blocos fora dos limites são rejeitados inteiros. Salvar alterações grava todo o lote; erro de validação impede toda a gravação. Descartar alterações abandona o rascunho. Datas aceitam AAAA-MM-DD ou DD/MM/AAAA; números aceitam vírgula decimal. Há avisos de edição pendente e controle contra sobreposição de gravações entre abas.
 
+## Grade compacta em todo o aplicativo
+
+As tabelas têm linhas e colunas com bordas, espaçamento reduzido e rolagem horizontal. Arraste a borda direita do cabeçalho para ajustar a largura de uma coluna; o separador também aceita as setas do teclado. As larguras são guardadas neste navegador. O efetivo do diário completo também usa grade compacta. Controles mantêm áreas de toque maiores no celular.
+
+Listas de obras, etapas, atividades, itens financeiros, tarefas, riscos, checklist, materiais, movimentos de estoque, custos, cotações, medições, recebimentos, equipes e diário oferecem Editar em planilha. Edite as células e use Salvar alterações ou Descartar alterações; Tab avança e Enter desce. Seleções podem ser coladas por seus nomes exatos; blocos inválidos são rejeitados sem colagem parcial. Datas e números são validados com as mesmas regras dos formulários. Os meses das etapas também são editáveis em colunas, exigindo soma de 100% e motivo da reprogramação. Anexos e campos complementares continuam nos formulários individuais.
+
+O check da lista mantém a rolagem vertical e horizontal depois de concluir/desfazer. Saldos, totais derivados e indicadores são calculados automaticamente.
+
 ## Conclusão rápida
 
 Etapas e atividades → check Concluir na própria linha. Registra 100% da quantidade prevista e término real hoje, sem abrir formulário. O botão fica marcado e pode ser clicado novamente para desfazer e restaurar o avanço anterior. Reabrir uma conclusão feita pelo formulário remove apenas a data de conclusão e preserva a quantidade executada. O check mantém orçamento, medições e registros do diário, grava histórico e aplica as validações do planejamento.
