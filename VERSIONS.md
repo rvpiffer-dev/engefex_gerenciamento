@@ -113,3 +113,11 @@ existam migrações futuras.
 - Pesquisa por código, item ou etapa e colagem de uma coluna do Excel. Sem recorrer ao cronograma.
 - Lote salvo como Preparada, preservando edição individual e edição em grade existentes. Número da medição exclusivo na obra; valores acima de 100%, redução do anterior e itens de outra obra são bloqueados atomicamente.
 - Proteções contra duplo clique, dados alterados durante o preenchimento e falta de confirmação no Supabase. Sem criar recebimentos, aprovações ou alterações no orçamento/cronograma.
+
+## v2.6.0 - compras, notas e fornecedores
+
+- Menu Compras e notas com abas Compras e notas e Fornecedores. Estoque, insumos e movimentos retirados dessa navegação; dados históricos preservados.
+- Cadastro global de fornecedores com visualizar, adicionar, editar e excluir. Exclusão desassocia o cadastro sem apagar dados das compras ou pagamentos.
+- Seleção de fornecedor preenche nome/documento na compra. Dados manuais e XML continuam aceitos; XML pode reconhecer cadastro por documento. Alterações cadastrais não reescrevem dados históricos de notas.
+- Filtros recolhidos por documento, fornecedor/documento, cliente da obra, tipo, situação, emissão, vencimento de parcelas e valor.
+- Cadastro integrado ao backup, sincronização e proteções de gravação existentes.
