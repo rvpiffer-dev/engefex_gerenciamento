@@ -23,11 +23,19 @@
    headers.Authorization='Bearer '+session.access_token;
   }
   if(options.json)headers['Content-Type']='application/json';
-  let res;
-  try{res=await fetch(URL_BASE+path,{method:options.method||'GET',headers,body:options.json?JSON.stringify(options.body):options.body,cache:'no-store'})}
-  catch(e){throw Error('Sem comunicação com o Supabase. Verifique sua conexão.')}
-  if(options.binary&&res.ok)return await res.blob();
-  const txt=await res.text();let parsed=null;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),20000);
+  let res,txt,blob;
+  try{
+   res=await fetch(URL_BASE+path,{method:options.method||'GET',headers,body:options.json?JSON.stringify(options.body):options.body,cache:'no-store',signal:controller.signal});
+   if(options.binary&&res.ok)blob=await res.blob();
+   else txt=await res.text();
+  }catch(e){
+   if(controller.signal.aborted)throw Error('O Supabase não respondeu em 20 segundos. Confira sua internet e tente novamente.');
+   throw Error('Não foi possível comunicar com o Supabase. Confira sua conexão.');
+  }finally{clearTimeout(timeout)}
+  if(blob)return blob;
+  let parsed=null;
   try{parsed=txt?JSON.parse(txt):null}catch{parsed=txt}
   if(!res.ok){let error=new Error((parsed?.message||parsed?.msg||parsed?.error_description||parsed?.error||('HTTP '+res.status)));error.status=res.status;error.code=parsed?.code;throw error}
   return parsed;
@@ -86,7 +94,7 @@
       <button type="submit">Entrar</button></form>
       <p><small>O administrador precisa cadastrar sua conta e vinculá-la à área de trabalho da Engefex no Supabase.</small></p>
      </div>
-     <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p></div>
+     <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p><p><small>Se o Supabase não responder, será mostrado um erro após 20 segundos.</small></p><button type="button" id="engefex-cloud-cancel" class="secondary">Cancelar e voltar ao login</button></div>
      <div data-cloud-panel="setup" hidden>
       <p id="engefex-cloud-setup-info"></p>
       <button type="button" id="engefex-cloud-local-backup" class="secondary">Exportar backup local</button>
@@ -121,6 +129,7 @@
   $('engefex-cloud-local-backup').onclick=()=>client?.exportBackup();
   $('engefex-cloud-export').onclick=()=>client?.exportBackup();
   $('engefex-cloud-retry').onclick=()=>connect().catch(e=>setPhase('error',e.message));
+  $('engefex-cloud-cancel').onclick=()=>logout();
   $('engefex-cloud-out').onclick=()=>logout();
   $('engefex-cloud-logout').onclick=()=>logout();
   $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>{paintStatus('Erro de sincronização: '+e.message);setPhase('error',e.message)});
