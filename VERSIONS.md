@@ -138,3 +138,9 @@ existam migrações futuras.
 - Pagar opera sobre a nota inteira. Parcial abate parcelas por ordem de vencimento, com distribuição proporcional entre destinos; quitação distribui desconto/acréscimo sobre os saldos restantes.
 - Uma nota permanece em aberto enquanto houver saldo em qualquer destino; só aparece em Pagos quando quitada integralmente. CSV acompanha o agrupamento.
 - Rateios, pagamentos e valores originais preservados no banco; agrupamento é derivado da estrutura financeira existente.
+
+## v2.9.0 - identidade Engefex
+
+- Logotipo original no menu e na tela de acesso. Azul, preto e cinza aplicados à navegação, botões, destaques e seleções.
+- Ícone do aplicativo usa o símbolo da marca original; cores de tema e manifesto atualizadas.
+- Identidade adaptada ao celular, com indicadores de pago, vencido e alerta mantidos por significado. Sem alterações de dados ou regras de negócio.

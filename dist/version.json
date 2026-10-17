@@ -1,8 +1,8 @@
 {
-  "version": "2.8.0",
+  "version": "2.9.0",
   "date": "2026-10-17",
-  "name": "Contas a pagar agrupadas por nota",
-  "previous_version": "2.7.0",
+  "name": "Identidade visual Engefex",
+  "previous_version": "2.8.0",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

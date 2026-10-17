@@ -69,15 +69,15 @@
   const style=document.createElement('style');
   style.textContent=String.raw`
     .engefex-cloud-locked body{overflow:hidden}
-    #engefex-cloud-cover{position:fixed;inset:0;z-index:2147483640;background:#142637;color:#f6f9fc;overflow:auto;display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    #engefex-cloud-cover{position:fixed;inset:0;z-index:2147483640;background:#111111;color:#f6f9fc;overflow:auto;display:flex;align-items:center;justify-content:center;padding:18px;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
     #engefex-cloud-cover[hidden]{display:none}
     .engefex-cloud-panel{background:#fff;color:#26384a;max-width:560px;width:100%;border-radius:18px;padding:30px;box-shadow:0 20px 60px #0018}
-    .engefex-cloud-panel h1{font-size:1.45rem;margin:0 0 6px}.engefex-cloud-panel p{line-height:1.55}
+    .engefex-cloud-logo{display:block;width:220px;max-width:80%;height:auto;margin:0 auto 22px}.engefex-cloud-panel h1{font-size:1.45rem;margin:0 0 6px}.engefex-cloud-panel p{line-height:1.55}
     .engefex-cloud-panel label{display:block;margin:12px 0 5px;font-weight:600}
     .engefex-cloud-panel input{width:100%;box-sizing:border-box;padding:13px;border:1px solid #b9c6d2;border-radius:8px;font-size:16px}
-    .engefex-cloud-panel button{border:0;border-radius:9px;background:#1362a3;color:white;padding:12px 16px;margin:8px 8px 0 0;cursor:pointer;font-weight:650}
+    .engefex-cloud-panel button{border:0;border-radius:9px;background:#1557ff;color:white;padding:12px 16px;margin:8px 8px 0 0;cursor:pointer;font-weight:650}
     .engefex-cloud-panel button:disabled{opacity:.5;cursor:wait}
-    .engefex-cloud-panel button.secondary{color:#173b57;background:#e9f0f8}
+    .engefex-cloud-panel button.secondary{color:#174bd2;background:#edf2ff}
     #engefex-cloud-message{white-space:pre-wrap;color:#9f2b21;font-weight:650;margin-top:14px}
     #engefex-cloud-status{display:inline-block;font-size:.82rem;opacity:.9;margin-right:10px}
     #engefex-cloud-header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 12px}
@@ -87,7 +87,7 @@
   cover=document.createElement('div');cover.id='engefex-cloud-cover';cover.setAttribute('role','dialog');cover.setAttribute('aria-modal','true');cover.setAttribute('aria-label','Acesso ao Gerenciador Engefex');
   cover.innerHTML=String.raw`
   <div class="engefex-cloud-panel">
-    <h1>ENGEFEX · Gerenciamento</h1>
+    <img class="engefex-cloud-logo" src="engefex-logo.png" alt="Engefex Engenharia e Estruturas Metálicas" width="469" height="364"><h1>Gerenciamento Engefex</h1>
     <p>Base compartilhada de obras, orçamento, cronograma e diário.</p>
     <div id="engefex-cloud-view">
      <div data-cloud-panel="login">
@@ -287,3 +287,4 @@
  }
  root.EngefexCloud={boot,requireWrite,send,get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
 })(window);
+
