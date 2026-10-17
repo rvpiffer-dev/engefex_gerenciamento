@@ -7,7 +7,7 @@
  const URL_BASE='https://kxekeeysonrppechegsq.supabase.co';
  const API_KEY='sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS';
  const SESSION_KEY='engefex-cloud-auth-v1';
- let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null;
+ let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let cover, messageEl, statusEl, originalLoad=null, originalPut=null;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
@@ -23,11 +23,19 @@
    headers.Authorization='Bearer '+session.access_token;
   }
   if(options.json)headers['Content-Type']='application/json';
-  let res;
-  try{res=await fetch(URL_BASE+path,{method:options.method||'GET',headers,body:options.json?JSON.stringify(options.body):options.body,cache:'no-store'})}
-  catch(e){throw Error('Sem comunicação com o Supabase. Verifique sua conexão.')}
-  if(options.binary&&res.ok)return await res.blob();
-  const txt=await res.text();let parsed=null;
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),20000);
+  let res,txt,blob;
+  try{
+   res=await fetch(URL_BASE+path,{method:options.method||'GET',headers,body:options.json?JSON.stringify(options.body):options.body,cache:'no-store',signal:controller.signal});
+   if(options.binary&&res.ok)blob=await res.blob();
+   else txt=await res.text();
+  }catch(e){
+   if(controller.signal.aborted)throw Error('O Supabase não respondeu em 20 segundos. Confira sua internet e tente novamente.');
+   throw Error('Não foi possível comunicar com o Supabase. Confira sua conexão.');
+  }finally{clearTimeout(timeout)}
+  if(blob)return blob;
+  let parsed=null;
   try{parsed=txt?JSON.parse(txt):null}catch{parsed=txt}
   if(!res.ok){let error=new Error((parsed?.message||parsed?.msg||parsed?.error_description||parsed?.error||('HTTP '+res.status)));error.status=res.status;error.code=parsed?.code;throw error}
   return parsed;
@@ -38,7 +46,9 @@
   saveSession({...s,user:s.user||session.user,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
  }
  async function login(email,password){
+  const generation=++authGeneration;
   const s=await raw('/auth/v1/token?grant_type=password',{method:'POST',json:true,body:{email,password},auth:false});
+  if(generation!==authGeneration)return;
   saveSession({...s,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
   await connect();
  }
@@ -86,7 +96,7 @@
       <button type="submit">Entrar</button></form>
       <p><small>O administrador precisa cadastrar sua conta e vinculá-la à área de trabalho da Engefex no Supabase.</small></p>
      </div>
-     <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p></div>
+     <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p><p><small>Se o Supabase não responder, será mostrado um erro após 20 segundos.</small></p><button type="button" id="engefex-cloud-cancel" class="secondary">Cancelar e voltar ao login</button></div>
      <div data-cloud-panel="setup" hidden>
       <p id="engefex-cloud-setup-info"></p>
       <button type="button" id="engefex-cloud-local-backup" class="secondary">Exportar backup local</button>
@@ -113,7 +123,7 @@
   $('engefex-cloud-login').addEventListener('submit',async event=>{
    event.preventDefault();const button=event.submitter;button.disabled=true;
    try{setPhase('loading');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
-   catch(e){saveSession(null);setPhase('login',e.message)}finally{button.disabled=false}
+   catch(e){if(phase!=='login'){saveSession(null);setPhase('login',e.message)}}finally{button.disabled=false}
   });
   $('engefex-cloud-migrate').onclick=()=>initializeWith(current());
   $('engefex-cloud-empty').onclick=()=>initializeWith(root.EngefexManager.separate(root.Obras.clone(root.OBRAS_SEED)));
@@ -121,6 +131,7 @@
   $('engefex-cloud-local-backup').onclick=()=>client?.exportBackup();
   $('engefex-cloud-export').onclick=()=>client?.exportBackup();
   $('engefex-cloud-retry').onclick=()=>connect().catch(e=>setPhase('error',e.message));
+  $('engefex-cloud-cancel').onclick=()=>logout();
   $('engefex-cloud-out').onclick=()=>logout();
   $('engefex-cloud-logout').onclick=()=>logout();
   $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>{paintStatus('Erro de sincronização: '+e.message);setPhase('error',e.message)});
@@ -145,11 +156,14 @@
   }catch(e){setPhase('setup',e.message)}
  }
  async function connect(){
+  const generation=authGeneration;
   setPhase('loading');
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
+  if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
   workspace=memberships[0].workspace_id;
   const rows=await raw('/rest/v1/engefex_state?select=payload,revision,updated_at&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');
+  if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
   revision=Number(rows[0].revision);
   remoteSnapshot=rows[0].payload||null;
@@ -259,6 +273,7 @@
   if(pending){alert('Aguarde o servidor confirmar o salvamento antes de sair.');return}
   const token=session?.access_token;
   const wasConnected=phase==='ready';
+  authGeneration++;
   saveSession(null);workspace=null;revision=null;remoteSnapshot=null;knownFiles.clear();failed='';
   setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
