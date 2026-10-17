@@ -49,3 +49,7 @@ th{position:sticky;padding-right:15px!important}.column-resizer{position:absolut
  #engefex-cloud-refresh,#engefex-cloud-status{display:none!important}
  #engefex-cloud-logout{font-size:10px!important;padding:6px!important}
 }
+
+
+/* Áreas do sistema: menu em grupos expansíveis, com rolagem no celular. */
+#nav{flex:1;min-height:0;overflow-y:auto;align-content:start;padding-right:3px}.nav-module{border-bottom:1px solid #ffffff12;padding:5px 0}.nav-module summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;cursor:pointer;color:#e3edf4;padding:11px 9px;font-size:13px;font-weight:700;border-radius:5px}.nav-module summary::-webkit-details-marker{display:none}.nav-module summary:hover{background:#ffffff0b}.nav-module summary:focus-visible{outline:3px solid #d89152;outline-offset:-3px}.nav-module.is-active>summary{color:#efb98b}.nav-chevron{font-size:22px;line-height:1;transition:transform .15s}.nav-module[open]>summary .nav-chevron{transform:rotate(90deg)}.nav-module-links{display:grid;gap:2px;padding:1px 0 7px 9px}.nav-module-links a{font-size:12px;padding:8px 9px;gap:9px}.nav-module-links svg{flex:none;width:16px;height:16px}.sidebar-bottom{flex-shrink:0}
