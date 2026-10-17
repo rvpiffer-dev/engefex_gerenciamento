@@ -80,3 +80,18 @@ No celular, o menu lateral abre pelo botão no canto superior esquerdo. Após a 
 Testes de cálculo, caixa, custos, estoque, diário incremental, medições, recebimentos, dependências, exclusão, migração, hierarquia, importação e renderização lógica das telas e subabas. O arquivo XLSX de referência também foi usado numa verificação local de importação e reconciliação, sem publicar seus dados. Não houve teste em navegador real nesta entrega; a operação por toque deve ser conferida no aparelho.
 
 Bibliotecas distribuídas localmente: docx 9.6.1 e JSZip, sob suas licenças em dist/vendor. O logotipo é da Engefex. Não há obras ou documentos de cliente pré-cadastrados.
+
+## Importação de cronograma PDF
+
+Cronograma → Importar cronograma PDF. Selecione a obra de destino no topo, abra o arquivo, confira a prévia e defina o destino de cada atividade: criar planejamento, atualizar um serviço existente ou ignorar. Nomes coincidentes e importações anteriores sugerem vínculos, que devem ser conferidos antes da confirmação.
+
+Compatível com PDF textual no padrão de tabela do Microsoft Project contendo Id, EDT, Nome da tarefa, recursos, Início, Término, % planejado, % concluído, Duração e Predecessoras. O parser lê as colunas por posição em todas as páginas e reúne descrições quebradas. PDF escaneado e vínculos especiais (II, TT, defasagens etc.) não são convertidos silenciosamente: a leitura informa erro e impede a importação. Limites: 20 MB e 100 páginas.
+
+Etapas-resumo viram hierarquia de etapas para as atividades novas. EDTs repetidas com Ids distintos são mantidas separadas e avisadas; pontos finais na EDT são normalizados apenas para organizar a hierarquia. A prévia preserva Id/EDT de origem. Vínculos de etapas-resumo são expandidos para todas as suas atividades. Predecessora ignorada, inexistente, ciclo e dois destinos iguais rejeitam o lote inteiro.
+
+Serviços já cadastrados mantêm nome, etapa, quantidade, execução e valores. A importação atualiza datas, responsável, ordem e predecessoras; guarda duração e percentuais do documento como referências. Atividades novas são planejamento percentual: unidade %, quantidade 100, executado conforme o PDF e valor zero. Nenhum valor contratado, custo, medição, diário ou recebimento é importado ou removido. Término planejado não vira término real.
+
+As datas são mantidas. A duração escrita no PDF é preservada em coluna própria; a duração da grade continua em dias corridos. Não é importado um calendário de trabalho/feriados, nem recalculada a agenda a partir das predecessoras. Todas as atividades podem ser editadas e removidas depois da importação.
+
+PDF.js 4.10.38 (Apache-2.0) e worker são distribuídos localmente em dist/vendor, com licença. A leitura usa isEvalSupported:false e não envia o documento a servidor. Os recursos também entram no cache offline. Testes com tabelas sintéticas cobrem leitura, validação, vínculos e gravação atômica; o PDF fornecido foi validado localmente sem publicar dados do cliente.
+
