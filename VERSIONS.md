@@ -64,3 +64,9 @@ existam migrações futuras.
 - Verifica obra, estrutura dos grupos/itens e alterações posteriores nos vínculos.
 - Preserva lançamentos mais recentes: somente regras da obra selecionada são substituídas, após salvar e confirmar no servidor.
 - Configurações particulares e backups de clientes não fazem parte do repositório.
+
+## v2.2.2 - contas em aberto e pagas
+
+- Contas a pagar separado em Em aberto e Pagos, conforme quitação em centavos.
+- Pagamentos parciais permanecem em aberto; correções que reabrem saldo retornam à lista em aberto.
+- CSV respeita a aba selecionada e a pesquisa. Nenhum lançamento é movido ou duplicado no banco.
