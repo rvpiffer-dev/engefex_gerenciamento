@@ -13,7 +13,7 @@
 
 - Gerenciamento de obras: recursos existentes de cadastro, planejamento,
   orçamento, suprimentos, execução, diário, equipes e documentos.
-- Financeiro: Contas a pagar e Medições e recebimentos.
+- Financeiro: Contas a pagar, Contas a receber (reservada) e Medições e recebimentos.
 - Fabricação: espaço reservado, sem controles de produção implementados ainda.
 - Contas a pagar usa os mesmos registros de contratos e pagamentos, sem cópia.
 - Edição em planilha, importadores, cálculos e sincronização permanecem ativos.
