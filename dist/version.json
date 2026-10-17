@@ -1,8 +1,8 @@
 {
-  "version": "2.4.2",
+  "version": "2.5.0",
   "date": "2026-10-17",
-  "name": "Seleção de itens orçados em medições",
-  "previous_version": "2.4.1",
+  "name": "Medições acumuladas em planilha",
+  "previous_version": "2.4.2",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

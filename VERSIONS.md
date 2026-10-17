@@ -104,3 +104,12 @@ existam migrações futuras.
 - Seletor da medição lista somente itens do orçamento da obra selecionada, com código, quantidade, unidade e valor orçado.
 - Trocar a obra reconstrói o seletor financeiro e limpa seleção incompatível, inclusive em navegadores móveis.
 - Orçamento vazio mostra orientação, sem recorrer a atividades do cronograma. Medições anteriores preservadas.
+
+
+## v2.5.0 - medições acumuladas em planilha
+
+- Nova medição em planilha por obra, com uma linha por item do orçamento, anterior, acumulado atual, incremento, valor e saldo.
+- Preenchimento em percentual ou quantidade acumulada. A segunda medição inicia pelos acumulados anteriores e grava somente aumentos selecionados. Preparadas contam no anterior; glosas não contam.
+- Pesquisa por código, item ou etapa e colagem de uma coluna do Excel. Sem recorrer ao cronograma.
+- Lote salvo como Preparada, preservando edição individual e edição em grade existentes. Número da medição exclusivo na obra; valores acima de 100%, redução do anterior e itens de outra obra são bloqueados atomicamente.
+- Proteções contra duplo clique, dados alterados durante o preenchimento e falta de confirmação no Supabase. Sem criar recebimentos, aprovações ou alterações no orçamento/cronograma.
