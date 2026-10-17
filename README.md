@@ -1,101 +1,91 @@
 # Engefex Gerenciamento
 
-Gerenciador vazio baseado na organização e nas regras de cálculo do aplicativo Obras dos Lagos. Mantém navegação lateral à esquerda e todas as áreas originais, com cadastros adicionais e importação de orçamento XLSX.
+Gerenciador de obras estático para computador, Android e iOS, com menu lateral, edição em planilha, orçamento Excel, cronograma PDF/Gantt e diário completo Engefex. Começa vazio. Registros, anexos e histórico são locais ao navegador; o GitHub hospeda o aplicativo, não um banco de dados.
 
-## Áreas preservadas
+## Orçamento e planejamento separados
 
-- Visão geral: contrato, avanço ponderado, custos previstos e caixa.
-- Agenda do engenheiro: dia, semana, todas as tarefas, prioridades, frentes e prazos de compra.
-- Etapas e atividades: quantidades, execução, dependências, equipes, critérios de aceitação e próxima ação.
-- Cronograma: datas de serviços, duração, distribuição mensal e planejamento financeiro mensal.
-- Orçamento e custos: cinco categorias de verba, cotações, comprometido, incorrido, pago e saldo a contratar.
-- Materiais e compras: necessidade, estoque, pedidos, consumo, perdas e prazo de pedido.
-- Medições e recebimentos: preparação, apresentação, aprovação, evidências e entrada efetiva de caixa.
-- Checklist de execução: conferências por fase e etapa.
-- Pendências e riscos: responsáveis, criticidade, prazos e decisões.
-- Diário de obra: descrição, avanço incremental, horas-pessoa, equipe, ocorrências, fotos com legenda e DOCX Engefex.
-- Documentos e diagnóstico: fontes, notas, anexos permanentes locais, pasta de originais e histórico antes/depois.
-- Equipes e produtividade: cadastro de equipes e produtividade por serviço calculada a partir do diário.
+- **Orçamento**: itens, quantidades, preços, totais, verbas, cotações, contratos, pagamentos e planejamento financeiro mensal. Coleções `budgetStages` e `budgetItems`.
+- **Etapas e atividades / Cronograma**: planejamento de execução, datas, duração, predecessoras, responsáveis, avanço, diário e Gantt. Coleções `stages` e `activities`.
+- **Medições e recebimentos**: usam os itens e os preços do orçamento, sem exigir atividade correspondente ou avanço no cronograma. Quantidades acumuladas não podem exceder o item orçado; pagamentos ficam limitados às medições aprovadas.
 
-Obras, etapas, serviços e demais cadastros podem ser adicionados, visualizados, editados e excluídos. A visualização não altera os dados. IDs internos são estáveis. Exclusões de obra e etapa removem os dependentes mediante confirmação; exporte backup antes. Informações removidas ficam registradas no histórico, sem botão de restauração individual.
+Editar, excluir, reprogramar ou importar dados em uma área não atualiza nem exclui os registros da outra. O avanço do cronograma usa a média dos percentuais das atividades, sem pesos financeiros. Diário atualiza o avanço do planejamento; não altera os quantitativos do orçamento ou medições.
+
+A versão `dataModel: 2` migra cadastros anteriores: mantém os itens e valores financeiros, vínculos de medições, histórico, fotos e execução; preserva também o planejamento já existente como cópia independente. Itens de planejamento criados por PDF sem valor financeiro não viram orçamento. IDs antigos das medições são preservados na coleção financeira. A migração é idempotente; a aplicação guarda a versão anterior no mesmo navegador antes da primeira gravação da separação. Planejamento antigo não é removido automaticamente.
 
 ## Começar
 
-1. Obras → Nova obra. Informe identificação, contrato, valor e prazos; datas podem permanecer em aberto.
+1. Obras → Nova obra. Nome, código curto, contrato, valores e prazos são editáveis; início pode ficar em aberto.
 2. Selecione a obra no topo.
-3. Etapas e atividades ou Orçamento e custos → Importar orçamento Excel.
-4. Confira a aba, a prévia, os valores e o destino. A opção de atualizar o valor contratado da obra fica desmarcada por padrão.
-5. Edite o planejamento e as verbas internas conforme necessário. Todos os serviços importados permanecem editáveis.
-6. Exporte o backup regularmente.
+3. Orçamento → Importar orçamento Excel. Confira a aba, os valores e a opção de gerar cronograma.
+4. Cronograma → Importar cronograma PDF, ou cadastre manualmente etapas e atividades.
+5. Medições e recebimentos → Item de medição: selecione um item do orçamento.
+6. Exporte backup ao encerrar o trabalho.
 
-## Edição em planilha e Gantt
+Cadastros podem ser adicionados, visualizados, editados e excluídos. Excluir etapas do planejamento remove suas atividades e vínculos operacionais, preservando orçamento e medições. Excluir item ou etapa financeira com medições exige remover as medições antes; essa proteção evita deixar recebimentos sem base. Excluir uma obra remove seus registros de ambas as áreas mediante confirmação. Alterações ficam no histórico.
 
-- Orçamento e custos → Planilha de serviços: descrição, unidade, quantidade, preço unitário, total e unitários de custos. Quantidade ou preço alterado recalcula o total; alterar total recalcula o preço. O valor contratado da obra é separado.
-- Orçamento e custos → Planilha de verbas: categorias de custo e saldo a contratar por etapa. Vazio mantém custo a definir; zero é custo definido como zero.
-- Cronograma → Planilha: ordem, atividade, início, duração em dias corridos, término, predecessoras e responsável. A ordem é aplicada após salvar. Predecessoras usam os números fixos das linhas da edição atual, separados por vírgulas. São vínculos término → início; as datas não são deslocadas automaticamente.
-- Cronograma → Gantt: atividades na ordem definida, barras de datas, avanço executado e avisos de sobreposição com predecessoras. Distribuição mensal preserva o planejamento anterior.
+## Importação do orçamento Excel
 
-Tab avança entre células e Enter desce na mesma coluna. Cole blocos tabulados do Excel a partir de uma célula. A colagem fora dos limites é rejeitada inteira. Clique Salvar alterações para gravar todo o lote ou Descartar alterações. Datas aceitam AAAA-MM-DD e DD/MM/AAAA; números aceitam vírgula decimal. Falha de validação impede a gravação de todo o lote. Alterações ficam no histórico; a gravação rejeita dados modificados por outra aba desde a abertura da grade.
+Layout Engefex: B código, C descrição, D/E unidade e quantidade (inferidas pelo conteúdo), F/G/H preços unitários de mão de obra/material/equipamento, I/J/K totais por categoria e L total. Linhas e etapas podem variar. Subtotais, tributos e total geral são conferidos sem somar novamente os serviços. Fórmulas dependem dos resultados salvos no Excel. Verbas internas e valores de venda permanecem distintos.
 
-O aplicativo avisa antes de sair da grade por menus e abas com edição pendente. No celular, deslize a tabela para os lados. Para receber a versão nova sem apagar registros: dist/atualizar.html → Atualizar e abrir atividades.
+A importação oferece duas opções:
 
-## Importação XLSX
+- **Não — somente orçamento e medições** (inicial): cria apenas etapas financeiras e itens do orçamento. Não altera etapas, atividades ou datas do cronograma existente. Depois, o PDF pode ser usado para todo o planejamento.
+- **Sim — copiar para o cronograma**: além do orçamento financeiro, cria cópias de todas as etapas e serviços no planejamento, com IDs próprios e sem preços ou vínculos de atualização automática. As datas são definidas depois. Alterações posteriores no orçamento ou na cópia ficam restritas à respectiva área.
 
-Layout Engefex: B código, C descrição, D/E unidade e quantidade (inferidas pelo conteúdo), F/G/H preços unitários de mão de obra/material/equipamento, I/J/K totais por categoria, L total. Linhas e etapas podem variar. Reconhece etapas, subetapas e serviços, sem somar agrupadores novamente no orçamento.
+A opção de atualizar o valor contratado da obra pelo total geral do arquivo fica desmarcada por padrão. Códigos duplicados são conferidos somente dentro do orçamento da obra; uma EDT usada no PDF não impede importar o Excel.
 
-Fórmulas usam o último resultado salvo no arquivo. Recalcule e salve no Excel/LibreOffice antes de importar. Dados inválidos ou fórmulas sem resultado bloqueiam a confirmação. Códigos já existentes na obra são rejeitados para evitar duplicação. Arquivos parciais sem etapas superiores recebem uma etapa de agrupamento. O arquivo original não é alterado.
+## Edição em planilha
 
-Os preços e totais originais são preservados nos serviços. Orçamento de venda e verba interna de custo são conceitos separados; importar preços não inventa custos ou margens. Etapas calculam sua venda pelos serviços, com opção Manual no editor. Etapas agrupadoras somam subetapas; verbas e contratações registradas diretamente no agrupador são adicionais às subetapas. Datas e distribuição mensal não são inventadas.
+Orçamento → Planilha de serviços permite editar descrição, unidade, quantidade, preço unitário, total e unitários de custos. Quantidade/preço alterado recalcula o total; total alterado recalcula o preço. O valor contratado da obra é separado. Planilha de verbas edita as categorias financeiras e o saldo a contratar. Vazio significa a definir; zero é um valor informado.
 
-## Migração e backup
+Cronograma → Planilha edita ordem, descrição, datas, duração em dias corridos, predecessoras e responsável. Predecessoras usam os números fixos das linhas da edição atual, separados por vírgula, e indicam término → início. A ordem é aplicada ao salvar; os vínculos não deslocam datas automaticamente. A duração escrita no PDF fica em coluna de referência.
 
-A versão anterior do Engefex é migrada automaticamente, preservando os registros e os anexos. A chave anterior fica intacta. Também é possível importar seu backup JSON anterior. O aplicativo Obras dos Lagos possui armazenamento independente e não é modificado.
+Tab avança entre células e Enter desce na mesma coluna. Cole blocos tabulados do Excel a partir de uma célula. Blocos fora dos limites são rejeitados inteiros. Salvar alterações grava todo o lote; erro de validação impede toda a gravação. Descartar alterações abandona o rascunho. Datas aceitam AAAA-MM-DD ou DD/MM/AAAA; números aceitam vírgula decimal. Há avisos de edição pendente e controle contra sobreposição de gravações entre abas.
 
-Backup inclui registros, histórico e arquivos anexados. Os registros ficam no localStorage; anexos e fotos ficam no IndexedDB deste navegador. Nada é enviado ao GitHub ou sincronizado entre dispositivos. Banco e regras de acesso serão uma etapa futura. Não publique backups no repositório.
+## Cronograma PDF e Gantt
 
-## Diário de obra completo
+Cronograma → Importar cronograma PDF → arquivo → prévia → conferir os destinos → confirmar. Apenas o planejamento é alterado. Ao concluir, Etapas e atividades abre na obra de destino, com filtros limpos e contagem do resultado.
 
-A aba Diário de obra contém a interface completa do aplicativo separado https://diario-de-obras-piffer.rapiffer.chatgpt.site, adaptada para usar as mesmas obras e anexos do gerenciador. Inclui identificação, clima por período, efetivo com linhas editáveis, atividades, equipamentos, observações, fotos com legenda, assinaturas, prévia, impressão/PDF e o mesmo gerador DOCX do aplicativo original. Obras e diários podem ser adicionados, visualizados, editados e excluídos.
+Compatível com PDF textual de tabela do Project contendo Id, EDT, Nome da tarefa, recursos, Início, Término, % planejado, % concluído, Duração e Predecessoras. Leitura por colunas em todas as páginas, incluindo descrições quebradas. Limites: 20 MB e 100 páginas. PDFs escaneados e vínculos especiais (II, TT, defasagens) são sinalizados como erro e não importados silenciosamente.
 
-A subaba Avanço e produtividade mantém o diário do gerenciador antigo: quantidades incrementais atualizam o avanço e horas-pessoa permitem produtividade. Editar pelo formulário completo preserva esses vínculos e valores.
+Etapas-resumo organizam a hierarquia. Etapas existentes do planejamento são reaproveitadas por vínculo de importação ou nome único. Atividades existentes são sugeridas por vínculo anterior, nome único ou código e etapa coincidentes; casos ambíguos podem ser revistos. EDTs repetidas com Ids distintos são mantidas separadas e avisadas. Predecessoras de resumos expandem para suas atividades. Vínculo inválido, ciclo ou dois destinos iguais rejeitam o lote.
 
-No GitHub Pages, os registros ficam no navegador e entram no backup do gerenciador. Não há autenticação nem sincronização no módulo local. O botão Versão online abre o aplicativo original, que mantém seu login por conta e fotos online. Os dados dessas duas versões não são sincronizados automaticamente. O código do serviço original foi preservado em modules/diary/cloud-source como referência para a futura implantação com servidor.
+Novas atividades do PDF têm unidade %, quantidade 100 e execução percentual conforme o documento. Datas planejadas não viram datas reais. Duração original é preservada: calendário de trabalho e feriados não são importados nem usados para recalcular datas. O Gantt mostra as barras, o avanço e conflitos entre datas e predecessoras. Todos os registros permanecem editáveis.
 
-O módulo possui fonte React em modules/diary e saída pronta em dist/diary. Não é necessário compilar para usar. Para reconstruir somente esse módulo: instale as dependências de modules/diary e execute seu script build. Bibliotecas e licenças estão documentadas nessa pasta. O aplicativo principal continua estático e sem instalação de dependências.
+PDF.js 4.10.38 (Apache-2.0), worker e licença estão em `dist/vendor`. Leitura com `isEvalSupported:false`, sem enviar documentos ao servidor. Recursos são preparados para uso offline.
 
-## Publicação e uso local
+## Demais áreas
 
-GitHub Pages: Settings → Pages → Source → GitHub Actions. Actions → Verificar e publicar aplicativo → Run workflow.
+Visão geral, agenda do engenheiro (dia/semana/tarefas), materiais e compras, estoque/consumos/perdas, checklist, riscos e pendências, documentos/anexos e equipes/produtividade foram preservados. Comprometido, incorrido, pago e recebido são controles distintos.
+
+Documentos podem receber anexos locais. A pasta de originais pode ser vinculada para consultar documentos externos; arquivos não anexados permanecem na pasta original. Fotografias do diário são anexadas, com legendas, e entram no DOCX e no backup.
+
+## Diário completo
+
+Diário de obra → Diário completo integra o formulário Engefex, clima, efetivo editável, equipamentos, observações, fotos com legenda, assinaturas, prévia, impressão/PDF e o gerador DOCX do aplicativo original. A subaba Avanço e produtividade mantém lançamentos incrementais por atividade do planejamento. Editar um registro aplica somente a diferença ao avanço.
+
+Fonte React em `modules/diary`, saída pronta em `dist/diary`: não é necessário compilar para usar. Para reconstruir somente esse módulo, instale suas dependências e execute o script build. Código do serviço original em `modules/diary/cloud-source` é referência para futura implantação com servidor. Bibliotecas e licenças estão documentadas nessa pasta.
+
+No GitHub Pages, o módulo usa obras, diário e arquivos locais do gerenciador. O botão Versão online abre o aplicativo original com sua autenticação e armazenamento próprios. As versões não sincronizam automaticamente.
+
+## Backup, atualização e publicação
+
+Exportar backup gera JSON com registros, as duas áreas, histórico e anexos. Importar backup substitui os dados locais mediante confirmação. Mantenha cópias fora do aparelho. Não há conta, autenticação, sincronização entre dispositivos ou banco compartilhado nesta versão.
+
+Outras abas do mesmo navegador são atualizadas por eventos de armazenamento/foco/visibilidade. A atualização visual aguarda quando existe edição pendente em formulário, planilha ou diário.
 
 URL: https://rvpiffer-dev.github.io/engefex_gerenciamento/
 
-Local: `python3 -m http.server 8765 --bind 127.0.0.1` nesta pasta; abra http://127.0.0.1:8765/dist/. Use sempre o mesmo endereço e navegador.
+Atualizar: `dist/atualizar.html` → Atualizar e abrir atividades. Não apaga registros nem arquivos locais. Há aviso de nova versão no aplicativo. Instalação: Chrome/Android → Instalar aplicativo; Safari/iOS → Compartilhar → Adicionar à Tela de Início. No celular, o menu lateral abre pelo botão no canto superior esquerdo e tabelas permitem rolagem horizontal.
 
-No celular, o menu lateral abre pelo botão no canto superior esquerdo. Após a primeira carga com internet, aguarde Pronto para uso offline. A instalação usa o menu do Chrome no Android e Safari → Compartilhar → Adicionar à Tela de Início no iPhone. Para carregar uma atualização, feche e reabra a aplicação com internet.
+GitHub Pages: Settings → Pages → Source → GitHub Actions. Actions → Verificar e publicar aplicativo → Run workflow. O código do aplicativo é estático e não requer build.
+
+Local: `python3 -m http.server 8765 --bind 127.0.0.1` nesta pasta; abra http://127.0.0.1:8765/dist/. Use o mesmo endereço e navegador para acessar os registros.
 
 ## Verificação
 
 `node --test tests/*.test.cjs`
 
-Testes de cálculo, caixa, custos, estoque, diário incremental, medições, recebimentos, dependências, exclusão, migração, hierarquia, importação e renderização lógica das telas e subabas. O arquivo XLSX de referência também foi usado numa verificação local de importação e reconciliação, sem publicar seus dados. Não houve teste em navegador real nesta entrega; a operação por toque deve ser conferida no aparelho.
+Testes cobrem cálculos, finanças, migração, diário, recebimentos, dependências, importações, geração opcional do planejamento, independência das áreas, edição em lote, Gantt, cache e renderização lógica. Excel e PDF fornecidos também foram usados localmente para verificar os dois fluxos, sem publicar dados de cliente. Testes de interface usam ambiente simulado; não substituem teste por toque em aparelho real.
 
-Bibliotecas distribuídas localmente: docx 9.6.1 e JSZip, sob suas licenças em dist/vendor. O logotipo é da Engefex. Não há obras ou documentos de cliente pré-cadastrados.
-
-## Importação de cronograma PDF
-
-Cronograma → Importar cronograma PDF. Selecione a obra de destino no topo, abra o arquivo, confira a prévia e defina o destino de cada atividade: criar planejamento, atualizar um serviço existente ou ignorar. Nomes coincidentes e importações anteriores sugerem vínculos, que devem ser conferidos antes da confirmação.
-
-Compatível com PDF textual no padrão de tabela do Microsoft Project contendo Id, EDT, Nome da tarefa, recursos, Início, Término, % planejado, % concluído, Duração e Predecessoras. O parser lê as colunas por posição em todas as páginas e reúne descrições quebradas. PDF escaneado e vínculos especiais (II, TT, defasagens etc.) não são convertidos silenciosamente: a leitura informa erro e impede a importação. Limites: 20 MB e 100 páginas.
-
-Etapas-resumo viram hierarquia de etapas para as atividades novas. EDTs repetidas com Ids distintos são mantidas separadas e avisadas; pontos finais na EDT são normalizados apenas para organizar a hierarquia. A prévia preserva Id/EDT de origem. Vínculos de etapas-resumo são expandidos para todas as suas atividades. Predecessora ignorada, inexistente, ciclo e dois destinos iguais rejeitam o lote inteiro.
-
-Serviços já cadastrados mantêm nome, etapa, quantidade, execução e valores. A importação atualiza datas, responsável, ordem e predecessoras; guarda duração e percentuais do documento como referências. Atividades novas são planejamento percentual: unidade %, quantidade 100, executado conforme o PDF e valor zero. Nenhum valor contratado, custo, medição, diário ou recebimento é importado ou removido. Término planejado não vira término real.
-
-As datas são mantidas. A duração escrita no PDF é preservada em coluna própria; a duração da grade continua em dias corridos. Não é importado um calendário de trabalho/feriados, nem recalculada a agenda a partir das predecessoras. Todas as atividades podem ser editadas e removidas depois da importação.
-
-PDF.js 4.10.38 (Apache-2.0) e worker são distribuídos localmente em dist/vendor, com licença. A leitura usa isEvalSupported:false e não envia o documento a servidor. Os recursos também entram no cache offline. Testes com tabelas sintéticas cobrem leitura, validação, vínculos e gravação atômica; o PDF fornecido foi validado localmente sem publicar dados do cliente.
-
-
-Ao confirmar a importação, o aplicativo abre Etapas e atividades na obra de destino, limpa os filtros e informa quantas atividades foram criadas e atualizadas. Etapas existentes são reaproveitadas por vínculo de importação ou nome único, recebendo as datas de referência sem mudar orçamento ou hierarquia financeira. Os serviços são reconhecidos por vínculo anterior, nome normalizado único ou combinação única de código e nome da etapa; casos ambíguos continuam disponíveis para revisão.
-
-Alterações salvas em outra aba do mesmo navegador são relidas nos eventos de armazenamento, foco e visibilidade. A atualização da tela aguarda o fim de edição pendente em planilha, formulário ou diário. Isso não constitui sincronização entre dispositivos.
+Outras bibliotecas locais: docx 9.6.1 e JSZip, com licenças em `dist/vendor`. Logotipo Engefex. Não há obras ou documentos de cliente pré-cadastrados.
