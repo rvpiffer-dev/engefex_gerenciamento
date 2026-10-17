@@ -32,3 +32,15 @@ Compare a branch de backup com `main` antes de restaurar. Reaplique o snapshot
 em um novo commit/PR; evite apagar o histórico. A recuperação do código não
 restaura dados apagados do banco. Verifique a compatibilidade do esquema caso
 existam migrações futuras.
+
+## v2.1.0 - compras por documento
+
+- Uma compra ou nota pode ter vários itens e parcelas, vinculados à mesma obra.
+- Cadastro manual em grade, colagem de blocos do Excel e prévia de XML NF-e.
+- Vinculação de cada item ao orçamento; confirmação gera contas a pagar rateadas pelas etapas.
+- Rascunhos não geram dívida. Reedição reutiliza os vínculos financeiros e preserva pagamentos.
+- Exclusões e alterações que removeriam parcelas pagas ou custos incorridos são bloqueadas.
+- Identidade da nota impede importações duplicadas; não há validação de assinatura ou situação fiscal.
+- XMLs e PDFs podem ser anexados como documentos privados. Extração automática de itens de PDF pendente de um modelo de exemplo.
+- Insumos e estoque antigos são mantidos em aba própria; compras não geram movimentos de estoque automaticamente.
+- Ponto de recuperação anterior: `backup/v2.0.0-2026-10-17`.

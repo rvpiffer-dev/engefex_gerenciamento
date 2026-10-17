@@ -1,8 +1,8 @@
 {
-  "version": "2.0.0",
+  "version": "2.1.0",
   "date": "2026-10-17",
-  "name": "Obras, financeiro e fabricação",
-  "previous_version": "1.0.0",
-  "backup_branch": "backup/v1.0.0-2026-10-17",
-  "backup_commit": "a066b396b3a8d45dcb1bbfcc5872614f01d11e05"
+  "name": "Compras e notas com vários itens",
+  "previous_version": "2.0.0",
+  "backup_branch": "backup/v2.0.0-2026-10-17",
+  "backup_commit": "ecd51820caae11fe8cecde7b0b1f59c28b9825bf"
 }
