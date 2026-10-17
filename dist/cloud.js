@@ -152,7 +152,7 @@
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
   revision=Number(rows[0].revision);
   remoteSnapshot=rows[0].payload||null;
-  if(!remoteSnapshot||localHasData()){
+  if(!remoteSnapshot||(localHasData()&&JSON.stringify(remoteSnapshot)!==JSON.stringify(current()))){
    setPhase('setup');
    $('engefex-cloud-setup-info').textContent=remoteSnapshot?'A base online já contém registros. Faça um backup de qualquer trabalho local antes de abrir a base compartilhada.':'A base online está vazia. Escolha iniciar com os dados deste aparelho ou com uma base vazia.';
    $('engefex-cloud-migrate').hidden=!!remoteSnapshot||!localHasData();
@@ -185,19 +185,21 @@
  function send(next){
   requireWrite();
   pending=true;paintStatus('Enviando alterações ao Supabase…');
-  (async()=>{
+  return (async()=>{
    await uploadFiles(next);
    const out=await writeState(next);
    revision=Number(out.revision);
    pending=false;failed='';
    paintStatus('Salvo no Supabase · revisão '+revision+' · '+new Date().toLocaleTimeString('pt-BR'));
    client.saved?.();
+   return true;
   })().catch(e=>{
    pending=false;
    failed=e.message||'Erro de sincronização';
    paintStatus('NÃO SALVO online · '+failed);
    setPhase('error','A alteração não foi confirmada pelo Supabase: '+failed+'\nExporte o backup antes de tentar recuperar.');
    client.saveError?.(failed);
+   return false;
   });
  }
  async function refreshRemote(force=false){
@@ -206,6 +208,7 @@
   const rows=await raw('/rest/v1/engefex_state?select=payload,revision&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');
   const row=rows?.[0];
   if(!row)throw Error('Área de trabalho não encontrada.');
+  if(phase!=='ready'||pending||ownDirty())return;
   if(Number(row.revision)!==revision){
    root.Obras.backupValid(row.payload);
    ensureBackupBeforeReplace();
