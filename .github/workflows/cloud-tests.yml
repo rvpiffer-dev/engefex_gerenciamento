@@ -1,0 +1,21 @@
+name: Verificar integração Supabase
+on:
+  push:
+    branches: [feat/supabase-shared-workspace]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxe do JavaScript
+        run: |
+          for file in dist/*.js; do node --check "$file"; done
+      - name: Executar testes
+        run: node --test tests/*.test.cjs
