@@ -35,7 +35,7 @@
  async function refreshToken(){
   if(!session?.refresh_token)throw Error('Sessão expirada. Faça login novamente.');
   const s=await raw('/auth/v1/token?grant_type=refresh_token',{method:'POST',json:true,body:{refresh_token:session.refresh_token},auth:false,skipRefresh:true});
-  saveSession({...s,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
+  saveSession({...s,user:s.user||session.user,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
  }
  async function login(email,password){
   const s=await raw('/auth/v1/token?grant_type=password',{method:'POST',json:true,body:{email,password},auth:false});
@@ -141,7 +141,7 @@
    client.acceptState(snapshot);
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;
-   pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);
+   pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
   }catch(e){setPhase('setup',e.message)}
  }
  async function connect(){
@@ -270,5 +270,5 @@
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={boot,requireWrite,send,get ready(){return phase==='ready'},get pending(){return pending}};
+ root.EngefexCloud={boot,requireWrite,send,get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
 })(window);
