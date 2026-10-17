@@ -1,3 +1,10 @@
+## 2.11.0 — 17/10/2026
+
+- Medições passam a usar o fluxo manual em planilha; previsão automática vinculada ao cronograma removida da navegação, preservando dados históricos no backup.
+- Contas a receber calcula os valores líquidos aprovados diretamente das medições, sem duplicar lançamentos e sem gerar receitas a partir do cronograma.
+- Abas Em aberto e Recebidos, saldos parciais, cliente, obra, data prevista e registro de recebimento preenchido com a medição e o saldo disponível.
+- Retenções entram separadamente em contas a receber após liberação. Recebimentos podem ser corrigidos pela própria lista; exportação CSV e consulta adaptada ao celular.
+
 ## 2.10.0 — 17/10/2026
 
 - Percentuais de retenção independentes para entrada e demais medições, configurados por obra/contrato; novos contratos iniciam em 0% e 5%, ambos editáveis.
