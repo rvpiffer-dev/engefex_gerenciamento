@@ -33,7 +33,7 @@
     const r=member(next,issue.responsibleId);
     if(!r)throw Error('Responsável não cadastrado. Atualize a seleção.');
     issue.responsible=r.name;
-   }
+   }else if(old?.responsibleId){issue.responsible=''}
    const recipients=new Map();
    const assigned=member(next,issue.responsibleId);
    if(assigned?.email&&(!old||old.responsibleId!==issue.responsibleId)){
