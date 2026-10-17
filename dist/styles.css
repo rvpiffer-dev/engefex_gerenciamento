@@ -37,3 +37,15 @@ th{position:sticky;padding-right:15px!important}.column-resizer{position:absolut
 .alerts-read{font-size:11px;color:var(--muted)}
 @media(max-width:760px){.alerts-panel{position:fixed;top:70px;right:8px;left:8px;width:auto;max-height:70vh}.alerts-bell{width:40px;height:40px}}
 @media print{.alerts-area{display:none!important}}
+
+/* Cabeçalho compacto para celular: manter sininho e sair acessíveis */
+@media(max-width:760px){
+ header{gap:4px;padding:0 8px}
+ .top-actions{gap:4px;min-width:0}
+ .top-actions #backup{display:none}
+ .top-actions select{max-width:110px;min-width:72px;padding:6px 4px;font-size:11px}
+ .top-actions #settings{padding:4px;min-width:34px}
+ #engefex-cloud-header{padding:0!important;margin:0!important;gap:0!important}
+ #engefex-cloud-refresh,#engefex-cloud-status{display:none!important}
+ #engefex-cloud-logout{font-size:10px!important;padding:6px!important}
+}
