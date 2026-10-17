@@ -107,3 +107,11 @@ Outras bibliotecas locais: docx 9.6.1 e JSZip, com licenças em `dist/vendor`. L
 Em Cronograma > Importar cronograma PDF, escolha **Atualizar somente datas das atividades existentes** (padrão quando a obra já tem atividades). Esse modo lê início e término e recalcula a duração em dias corridos. Ignora percentuais planejado/executado, duração original e predecessoras do PDF. Preserva quantidades, execução, responsáveis, sequência, etapas e toda a base financeira.
 
 Confira os destinos na prévia: linhas reconhecidas apontam para atividades existentes; linhas sem correspondência ficam em **Ignorar esta linha** e podem ser vinculadas manualmente. Nenhuma atividade ou etapa é criada nesse modo. Duplicidade de destino e datas inválidas bloqueiam o lote. O modo **Importar cronograma completo** continua disponível para criar o planejamento.
+
+### EDT e avanço de grupos
+
+Etapas e atividades, a planilha do Cronograma e o Gantt exibem a hierarquia das etapas do planejamento com a numeração EDT legível do PDF (por exemplo 1.4 e 1.4.1). Os IDs internos continuam ocultos. O vínculo de etapa do cronograma importado é respeitado sem duplicar as atividades na etapa anterior.
+
+Cada grupo mostra a média dos percentuais de todas as atividades descendentes; subetapas não são contadas novamente. Cada atividade tem o mesmo peso, independentemente da unidade, duração ou valor financeiro. Exemplo: atividades em 100%, 50% e 0% dão 50% ao grupo. Esse critério pode diferir da ponderação do MS Project. O cálculo acompanha edições de execução, o check de conclusão e as quantidades lançadas pelo diário. Datas dos grupos vão do primeiro início ao último término das atividades.
+
+Na planilha, linhas de grupo são resumos e não participam da numeração usada pelas predecessoras. Os números fixos das atividades continuam válidos mesmo com as linhas de grupo intercaladas. A coluna EDT pode ser editada; o avanço do grupo é calculado. Etapas podem ser editadas a partir da lista Etapas e atividades.
