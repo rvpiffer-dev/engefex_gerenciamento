@@ -78,3 +78,8 @@ existam migrações futuras.
 - Valor original preservado, descontos/acréscimos acumulados separados e saída de caixa pelo valor efetivamente pago. Conta quitada aparece verde como Pago.
 - Edição individual/em planilha permite corrigir os acumulados; histórico registra antes/depois e detalhes da baixa.
 - Regravação da compra preserva baixas e ajustes das parcelas. Proteções contra duplo clique, saldo desatualizado e salvamento não confirmado.
+
+## v2.3.1 - filtros recolhidos
+
+- Filtros de contas a pagar iniciam fechados e abrem ao clicar em Filtros.
+- Mantém a escolha de abrir/fechar durante a navegação e indica quando há filtros ativos.
