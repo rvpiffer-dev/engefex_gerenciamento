@@ -28,6 +28,17 @@ Obras, etapas, serviços e demais cadastros podem ser adicionados, visualizados,
 5. Edite o planejamento e as verbas internas conforme necessário. Todos os serviços importados permanecem editáveis.
 6. Exporte o backup regularmente.
 
+## Edição em planilha e Gantt
+
+- Orçamento e custos → Planilha de serviços: descrição, unidade, quantidade, preço unitário, total e unitários de custos. Quantidade ou preço alterado recalcula o total; alterar total recalcula o preço. O valor contratado da obra é separado.
+- Orçamento e custos → Planilha de verbas: categorias de custo e saldo a contratar por etapa. Vazio mantém custo a definir; zero é custo definido como zero.
+- Cronograma → Planilha: ordem, atividade, início, duração em dias corridos, término, predecessoras e responsável. A ordem é aplicada após salvar. Predecessoras usam os números fixos das linhas da edição atual, separados por vírgulas. São vínculos término → início; as datas não são deslocadas automaticamente.
+- Cronograma → Gantt: atividades na ordem definida, barras de datas, avanço executado e avisos de sobreposição com predecessoras. Distribuição mensal preserva o planejamento anterior.
+
+Tab avança entre células e Enter desce na mesma coluna. Cole blocos tabulados do Excel a partir de uma célula. A colagem fora dos limites é rejeitada inteira. Clique Salvar alterações para gravar todo o lote ou Descartar alterações. Datas aceitam AAAA-MM-DD e DD/MM/AAAA; números aceitam vírgula decimal. Falha de validação impede a gravação de todo o lote. Alterações ficam no histórico; a gravação rejeita dados modificados por outra aba desde a abertura da grade.
+
+O aplicativo avisa antes de sair da grade por menus e abas com edição pendente. No celular, deslize a tabela para os lados. Para receber a versão nova sem apagar registros: dist/atualizar.html → Atualizar e abrir atividades.
+
 ## Importação XLSX
 
 Layout Engefex: B código, C descrição, D/E unidade e quantidade (inferidas pelo conteúdo), F/G/H preços unitários de mão de obra/material/equipamento, I/J/K totais por categoria, L total. Linhas e etapas podem variar. Reconhece etapas, subetapas e serviços, sem somar agrupadores novamente no orçamento.
