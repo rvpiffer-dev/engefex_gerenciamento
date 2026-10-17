@@ -258,8 +258,9 @@
  async function logout(){
   if(pending){alert('Aguarde o servidor confirmar o salvamento antes de sair.');return}
   const token=session?.access_token;
+  const wasConnected=phase==='ready';
   saveSession(null);workspace=null;revision=null;remoteSnapshot=null;knownFiles.clear();failed='';
-  setPhase('login');paintStatus('Desconectado');
+  setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
  function boot(app){
