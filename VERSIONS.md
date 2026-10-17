@@ -92,3 +92,9 @@ existam migrações futuras.
 - Formulários em painel inferior, fonte de entrada de 16px, ações acessíveis e respeito às áreas seguras.
 - Filtros em duas colunas, cartões de totais ajustados, grades roláveis e orientação de rolagem nas tabelas de consulta.
 - Sem alterações nos dados ou nas regras financeiras.
+
+## v2.4.1 - listas de obras no celular
+
+- Listas de obras, atividades, materiais, compras, checklist, pendências, equipes, responsáveis e diário clássico apresentadas como cartões no celular.
+- Campos essenciais e ações visíveis; botão Mais detalhes revela campos complementares. Hierarquia de etapas e check de conclusão preservados.
+- Consulta no computador, impressão, orçamento, cronograma/Gantt e editores em grade mantêm o formato de tabela. Sem duplicar registros ou alterar dados.
