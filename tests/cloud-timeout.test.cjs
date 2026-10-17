@@ -14,7 +14,7 @@ function harness(fetch,immediateTimeout=false){
     body:{append(node){if(node.id==='engefex-cloud-cover')elements.set('engefex-cloud-cover',cover)}},
     head:{append(){}},
     documentElement:{classList:{toggle(name,value){locked=value}}},
-    createElement(){return {id:'',textContent:'',innerHTML:'',append(){}}},
+    createElement(tag){if(tag==='div'&&!elements.has('engefex-cloud-cover'))return cover;return {id:'',textContent:'',innerHTML:'',append(){},setAttribute(){}}},
     querySelector(){return {append(){}}},
     getElementById:el,
     hidden:false
