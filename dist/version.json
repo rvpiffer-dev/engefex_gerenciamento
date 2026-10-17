@@ -1,8 +1,8 @@
 {
-  "version": "2.14.0",
+  "version": "2.14.1",
   "date": "2026-10-17",
-  "name": "Comprovantes de medição e empreita por obra geral",
-  "previous_version": "2.13.0",
+  "name": "Correção do formulário de empreita no celular",
+  "previous_version": "2.14.0",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

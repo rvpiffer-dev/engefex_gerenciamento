@@ -1,3 +1,10 @@
+## 2.14.1 — 17/10/2026
+
+- Validação de contrato informa especificamente prestador, descrição, valor ou data ausente/inválida, destacando e focando o campo correspondente.
+- Erros de medição identificam a linha e o campo que precisam ser corrigidos, com orientações para número, valor, data e vencimento.
+- Formulário de contrato usa a grade responsiva existente; no celular, medições aparecem em blocos verticais com rótulos, campos e comprovantes visíveis, sem exigir rolagem lateral.
+- Campos obrigatórios identificados e orientação para salvar somente o contrato quando ainda não houver medições.
+
 ## 2.14.0 — 17/10/2026
 
 - Contratos de mão de obra permitem selecionar uma etapa do orçamento ou Obra geral (empreita completa), sem criar etapa fictícia nem exigir orçamento cadastrado para a empreita geral.
