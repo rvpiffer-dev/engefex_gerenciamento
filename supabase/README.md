@@ -1,7 +1,6 @@
 # Ativação do compartilhamento gratuito
 
-Estado: estrutura de banco preparada; login e sincronização da interface ainda não
-ativados. O aplicativo publicado continua local e não envia dados a terceiros.
+Estado: integração do navegador implementada na ramificação `feat/supabase-shared-workspace`, aguardando execução do SQL, cadastro dos usuários e testes reais antes de publicação. A versão `main` publicada continua local enquanto esta ramificação não for integrada.
 
 ## 1. Criar o projeto
 
@@ -44,19 +43,13 @@ begin
 end $$;
 ```
 
-## 4. Conectar a interface (etapa pendente)
+## 4. Conectar a interface (implementado na ramificação de integração)
 
-Precisamos da Project URL e da chave **publishable** (`sb_publishable_...`),
-localizadas no painel Connect / Settings > API Keys.
+Projeto configurado na ramificação: `https://kxekeeysonrppechegsq.supabase.co` e chave **publishable** pública (`sb_publishable_...`). O endpoint que termina em `/rest/v1/` não é a Project URL. A configuração fica em `dist/cloud.js`.
 Nunca usar `service_role`, `sb_secret_...` ou senha do banco no navegador.
 A chave publicável identifica o projeto; quem autoriza os registros é o login com RLS.
 
-A integração precisa concluir: login, renovação de sessão, logout com isolamento
-entre contas, upload/download autenticado de anexos, leitura do estado e salvamento
-pela função `engefex_save_state`. Toda gravação exige a revisão lida anteriormente;
-conflitos devem manter o rascunho e pedir recarga, nunca substituir o servidor.
-Não anunciar sucesso online enquanto o servidor não confirmar a transação.
-Sem conexão, bloquear gravações compartilhadas nesta primeira versão.
+O código já implementa: login/sessão, atualização de token, logout, leitura do workspace, migração inicial explícita, leitura e gravação de estado por `engefex_save_state`, atualização periódica, controle de revisão e upload/download de arquivos no bucket privado. A edição é bloqueada offline e quando há falha ou confirmação pendente; uma cópia local de emergência permanece disponível para backup. A versão no ramo `main` não será substituída até os testes no projeto Supabase confirmarem a segurança.
 
 ## 5. Migrar e verificar
 
@@ -80,3 +73,18 @@ Referências oficiais:
 - https://supabase.com/docs/guides/database/postgres/row-level-security
 - https://supabase.com/docs/guides/storage/security/access-control
 - https://supabase.com/docs/guides/getting-started/api-keys
+
+## 6. Checklist de ativação antes do merge
+
+1. Execute `202610170001_shared_workspace.sql` no Supabase **uma única vez**, em um projeto novo (SQL Editor > New query > Run).
+2. No Supabase, Authentication > Users > Add user: crie três contas distintas (confirme e-mails conforme as opções de autenticação ativas). Não compartilhe senhas entre usuários.
+3. Execute o bloco `DO $$` da seção 3 para criar o workspace e os três vínculos. Não execute o bloco duas vezes.
+4. Revise as RLS no Table Editor / Database e confirme o bucket `engefex-files` como **Private** no Storage.
+5. Confira os testes do GitHub Actions na ramificação e somente então publique/mescle para `main`.
+6. Na primeira abertura do site, faça login. Exporte o backup local antes de enviar dados; o primeiro usuário só inicializa a base se estiver vazia.
+7. Entre no segundo navegador com outra conta: veja os mesmos dados, salve uma alteração, teste leitura de anexos; repita com o terceiro usuário.
+8. Teste concorrência editando dois navegadores: a gravação com revisão antiga deve ser **rejeitada**, preservando rascunho local para exportar backup.
+9. Teste um usuário não autorizado e sessão sem login: nenhum registro nem arquivo privado acessível.
+10. Antes de produção, defina quem pode adicionar/remover membros e quais dados serão retidos no Supabase; o admin mantém o controle de acessos pelo painel.
+
+**Nota de arquitetura:** é uma primeira versão de sincronização por revisão de um estado JSON compartilhado, não edição colaborativa célula por célula; conflitos exigem atualização manual. O plano gratuito do Supabase tem limites de banco, banda e Storage. A interface pode ficar em cache offline, mas lançamentos novos dependem de conexão com o servidor.
