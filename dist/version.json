@@ -1,8 +1,8 @@
 {
-  "version": "2.3.1",
+  "version": "2.4.0",
   "date": "2026-10-17",
-  "name": "Filtros recolhidos em contas a pagar",
-  "previous_version": "2.3.0",
+  "name": "Experiência em celular: cartões, navegação e formulários",
+  "previous_version": "2.3.1",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

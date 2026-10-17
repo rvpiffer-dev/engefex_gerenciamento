@@ -83,3 +83,12 @@ existam migrações futuras.
 
 - Filtros de contas a pagar iniciam fechados e abrem ao clicar em Filtros.
 - Mantém a escolha de abrir/fechar durante a navegação e indica quando há filtros ativos.
+
+## v2.4.0 - experiência em celular
+
+- Contas a pagar em cartões no celular, com saldo, vencimento e ações principais à vista. Tabela mantida no computador.
+- Menu lateral com fundo escurecido, botão de fechar, fechamento ao navegar e bloqueio da rolagem de fundo.
+- Cabeçalho com seletor de obra flexível e alvos de toque maiores.
+- Formulários em painel inferior, fonte de entrada de 16px, ações acessíveis e respeito às áreas seguras.
+- Filtros em duas colunas, cartões de totais ajustados, grades roláveis e orientação de rolagem nas tabelas de consulta.
+- Sem alterações nos dados ou nas regras financeiras.
