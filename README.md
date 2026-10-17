@@ -1,6 +1,6 @@
 # Engefex Gerenciamento
 
-Gerenciador de obras estático para computador, Android e iOS, com menu lateral, edição em planilha, orçamento Excel, cronograma PDF/Gantt e diário completo Engefex. Começa vazio. Registros, anexos e histórico são locais ao navegador; o GitHub hospeda o aplicativo, não um banco de dados.
+Gerenciador de obras estático para computador, Android e iOS, com menu lateral, edição em planilha, orçamento Excel, cronograma PDF/Gantt e diário completo Engefex. Começa vazio. A versão publicada em `main` ainda guarda registros localmente; a ramificação `feat/supabase-shared-workspace` adiciona autenticação e sincronização privada com Supabase após a ativação do banco. O GitHub hospeda a interface.
 
 ## Orçamento e planejamento separados
 
@@ -82,7 +82,7 @@ No GitHub Pages, o módulo usa obras, diário e arquivos locais do gerenciador. 
 
 ## Backup, atualização e publicação
 
-Exportar backup gera JSON com registros, as duas áreas, histórico e anexos. Importar backup substitui os dados locais mediante confirmação. Mantenha cópias fora do aparelho. Não há conta, autenticação, sincronização entre dispositivos ou banco compartilhado nesta versão.
+Exportar backup gera JSON com registros, as duas áreas, histórico e anexos. Importar backup substitui os dados locais mediante confirmação. Mantenha cópias fora do aparelho. Na versão atual publicada em `main` ainda não há login ou sincronização. Na ramificação de integração a base será compartilhada por três usuários autenticados no Supabase, com revisão contra gravações concorrentes e anexos privados. Consulte `supabase/README.md` para ativar, validar e publicar.
 
 Outras abas do mesmo navegador são atualizadas por eventos de armazenamento/foco/visibilidade. A atualização visual aguarda quando existe edição pendente em formulário, planilha ou diário.
 
@@ -115,3 +115,7 @@ Etapas e atividades, a planilha do Cronograma e o Gantt exibem a hierarquia das 
 Cada grupo mostra a média dos percentuais de todas as atividades descendentes; subetapas não são contadas novamente. Cada atividade tem o mesmo peso, independentemente da unidade, duração ou valor financeiro. Exemplo: atividades em 100%, 50% e 0% dão 50% ao grupo. Esse critério pode diferir da ponderação do MS Project. O cálculo acompanha edições de execução, o check de conclusão e as quantidades lançadas pelo diário. Datas dos grupos vão do primeiro início ao último término das atividades.
 
 Na planilha, linhas de grupo são resumos e não participam da numeração usada pelas predecessoras. Os números fixos das atividades continuam válidos mesmo com as linhas de grupo intercaladas. A coluna EDT pode ser editada; o avanço do grupo é calculado. Etapas podem ser editadas a partir da lista Etapas e atividades.
+
+## Integração Supabase (pendente de ativação)
+
+A ramificação `feat/supabase-shared-workspace` contém `dist/cloud.js`, integração no aplicativo, política de cache e testes. Antes de publicar, execute a migração em `supabase/migrations`, crie três contas e vincule-as ao mesmo workspace. A primeira sincronização requer uma escolha explícita para não sobrescrever registros locais; exporte backup. Edição offline não é suportada neste primeiro modo compartilhado. A atualização periódica ocorre a cada 20 segundos e alterações concorrentes na mesma revisão são rejeitadas para evitar sobrescrita.
