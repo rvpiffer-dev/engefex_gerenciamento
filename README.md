@@ -119,3 +119,18 @@ Na planilha, linhas de grupo são resumos e não participam da numeração usada
 ## Integração Supabase (pendente de ativação)
 
 A ramificação `feat/supabase-shared-workspace` contém `dist/cloud.js`, integração no aplicativo, política de cache e testes. Antes de publicar, execute a migração em `supabase/migrations`, crie três contas e vincule-as ao mesmo workspace. A primeira sincronização requer uma escolha explícita para não sobrescrever registros locais; exporte backup. Edição offline não é suportada neste primeiro modo compartilhado. A atualização periódica ocorre a cada 20 segundos e alterações concorrentes na mesma revisão são rejeitadas para evitar sobrescrita.
+
+
+## Responsáveis e notificações pessoais
+
+A ramificação `feat/responsaveis-notificacoes` adiciona um cadastro de **Responsáveis** (nome, setor, empresa, e-mail e telefone), atribuição por contato cadastrado nas **Pendências**, uma **central de notificações no sininho superior** e resumo das notificações mais recentes no dashboard.
+
+Como utilizar:
+1. Entre na aba **Responsáveis** e cadastre o nome, telefone e o e-mail que o colaborador usa no login do Supabase.
+2. Em **Pendências e riscos**, crie uma pendência e escolha **Responsável cadastrado**.
+3. Ao salvar no banco, o sistema registra autoria do usuário logado e cria a notificação para o e-mail selecionado.
+4. No próximo carregamento (ou atualização periódica), o destinatário verá o contador no sininho e a pendência nas listas pessoais. O usuário que criou mantém a pendência no próprio dashboard.
+5. O aviso pode ser marcado como lido sem ser apagado.
+
+**Limites e segurança:** esta fase filtra a exibição por login no navegador, mas as pendências continuam no JSON compartilhado do workspace e podem ser acessadas por integrantes autenticados por outros meios, inclusive em backup. **Não é isolamento de dados no servidor.** Para isolamento de verdade é necessário reestruturar pendências e notificações em tabelas próprias com RLS por autor/responsável. Também **não** envia mensagens externas: WhatsApp e e-mail automático exigem integração adicional com serviços de envio. Registros antigos sem autor identificado permanecem disponíveis em **Pendências → Antigas sem atribuição** para revisão manual.
+
