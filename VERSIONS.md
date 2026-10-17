@@ -70,3 +70,11 @@ existam migrações futuras.
 - Contas a pagar separado em Em aberto e Pagos, conforme quitação em centavos.
 - Pagamentos parciais permanecem em aberto; correções que reabrem saldo retornam à lista em aberto.
 - CSV respeita a aba selecionada e a pesquisa. Nenhum lançamento é movido ou duplicado no banco.
+
+## v2.3.0 - filtros e baixa de contas a pagar
+
+- Filtros combináveis por nota/documento, cliente da obra, fornecedor, categoria, etapa, data da nota/lançamento, vencimento, último pagamento, saldo e contas vencidas. CSV acompanha os filtros e a aba.
+- Botão Pagar abre quitação ou pagamento parcial com data, valor e observações. Quitação calcula desconto/acréscimo sobre o saldo; pagamento parcial conserva a diferença em aberto.
+- Valor original preservado, descontos/acréscimos acumulados separados e saída de caixa pelo valor efetivamente pago. Conta quitada aparece verde como Pago.
+- Edição individual/em planilha permite corrigir os acumulados; histórico registra antes/depois e detalhes da baixa.
+- Regravação da compra preserva baixas e ajustes das parcelas. Proteções contra duplo clique, saldo desatualizado e salvamento não confirmado.
