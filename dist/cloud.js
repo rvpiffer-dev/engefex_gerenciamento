@@ -139,6 +139,7 @@
    root.Obras.backupValid(snapshot);
    ensureBackupBeforeReplace();
    client.acceptState(snapshot);
+   for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);
   }catch(e){setPhase('setup',e.message)}
@@ -212,7 +213,7 @@
   if(Number(row.revision)!==revision){
    root.Obras.backupValid(row.payload);
    ensureBackupBeforeReplace();
-   client.acceptState(row.payload);revision=Number(row.revision);
+   client.acceptState(row.payload);for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
   }else if(force)paintStatus('Dados atualizados · revisão '+revision);
  }
@@ -247,7 +248,8 @@
     try{result.push((await originalLoad([id]))[0]);continue}catch(e){if(phase!=='ready'||!workspace)throw e}
     const blob=await raw(storagePath(id).replace('/storage/v1/object/','/storage/v1/object/authenticated/'),{binary:true});
     const dataURL=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('Falha ao ler anexo.'));r.readAsDataURL(blob)});
-    const item={id,type:blob.type||'application/octet-stream',name:id,dataURL};
+    let meta={};for(const collection of ['diary','documents','history']){for(const row of current()?.[collection]||[]){const records=collection==='history'?[row.before,row.after,...(row.removed||[]).map(x=>x.record)].filter(Boolean):[row];for(const entry of records){const match=[...(entry.photos||[]),...(entry.attachments||[])].find(x=>x.id===id);if(match){meta=match;break}}if(meta.id)break}if(meta.id)break}
+    const item={id,type:blob.type||meta.type||'application/octet-stream',name:meta.name||id,width:meta.width,height:meta.height,dataURL};
     await originalPut([item]);result.push(item);
    }
    return result;
