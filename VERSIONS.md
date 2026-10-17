@@ -98,3 +98,9 @@ existam migrações futuras.
 - Listas de obras, atividades, materiais, compras, checklist, pendências, equipes, responsáveis e diário clássico apresentadas como cartões no celular.
 - Campos essenciais e ações visíveis; botão Mais detalhes revela campos complementares. Hierarquia de etapas e check de conclusão preservados.
 - Consulta no computador, impressão, orçamento, cronograma/Gantt e editores em grade mantêm o formato de tabela. Sem duplicar registros ou alterar dados.
+
+## v2.4.2 - medição por orçamento da obra
+
+- Seletor da medição lista somente itens do orçamento da obra selecionada, com código, quantidade, unidade e valor orçado.
+- Trocar a obra reconstrói o seletor financeiro e limpa seleção incompatível, inclusive em navegadores móveis.
+- Orçamento vazio mostra orientação, sem recorrer a atividades do cronograma. Medições anteriores preservadas.
