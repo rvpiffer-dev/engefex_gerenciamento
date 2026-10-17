@@ -1,3 +1,11 @@
+## 2.14.0 — 17/10/2026
+
+- Contratos de mão de obra permitem selecionar uma etapa do orçamento ou Obra geral (empreita completa), sem criar etapa fictícia nem exigir orçamento cadastrado para a empreita geral.
+- Cada medição do prestador aceita múltiplos comprovantes em imagem ou PDF, até 20 MB por arquivo, com abertura e remoção no cadastro de origem.
+- Arquivos usam o armazenamento de anexos do aplicativo, sincronização privada no Supabase e backup com conteúdo; metadados ficam vinculados à medição.
+- Backup remapeia também anexos dentro das medições e do histórico. Comprovantes de imagem não são confundidos com fotos do diário na restauração.
+- Empreitas gerais entram no comprometido e nos pagamentos da obra sem duplicar parcelas e podem ser filtradas em Contas a Pagar pela opção Obra geral.
+
 ## 2.13.0 — 17/10/2026
 
 - Contas a receber ganha filtros recolhidos por cliente, cobrança/documento, obra (incluindo sem obra), tipo, lançamento, vencimento/previsão, último recebimento, saldo e vencidos; filtros também aplicados ao CSV.
