@@ -130,3 +130,11 @@ existam migrações futuras.
 - Rateios podem ser vistos, alterados ou removidos na prévia. Pagamentos existentes são preservados e alterações que os deixariam sem cobertura são bloqueadas.
 - Exclusão/mudança de etapas e obras protege notas compartilhadas de outras obras; ajuste o rateio antes de remover um destino.
 - Compras anteriores sem rateio explícito mantêm a regra e os identificadores financeiros anteriores.
+
+## v2.8.0 - uma linha por nota em contas a pagar
+
+- Lista e cartões agrupam todos os rateios e parcelas de uma compra em uma única nota. Clique no valor original para abrir obras, etapas, parcelas e baixas. Contas manuais continuam individuais.
+- Filtrar por obra/etapa encontra a nota sem cortar seu valor integral; aviso explica que os totais da lista consideram documentos completos. Dashboard financeiro por obra continua usando os rateios.
+- Pagar opera sobre a nota inteira. Parcial abate parcelas por ordem de vencimento, com distribuição proporcional entre destinos; quitação distribui desconto/acréscimo sobre os saldos restantes.
+- Uma nota permanece em aberto enquanto houver saldo em qualquer destino; só aparece em Pagos quando quitada integralmente. CSV acompanha o agrupamento.
+- Rateios, pagamentos e valores originais preservados no banco; agrupamento é derivado da estrutura financeira existente.
