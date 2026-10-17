@@ -1,8 +1,8 @@
 {
-  "version": "2.6.0",
+  "version": "2.7.0",
   "date": "2026-10-17",
-  "name": "Compras e notas com fornecedores e filtros",
-  "previous_version": "2.5.0",
+  "name": "Rateio de compras por etapas e obras",
+  "previous_version": "2.6.0",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

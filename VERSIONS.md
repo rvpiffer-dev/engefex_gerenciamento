@@ -121,3 +121,12 @@ existam migrações futuras.
 - Seleção de fornecedor preenche nome/documento na compra. Dados manuais e XML continuam aceitos; XML pode reconhecer cadastro por documento. Alterações cadastrais não reescrevem dados históricos de notas.
 - Filtros recolhidos por documento, fornecedor/documento, cliente da obra, tipo, situação, emissão, vencimento de parcelas e valor.
 - Cadastro integrado ao backup, sincronização e proteções de gravação existentes.
+
+## v2.7.0 - rateio de compras entre etapas e obras
+
+- Cada item da nota pode ser dividido em destinos com obra, etapa do orçamento e percentual; confirmação exige soma de 100%. Vínculo único anterior continua disponível.
+- Uma única nota gera contas por parcela, obra e etapa; frete/desconto/tributos seguem a proporção dos itens. Centavos dos novos rateios fecham tanto por parcela quanto por destino no total da nota.
+- Compra aparece ao filtrar qualquer obra beneficiada, com valor integral da nota e indicação do valor atribuído à obra selecionada.
+- Rateios podem ser vistos, alterados ou removidos na prévia. Pagamentos existentes são preservados e alterações que os deixariam sem cobertura são bloqueadas.
+- Exclusão/mudança de etapas e obras protege notas compartilhadas de outras obras; ajuste o rateio antes de remover um destino.
+- Compras anteriores sem rateio explícito mantêm a regra e os identificadores financeiros anteriores.
