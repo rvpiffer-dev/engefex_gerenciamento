@@ -57,3 +57,10 @@ existam migrações futuras.
 - Sem vínculo, sem datas e valores previstos em meses passados continuam visíveis como pendências.
 - Não cria medições, contas a receber ou aprovações automaticamente. Exige conferência explícita dos vínculos antes de salvar.
 - CSV disponível; cópia de recuperação da versão anterior em `backup/v2.1.0-2026-10-17`.
+
+## v2.2.1 - configuração de previsão pronta
+
+- Importa arquivo privado contendo somente vínculos, com prévia e observações.
+- Verifica obra, estrutura dos grupos/itens e alterações posteriores nos vínculos.
+- Preserva lançamentos mais recentes: somente regras da obra selecionada são substituídas, após salvar e confirmar no servidor.
+- Configurações particulares e backups de clientes não fazem parte do repositório.
