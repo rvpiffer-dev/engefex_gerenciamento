@@ -101,3 +101,9 @@ Local: `python3 -m http.server 8765 --bind 127.0.0.1` nesta pasta; abra http://1
 Testes cobrem cálculos, finanças, migração, diário, recebimentos, dependências, importações, geração opcional do planejamento, independência das áreas, edição em lote, Gantt, cache e renderização lógica. Excel e PDF fornecidos também foram usados localmente para verificar os dois fluxos, sem publicar dados de cliente. Testes de interface usam ambiente simulado; não substituem teste por toque em aparelho real.
 
 Outras bibliotecas locais: docx 9.6.1 e JSZip, com licenças em `dist/vendor`. Logotipo Engefex. Não há obras ou documentos de cliente pré-cadastrados.
+
+### Reprogramar datas com um PDF revisado
+
+Em Cronograma > Importar cronograma PDF, escolha **Atualizar somente datas das atividades existentes** (padrão quando a obra já tem atividades). Esse modo lê início e término e recalcula a duração em dias corridos. Ignora percentuais planejado/executado, duração original e predecessoras do PDF. Preserva quantidades, execução, responsáveis, sequência, etapas e toda a base financeira.
+
+Confira os destinos na prévia: linhas reconhecidas apontam para atividades existentes; linhas sem correspondência ficam em **Ignorar esta linha** e podem ser vinculadas manualmente. Nenhuma atividade ou etapa é criada nesse modo. Duplicidade de destino e datas inválidas bloqueiam o lote. O modo **Importar cronograma completo** continua disponível para criar o planejamento.
