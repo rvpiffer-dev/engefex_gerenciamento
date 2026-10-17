@@ -1,3 +1,12 @@
+## 2.10.0 — 17/10/2026
+
+- Percentuais de retenção independentes para entrada e demais medições, configurados por obra/contrato; novos contratos iniciam em 0% e 5%, ambos editáveis.
+- Entrada lançada como primeira medição dos itens do orçamento, consumindo quantidades e saldo, sem novo faturamento do mesmo valor.
+- Planilha de medição permite escolher Entrada e aplicar um acumulado percentual a todos os itens.
+- Retenção calculada em centavos sobre o total aprovado de cada número de medição; percentual preservado nas medições existentes.
+- Nova aba Entrada e retenções: bruto, líquido, retenção, liberação e saldo retido. Recebimentos distinguem líquido da medição e retenção liberada.
+- Proteções de saldo, edição/exclusão, cobertura de recebimentos, importação de backup e concorrência no Supabase. Registros antigos mantêm seus valores, sem retenção retroativa automática.
+
 # Versões do Gerenciador Engefex
 
 ## v1.0.0 - versão preservada antes dos módulos
