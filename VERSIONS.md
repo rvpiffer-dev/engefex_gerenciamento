@@ -1,3 +1,11 @@
+## 2.15.0 — 17/10/2026
+
+- Importação de orçamento oferece Tipo 1 — Matheus (Excel .xlsx) e Tipo 2 — Orlando (PDF com texto selecionável).
+- Tipo 2 lê a tabela de quantidades, descrições, preços unitários e totais por posição, verifica a soma com o total geral e bloqueia PDFs incompletos ou inconsistentes.
+- Prévia com unidades editáveis, sem inferir unidades ou dividir custos de mão de obra/material/equipamento. Conferência explícita antes de confirmar.
+- PDF original, metadados e observações ficam em Documentos; o orçamento permanece independente do cronograma, com cópia para planejamento somente quando escolhida.
+- Proteções de alteração de obra/estado durante leitura e preparo, confirmação online e duplo clique. Mantida a importação do modelo Matheus.
+
 ## 2.14.1 — 17/10/2026
 
 - Validação de contrato informa especificamente prestador, descrição, valor ou data ausente/inválida, destacando e focando o campo correspondente.
