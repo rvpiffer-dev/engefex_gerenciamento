@@ -44,3 +44,16 @@ existam migrações futuras.
 - XMLs e PDFs podem ser anexados como documentos privados. Extração automática de itens de PDF pendente de um modelo de exemplo.
 - Insumos e estoque antigos são mantidos em aba própria; compras não geram movimentos de estoque automaticamente.
 - Ponto de recuperação anterior: `backup/v2.0.0-2026-10-17`.
+
+## v2.2.0 - previsão de medições por grupos
+
+- Em Financeiro > Medições e recebimentos > Previsão de medições, selecione a obra e gere/revise vínculos em lote.
+- Sugestões por nomes compatíveis, código com descrição compatível ou origem explícita do orçamento. Correspondências ambíguas ficam sem vínculo.
+- Uma regra de grupo abrange as atividades e subetapas; participação define a fração do grupo do orçamento atribuída àquela regra. A soma por item financeiro não pode ultrapassar 100%.
+- Distribuição durante a execução: atividades com igual peso dentro do grupo e valores uniformes por dia corrido. Na conclusão: último término do grupo, somente com datas completas. Critérios são estimativas gerenciais que exigem conferência contratual.
+- Valores já lançados, incluindo medições preparadas e excluindo glosas, abatem cronologicamente as primeiras previsões do item. O saldo nunca é contado duas vezes.
+- A programação é recalculada em cada leitura a partir das datas atuais; as regras ficam salvas. As medições, o orçamento e os recebimentos não são alterados.
+- Quantidades são estimativas proporcionais ao saldo contratual e permanecem separadas por item/unidade.
+- Sem vínculo, sem datas e valores previstos em meses passados continuam visíveis como pendências.
+- Não cria medições, contas a receber ou aprovações automaticamente. Exige conferência explícita dos vínculos antes de salvar.
+- CSV disponível; cópia de recuperação da versão anterior em `backup/v2.1.0-2026-10-17`.
