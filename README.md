@@ -95,3 +95,7 @@ As datas são mantidas. A duração escrita no PDF é preservada em coluna próp
 
 PDF.js 4.10.38 (Apache-2.0) e worker são distribuídos localmente em dist/vendor, com licença. A leitura usa isEvalSupported:false e não envia o documento a servidor. Os recursos também entram no cache offline. Testes com tabelas sintéticas cobrem leitura, validação, vínculos e gravação atômica; o PDF fornecido foi validado localmente sem publicar dados do cliente.
 
+
+Ao confirmar a importação, o aplicativo abre Etapas e atividades na obra de destino, limpa os filtros e informa quantas atividades foram criadas e atualizadas. Etapas existentes são reaproveitadas por vínculo de importação ou nome único, recebendo as datas de referência sem mudar orçamento ou hierarquia financeira. Os serviços são reconhecidos por vínculo anterior, nome normalizado único ou combinação única de código e nome da etapa; casos ambíguos continuam disponíveis para revisão.
+
+Alterações salvas em outra aba do mesmo navegador são relidas nos eventos de armazenamento, foco e visibilidade. A atualização da tela aguarda o fim de edição pendente em planilha, formulário ou diário. Isso não constitui sincronização entre dispositivos.
