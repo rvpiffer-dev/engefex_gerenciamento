@@ -42,13 +42,15 @@ A versão anterior do Engefex é migrada automaticamente, preservando os registr
 
 Backup inclui registros, histórico e arquivos anexados. Os registros ficam no localStorage; anexos e fotos ficam no IndexedDB deste navegador. Nada é enviado ao GitHub ou sincronizado entre dispositivos. Banco e regras de acesso serão uma etapa futura. Não publique backups no repositório.
 
-## Diário de obra
+## Diário de obra completo
 
-Mantém neste momento o diário com fotos e o gerador DOCX no modelo Engefex já disponível neste gerenciador. O repositório separado de diário solicitado para integração completa ainda precisa ser identificado pelo link exato. Esta versão não declara ter copiado um repositório que não pôde ser localizado.
+A aba Diário de obra contém a interface completa do aplicativo separado https://diario-de-obras-piffer.rapiffer.chatgpt.site, adaptada para usar as mesmas obras e anexos do gerenciador. Inclui identificação, clima por período, efetivo com linhas editáveis, atividades, equipamentos, observações, fotos com legenda, assinaturas, prévia, impressão/PDF e o mesmo gerador DOCX do aplicativo original. Obras e diários podem ser adicionados, visualizados, editados e excluídos.
 
-Fotos são incorporadas ao DOCX e ao backup. Efetivo no formulário: uma linha por função, no formato função | quantidade | empresa | horas. Os nomes do efetivo, clima, atividades, equipamentos, observações, fotos e assinaturas são editáveis. O DOCX contém campos de assinatura, sem produzir assinaturas digitais.
+A subaba Avanço e produtividade mantém o diário do gerenciador antigo: quantidades incrementais atualizam o avanço e horas-pessoa permitem produtividade. Editar pelo formulário completo preserva esses vínculos e valores.
 
-Quantidades no diário são incrementais e atualizam o avanço do serviço; editar aplica a diferença. Não repita execução já lançada diretamente na atividade. Produtividade usa somente registros com quantidade e horas-pessoa preenchidas.
+No GitHub Pages, os registros ficam no navegador e entram no backup do gerenciador. Não há autenticação nem sincronização no módulo local. O botão Versão online abre o aplicativo original, que mantém seu login por conta e fotos online. Os dados dessas duas versões não são sincronizados automaticamente. O código do serviço original foi preservado em modules/diary/cloud-source como referência para a futura implantação com servidor.
+
+O módulo possui fonte React em modules/diary e saída pronta em dist/diary. Não é necessário compilar para usar. Para reconstruir somente esse módulo: instale as dependências de modules/diary e execute seu script build. Bibliotecas e licenças estão documentadas nessa pasta. O aplicativo principal continua estático e sem instalação de dependências.
 
 ## Publicação e uso local
 

@@ -1,0 +1,5 @@
+{
+  "source": "https://diario-de-obras-piffer.rapiffer.chatgpt.site",
+  "commit": "90239c50c4f1fdb0b4e36bb67f6fd0aa2f3f0a12",
+  "integration": "Interface completa do diário, com adaptador para os dados do gerenciador estático. Serviço online original preservado e acessível separadamente."
+}

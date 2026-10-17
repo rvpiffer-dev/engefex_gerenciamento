@@ -1,0 +1,3 @@
+import {env} from 'cloudflare:workers';
+import {getChatGPTUser} from '../../../chatgpt-auth';
+export async function GET(_req:Request,ctx:{params:Promise<{id:string}>}){const u=await getChatGPTUser();if(!u)return new Response(null,{status:401});const {id}=await ctx.params;const p=await env.DB!.prepare('SELECT mime FROM photos WHERE id=? AND owner=?').bind(id,u.userId).first();if(!p)return new Response(null,{status:404});const o=await env.BUCKET!.get(`${u.userId}/${id}`);if(!o)return new Response(null,{status:404});return new Response(o.body,{headers:{'Content-Type':String(p.mime),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});}
