@@ -1,3 +1,11 @@
+## 2.12.0 — 17/10/2026
+
+- Financeiro → Contas a receber ganha + Conta a receber para cobranças avulsas, com cliente, descrição, documento, valor, lançamento, vencimento e observações.
+- Obra opcional: permite Sem obra específica, inclusive sem qualquer obra cadastrada.
+- Recebimentos parciais ou totais com saldo atualizado, abas Em aberto e Recebidos, edição/visualização/exclusão e correção de recebimentos.
+- Cobranças avulsas usam referências próprias; não criam medições nem consomem seus saldos, mesmo com números iguais.
+- Backup e sincronização incluem as contas avulsas, com validação de valores, datas e referências. Exclusão/alteração de contas recebidas exige corrigir os recebimentos antes.
+
 ## 2.11.0 — 17/10/2026
 
 - Medições passam a usar o fluxo manual em planilha; previsão automática vinculada ao cronograma removida da navegação, preservando dados históricos no backup.

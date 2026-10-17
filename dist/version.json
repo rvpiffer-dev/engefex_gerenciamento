@@ -1,8 +1,8 @@
 {
-  "version": "2.11.0",
+  "version": "2.12.0",
   "date": "2026-10-17",
-  "name": "Medições manuais integradas a contas a receber",
-  "previous_version": "2.10.0",
+  "name": "Contas a receber avulsas com obra opcional",
+  "previous_version": "2.11.0",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }
