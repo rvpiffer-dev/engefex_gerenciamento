@@ -42,6 +42,10 @@ Cronograma → Planilha edita ordem, descrição, datas, duração em dias corri
 
 Tab avança entre células e Enter desce na mesma coluna. Cole blocos tabulados do Excel a partir de uma célula. Blocos fora dos limites são rejeitados inteiros. Salvar alterações grava todo o lote; erro de validação impede toda a gravação. Descartar alterações abandona o rascunho. Datas aceitam AAAA-MM-DD ou DD/MM/AAAA; números aceitam vírgula decimal. Há avisos de edição pendente e controle contra sobreposição de gravações entre abas.
 
+## Conclusão rápida
+
+Etapas e atividades → check Concluir na própria linha. Registra 100% da quantidade prevista e término real hoje, sem abrir formulário. O botão fica marcado e pode ser clicado novamente para desfazer e restaurar o avanço anterior. Reabrir uma conclusão feita pelo formulário remove apenas a data de conclusão e preserva a quantidade executada. O check mantém orçamento, medições e registros do diário, grava histórico e aplica as validações do planejamento.
+
 ## Cronograma PDF e Gantt
 
 Cronograma → Importar cronograma PDF → arquivo → prévia → conferir os destinos → confirmar. Apenas o planejamento é alterado. Ao concluir, Etapas e atividades abre na obra de destino, com filtros limpos e contagem do resultado.
