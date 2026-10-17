@@ -7,7 +7,7 @@
  const URL_BASE='https://kxekeeysonrppechegsq.supabase.co';
  const API_KEY='sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS';
  const SESSION_KEY='engefex-cloud-auth-v1';
- let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null;
+ let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let cover, messageEl, statusEl, originalLoad=null, originalPut=null;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
@@ -46,7 +46,9 @@
   saveSession({...s,user:s.user||session.user,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
  }
  async function login(email,password){
+  const generation=++authGeneration;
   const s=await raw('/auth/v1/token?grant_type=password',{method:'POST',json:true,body:{email,password},auth:false});
+  if(generation!==authGeneration)return;
   saveSession({...s,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
   await connect();
  }
@@ -121,7 +123,7 @@
   $('engefex-cloud-login').addEventListener('submit',async event=>{
    event.preventDefault();const button=event.submitter;button.disabled=true;
    try{setPhase('loading');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
-   catch(e){saveSession(null);setPhase('login',e.message)}finally{button.disabled=false}
+   catch(e){if(phase!=='login'){saveSession(null);setPhase('login',e.message)}}finally{button.disabled=false}
   });
   $('engefex-cloud-migrate').onclick=()=>initializeWith(current());
   $('engefex-cloud-empty').onclick=()=>initializeWith(root.EngefexManager.separate(root.Obras.clone(root.OBRAS_SEED)));
@@ -154,11 +156,14 @@
   }catch(e){setPhase('setup',e.message)}
  }
  async function connect(){
+  const generation=authGeneration;
   setPhase('loading');
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
+  if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
   workspace=memberships[0].workspace_id;
   const rows=await raw('/rest/v1/engefex_state?select=payload,revision,updated_at&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');
+  if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
   revision=Number(rows[0].revision);
   remoteSnapshot=rows[0].payload||null;
@@ -268,6 +273,7 @@
   if(pending){alert('Aguarde o servidor confirmar o salvamento antes de sair.');return}
   const token=session?.access_token;
   const wasConnected=phase==='ready';
+  authGeneration++;
   saveSession(null);workspace=null;revision=null;remoteSnapshot=null;knownFiles.clear();failed='';
   setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
