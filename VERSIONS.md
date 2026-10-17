@@ -1,3 +1,12 @@
+## 2.13.0 — 17/10/2026
+
+- Contas a receber ganha filtros recolhidos por cliente, cobrança/documento, obra (incluindo sem obra), tipo, lançamento, vencimento/previsão, último recebimento, saldo e vencidos; filtros também aplicados ao CSV.
+- Compras e notas ganha Contratos de mão de obra, integrado ao cadastro de fornecedores, com contrato total e medições manuais do prestador.
+- Apenas medições liberadas geram parcelas em Contas a Pagar; rascunhos permanecem no contrato. Cada parcela mantém seu vencimento e pagamento independente.
+- O total contratado fica comprometido no orçamento, sem duplicar as parcelas liberadas. O contrato mostra total, liberado, pago e saldo a liberar.
+- Proteções contra medições acima do contrato, números repetidos, exclusão de parcelas baixadas e edição da origem pelo contas a pagar; salvamento idempotente preserva pagamentos e descontos.
+- Contratos e medições integram backup, histórico e sincronização; visualização/edição/exclusão disponíveis no cadastro de origem.
+
 ## 2.12.0 — 17/10/2026
 
 - Financeiro → Contas a receber ganha + Conta a receber para cobranças avulsas, com cliente, descrição, documento, valor, lançamento, vencimento e observações.
