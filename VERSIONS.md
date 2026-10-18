@@ -1,3 +1,13 @@
+## 2.17.0 — 18/10/2026
+
+- Campos monetários compartilham apresentação BRL (R$150.000,00) ao abrir e ao sair da edição, incluindo formulários, grades, compras, mão de obra, pagamentos e filtros. Quantidades e percentuais continuam separados.
+- Salvamento numérico preserva precisão de unitários sem alteração; formato brasileiro aceito nos cálculos e filtros.
+- Nova obra oferece importar orçamento após salvar, usando o mesmo importador de Orçamento, com modelos Matheus e Orlando, prévia e escolha de copiar para planejamento. Atalho contextual na linha da obra.
+- Visão geral e Obras ficam na raiz; Medições passa para Gerenciamento de obras. Financeiro reúne Contas a pagar e Contas a receber.
+- Contas a receber oferece Ver medição; preservadas integrações compra/parcela/rateio → contas a pagar e medição aprovada/retenção → contas a receber, sem gerar recebimentos automaticamente.
+- Versão exibida no menu corrigida; seletor de arquivo legado sem uso removido.
+- Validação: 211 testes de regressão e integração.
+
 ## 2.16.6 — 18/10/2026
 
 - Compras e notas sugerem fornecedores cadastrados ao preencher nome ou CNPJ/CPF e completam os dados quando há correspondência única.

@@ -1,8 +1,8 @@
 {
-  "version": "2.16.6",
+  "version": "2.17.0",
   "date": "2026-10-18",
-  "name": "Preenchimento automático de fornecedores nas compras",
-  "previous_version": "2.16.5",
+  "name": "Revisão de moeda, integrações e navegação",
+  "previous_version": "2.16.6",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }

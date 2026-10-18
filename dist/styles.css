@@ -117,3 +117,5 @@ th{position:sticky;padding-right:15px!important}.column-resizer{position:absolut
 .measurement-release-editor input,.measurement-release-editor textarea{display:block;width:100%;padding:10px;border:1px solid var(--line);border-radius:5px}
 
 #reader .purchase-editor{width:100%;max-width:none;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+
+input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:130px}nav>a{margin-bottom:3px}
