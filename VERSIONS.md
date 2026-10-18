@@ -1,3 +1,10 @@
+## v2.21.0 — Lançamento central da fabricação
+
+- Nova tela Lançar andamento com formulário rápido e grade para várias peças.
+- Registros alimentam lotes e cargas existentes, atualizando todos os controles automaticamente.
+- Recebimento seleciona uma carga e impede quantidade superior ao saldo expedido.
+- Correções e exclusões continuam nos lotes e cargas, com histórico e salvamento confirmado.
+
 ## 2.20.0 — 18/10/2026
 
 - Fabricação passa a ter itens laterais próprios: checklist geral, quantidades e andamento geral, acompanhamento da fabricação, controle geral de fabricação, lotes, checklist de expedição, liberação e carga e controle geral de expedição.

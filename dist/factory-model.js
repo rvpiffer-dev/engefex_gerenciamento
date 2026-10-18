@@ -18,5 +18,29 @@ let header=prod.rows.find(r=>norm(value(r,'A'))==='grupo'&&norm(value(r,'B'))===
 // Reconstituir lotes/cargas preenchidos sem somá-los duas vezes aos resumos.
 for(let r of prod.rows){if(!value(r,'B')||!value(r,'D')||Number(Object.values(r)[0]?.address?.match(/\d+/)?.[0])<=51)continue;let candidates=o.parts.filter(p=>norm(p.group)===norm(value(r,'C'))&&norm(p.name)===norm(value(r,'D')));if(candidates.length!==1){issues.push('Lote '+value(r,'B')+': peça ambígua; consulte a planilha original.');continue}let p=candidates[0],l={id:id(),number:String(value(r,'B')),date:date(value(r,'A')),part:p.id,owner:String(value(r,'I')),note:[value(r,'J'),value(r,'K')].filter(Boolean).join(' · ')};for(let [i,k]of keys.entries())l[k]=numberOrZero(value(r,String.fromCharCode(69+i)),p.name+' / lote');o.lots.push(l)}for(let p of o.parts)for(let k of keys){let total=D.sum(o.lots.filter(l=>l.part===p.id),l=>l[k]);if(total>p[k])issues.push(p.name+': lotes superam resumo de '+k);p[k]=Math.max(0,p[k]-total)}for(let r of ship.rows){if(!value(r,'B')||Number(Object.values(r)[0]?.address?.match(/\d+/)?.[0])<=57)continue;let p=o.parts.find(p=>p.code===String(value(r,'C')));if(!p){issues.push('Carga '+value(r,'B')+': código de peça não encontrado.');continue}let l=o.loads.find(l=>l.number===String(value(r,'B')));if(!l){l=load();Object.assign(l,{number:String(value(r,'B')),date:date(value(r,'A')),receivedDate:date(value(r,'G')),checker:String(value(r,'H'))});o.loads.push(l)}l.items.push({id:id(),part:p.id,shipped:numberOrZero(value(r,'E'),p.name),received:numberOrZero(value(r,'F'),p.name),note:String(value(r,'I'))})}let release=find('Liberação e Carga'),releaseNumber=String(v(release,3,'D')||'').trim();if(release&&releaseNumber){let existing=o.loads.find(l=>l.number===releaseNumber),l=existing||load();if(!existing){l.number=releaseNumber;o.loads.push(l);for(let r of release.rows){let rn=Number(Object.values(r)[0]?.address?.match(/\d+/)?.[0]);if(rn<17||rn>48||!value(r,'E'))continue;let p=o.parts.find(p=>p.code===String(value(r,'B')));if(p)l.items.push({id:id(),part:p.id,shipped:numberOrZero(value(r,'E'),p.name+' / liberação'),received:0,note:''});else issues.push('Lista da carga: peça não identificada pelo código '+value(r,'B'))}}Object.assign(l,{date:date(v(release,4,'D'))||l.date,driver:String(v(release,5,'D')),vehicle:String(v(release,6,'D')),destination:String(v(release,7,'D')),receiver:String(v(release,8,'D')),pending:String(v(release,10,'D'))});let status=String(v(release,9,'D'));if(['Em preparação','Liberada','Expedida','Recebida','Com pendências'].includes(status))l.status=status;else if(status)l.note='Situação da planilha: '+status;}
 for(let p of o.parts)for(let k of ['shipped','received']){let total=D.sum(o.loads.flatMap(l=>l.items).filter(i=>i.part===p.id),i=>i[k]);if(total>p[k])issues.push(p.name+': cargas superam resumo de '+k);p[k]=Math.max(0,p[k]-total)}return o}
-root.EngefexFactoryModel={fresh,part,load,id,keys,num,totals,save,remove,validateState,validate,warnings,analyze,blankChecks};
+// O lançamento central grava nos mesmos lotes e cargas usados pelos controles.
+function recordProgress(order,input){
+ let o=clone(order),stage=input.stage;
+ if(![...keys,'shipped','received'].includes(stage))throw Error('Escolha a etapa do lançamento.');
+ if(!input.date||!validDate(input.date))throw Error('Informe uma data válida.');
+ let rows=(input.rows||[]).map(r=>({part:r.part,quantity:num(r.quantity)})).filter(r=>r.quantity>0);
+ if(!rows.length)throw Error('Informe pelo menos uma quantidade maior que zero.');
+ let seen=new Set();for(let r of rows){if(!o.parts.some(p=>p.id===r.part)||seen.has(r.part))throw Error('Revise as peças do lançamento.');seen.add(r.part)}
+ let number=String(input.number||'').trim(),owner=String(input.owner||'').trim(),note=String(input.note||'').trim();
+ if(stage==='received'){
+  let cargo=o.loads.find(l=>l.id===input.load);if(!cargo)throw Error('Selecione a carga que está sendo recebida.');
+  for(let r of rows){let items=cargo.items.filter(i=>i.part===r.part),available=D.sum(items,i=>num(i.shipped)-num(i.received));if(r.quantity>available+1e-8)throw Error('Recebimento maior que o saldo desta peça na carga.');let left=r.quantity;for(let i of items){let amount=Math.min(left,num(i.shipped)-num(i.received));i.received=num(i.received)+amount;left-=amount}}
+  cargo.receivedDate=input.date;if(owner)cargo.receiver=owner;if(note)cargo.note=[cargo.note,note].filter(Boolean).join(' / ');
+  cargo.status=cargo.items.every(i=>num(i.received)>=num(i.shipped))?'Recebida':'Expedida';
+ }else if(stage==='shipped'){
+  if(!number)throw Error('Informe o número da carga.');
+  if(o.loads.some(l=>l.number===number))throw Error('Esta carga já existe. Edite em Liberação e carga para acrescentar peças.');
+  let cargo=load();Object.assign(cargo,{number,date:input.date,checker:owner,note,status:'Expedida'});cargo.items=rows.map(r=>({id:id(),part:r.part,shipped:r.quantity,received:0,note:''}));o.loads.push(cargo);
+ }else{
+  if(!number)number='Lançamento '+(o.lots.length+1);
+  for(let r of rows)o.lots.push({id:id(),number,date:input.date,part:r.part,...Object.fromEntries(keys.map(k=>[k,k===stage?r.quantity:0])),owner,note});
+ }
+ return o;
+}
+root.EngefexFactoryModel={recordProgress,fresh,part,load,id,keys,num,totals,save,remove,validateState,validate,warnings,analyze,blankChecks};
 })(typeof window==='undefined'?globalThis:window);
