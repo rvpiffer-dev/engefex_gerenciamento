@@ -1,8 +1,8 @@
 {
-  "version": "4.1.4",
+  "version": "4.1.5",
   "date": "2026-10-18",
-  "name": "Lançar produção diretamente nos cartões de acompanhamento",
-  "previous_version": "4.1.3",
+  "name": "Salvar lançamentos dos cartões de produção de uma só vez",
+  "previous_version": "4.1.4",
   "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
   "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
 }
