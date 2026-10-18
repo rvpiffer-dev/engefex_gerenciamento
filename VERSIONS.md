@@ -1,3 +1,15 @@
+## v4.1.0 — Cadastro rápido e ordem de fabricação em PDF
+
+- Grade para editar a relação de peças; TAB entre campos e ENTER entre linhas, com criação de nova linha ao final.
+- Colagem de células do Excel diretamente na grade e inclusão de listas com prévia.
+- Grupo, unidade e operações aplicados em lote às peças selecionadas.
+- Colagens e alterações em lote são atômicas e preservam os registros existentes.
+- Edição individual por ficha continua disponível.
+- Botão ao final da lista gera e baixa a ordem em PDF, com logo da Engefex, identificação da obra, projeto, revisão, responsável, prazos, materiais, peças e operações.
+- PDF com quantidade prevista, saldo a concluir, totais separados por unidade, cabeçalhos repetidos e paginação.
+- Opção de emitir somente o saldo a fabricar. Alterações são salvas antes da emissão.
+- Geração local no navegador com pdf-lib (MIT); sem envio de dados para serviços de geração de PDF.
+
 ## v4.0.0 — Fábrica por obra, refeita do zero
 
 - Versão anterior preservada em `backup/v3.0.0-antes-fabrica-2026-10-18`.

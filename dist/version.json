@@ -1,8 +1,8 @@
 {
-  "version": "4.0.0",
+  "version": "4.1.0",
   "date": "2026-10-18",
-  "name": "Fábrica por obra: caracterização, produção e checklist",
-  "previous_version": "3.0.0",
-  "backup_branch": "backup/v3.0.0-antes-fabrica-2026-10-18",
-  "backup_commit": "c8c0e96af402b5c0d0b4a61ee0d35c351458a3d1"
+  "name": "Cadastro de peças em lote e ordem de fabricação em PDF",
+  "previous_version": "4.0.0",
+  "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
+  "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
 }

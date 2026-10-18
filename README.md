@@ -141,3 +141,9 @@ Como utilizar:
 Em Fábrica por obra, abra uma obra e siga Caracterização → Peças e quantidades → Preparação → Produção → Checklist de fabricação. O cadastro não depende de planilha ou ordem. Selecione as operações de cada peça e registre apenas a quantidade realizada agora. O sistema limita os avanços pelo previsto e pelo saldo da operação anterior.
 
 Os checklists não são preenchidos automaticamente por avanços de produção. A conferência final exige responsável por item, fabricação completa e ausência de pendências. O encerramento pode ser reaberto com justificativa. A expedição fica reservada para uma etapa futura; registros antigos são preservados.
+
+### Cadastro rápido e ordem de fabricação — v4.1
+
+Em Peças e quantidades, use a grade com TAB entre os campos e ENTER para avançar à próxima linha. É possível colar células do Excel diretamente na grade. Para incluir uma lista inteira com prévia, use Colar várias peças do Excel, nesta ordem: Marca, Nome, Grupo, Unidade, Quantidade, Perfil / dimensões, Observações. Marque as peças para aplicar grupo, unidade ou operações em lote.
+
+O botão Gerar ordem de fabricação em PDF fica ao final da lista. As alterações são salvas antes da emissão. O PDF contém logo, obra, cliente, projeto, responsável, revisão, prazos, materiais, lista de peças, quantidade prevista, saldo por peça, operações e totais por unidade. A opção Somente saldo a fabricar exclui peças já concluídas. O gerador usa pdf-lib, sob licença MIT em dist/vendor/PDF-LIB-LICENSE.txt, sem serviços externos de geração.
