@@ -134,3 +134,10 @@ Como utilizar:
 
 **Limites e segurança:** esta fase filtra a exibição por login no navegador, mas as pendências continuam no JSON compartilhado do workspace e podem ser acessadas por integrantes autenticados por outros meios, inclusive em backup. **Não é isolamento de dados no servidor.** Para isolamento de verdade é necessário reestruturar pendências e notificações em tabelas próprias com RLS por autor/responsável. Também **não** envia mensagens externas: WhatsApp e e-mail automático exigem integração adicional com serviços de envio. Registros antigos sem autor identificado permanecem disponíveis em **Pendências → Antigas sem atribuição** para revisão manual.
 
+
+
+## Fábrica por obra — v4
+
+Em Fábrica por obra, abra uma obra e siga Caracterização → Peças e quantidades → Preparação → Produção → Checklist de fabricação. O cadastro não depende de planilha ou ordem. Selecione as operações de cada peça e registre apenas a quantidade realizada agora. O sistema limita os avanços pelo previsto e pelo saldo da operação anterior.
+
+Os checklists não são preenchidos automaticamente por avanços de produção. A conferência final exige responsável por item, fabricação completa e ausência de pendências. O encerramento pode ser reaberto com justificativa. A expedição fica reservada para uma etapa futura; registros antigos são preservados.

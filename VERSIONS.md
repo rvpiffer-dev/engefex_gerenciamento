@@ -1,3 +1,17 @@
+## v4.0.0 — Fábrica por obra, refeita do zero
+
+- Versão anterior preservada em `backup/v3.0.0-antes-fabrica-2026-10-18`.
+- Fábrica aberta diretamente pela obra, sem cadastro de ordem ou planilha de origem.
+- Cinco etapas: caracterização, peças e quantidades, preparação, produção e checklist final.
+- Caracterização estruturada de escopo, projeto, responsável, materiais, dimensões e proteção superficial.
+- Operações configuradas por peça: corte, furação, montagem, soldagem, acabamento e pintura.
+- Lançamentos incrementais com saldos por operação e limite pela etapa anterior.
+- Checklists independentes da produção; pendências e itens não aplicáveis exigem observação.
+- Conferente obrigatório para cada item final; encerramento validado e reabertura com motivo.
+- Conferências específicas podem ser incluídas para cada obra.
+- Expedição removida do novo fluxo; dados existentes, cargas e demais módulos preservados.
+- Dados antigos continuam no mesmo registro e em consulta; saldos fabricados/pintados são identificados no acompanhamento.
+
 ## v3.0.0 — Fabricação redesenhada
 
 - Ponto de retorno: `backup/v2.22.0-fabricacao-2026-10-18` (dc28515035e67feee37d7c676862a91ea6c0390c).

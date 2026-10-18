@@ -1,8 +1,8 @@
 {
-  "version": "3.0.0",
+  "version": "4.0.0",
   "date": "2026-10-18",
-  "name": "Fabricação: fluxo integrado para celular e computador",
-  "previous_version": "2.22.0",
-  "backup_branch": "backup/v2.22.0-fabricacao-2026-10-18",
-  "backup_commit": "dc28515035e67feee37d7c676862a91ea6c0390c"
+  "name": "Fábrica por obra: caracterização, produção e checklist",
+  "previous_version": "3.0.0",
+  "backup_branch": "backup/v3.0.0-antes-fabrica-2026-10-18",
+  "backup_commit": "c8c0e96af402b5c0d0b4a61ee0d35c351458a3d1"
 }
