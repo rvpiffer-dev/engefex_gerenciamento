@@ -1,3 +1,13 @@
+## 2.19.0 — 18/10/2026
+
+- Módulo Fabricação: ordens por obra com cadastro, edição em grade, consulta e exclusão com histórico.
+- Dados e características, preparação, peças, saldos iniciais, lançamentos por lote, cargas com múltiplas peças, recebimentos e checklists gerais e por carga.
+- Resumos calculados a partir de base + lotes/cargas; checklist separado das quantidades. Unidades diferentes não são somadas.
+- Importação Excel do modelo com seis abas, prévia e conferência explícita antes de gravar; original anexado à ordem. Textos e inconsistências viram alertas, sem inferir quantidades de liberação.
+- Destino vinculado à obra selecionada, sem alterar orçamento, cronograma, medições ou contas. Dados de fabricação incluídos em backups, sincronização e exclusão da obra.
+- Edição em tela cheia, colagem em grade, proteção de dados desatualizados, duplo clique e navegação com alterações pendentes.
+- Validação: 230 testes de regressão e leitura do arquivo de referência.
+
 ## 2.18.3 — 18/10/2026
 
 - Pagar quita o saldo exato com a data de hoje; Pago desfaz toda a baixa e devolve a conta para Em aberto.
