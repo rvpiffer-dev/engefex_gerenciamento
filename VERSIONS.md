@@ -1,3 +1,11 @@
+## 2.18.3 — 18/10/2026
+
+- Pagar quita o saldo exato com a data de hoje; Pago desfaz toda a baixa e devolve a conta para Em aberto.
+- Desfazer zera pago, data, descontos e acréscimos; preserva origem, incorrido e histórico com os valores anteriores. Notas agrupadas são tratadas integralmente, incluindo rateios e parcelas.
+- Detalhes / ajustar pagamento mantém o formulário para data, valor diferente, desconto, acréscimo e pagamento parcial.
+- Confirmação online e bloqueio de duplo clique; comportamento igual no computador e celular.
+- Validação: 220 testes.
+
 ## 2.18.2 — 18/10/2026
 
 - Corrigida a edição de baixas de mão de obra e compras: campos da origem são somente leitura, sem normalização ou alteração acidental ao corrigir pagamento.
