@@ -1,3 +1,8 @@
+## 2.16.6 — 18/10/2026
+
+- Compras e notas sugerem fornecedores cadastrados ao preencher nome ou CNPJ/CPF e completam os dados quando há correspondência única.
+- Mantida a seleção direta de fornecedor e o preenchimento manual.
+
 ## 2.16.5 — 18/10/2026
 
 - Lançamento e edição de compras e notas abrem em tela cheia, com mais espaço para itens, parcelas e rateios.
