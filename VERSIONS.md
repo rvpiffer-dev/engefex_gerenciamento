@@ -1,3 +1,15 @@
+## v3.0.0 — Fabricação redesenhada
+
+- Ponto de retorno: `backup/v2.22.0-fabricacao-2026-10-18` (dc28515035e67feee37d7c676862a91ea6c0390c).
+- Painel de ordens com acesso ao espaço de trabalho e visão geral com próximos passos.
+- Cadastro único de peças e quantidades; campos antigos da ficha preservados como referência.
+- Lista inicial da ficha disponível apenas em ordens sem peças, evitando duplicações.
+- Registro por etapa com peça, quantidade, data e responsável; lote e carga continuam sendo os registros canônicos.
+- Preparação e conferência de expedição com respostas por toque.
+- Produção, pintura, liberação e entregas com saldos por peça e totais separados por unidade.
+- Cargas com edição de dados, peças e conferências; histórico com correção dos avanços.
+- Formulários e cartões responsivos; mesma persistência no Supabase e compatibilidade com ordens e backups existentes.
+
 ## v2.22.0 — Características da obra no celular
 
 - Acesso direto em Fabricação → Características da obra e em cada ordem.

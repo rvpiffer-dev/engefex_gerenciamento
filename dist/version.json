@@ -1,9 +1,8 @@
 {
-  "version": "2.22.0",
+  "version": "3.0.0",
   "date": "2026-10-18",
-  "name": "Características da obra com formulário para celular",
-  "previous_version": "2.21.0",
-  "backup_branch": "backup/v2.1.0-2026-10-17",
-  "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
+  "name": "Fabricação: fluxo integrado para celular e computador",
+  "previous_version": "2.22.0",
+  "backup_branch": "backup/v2.22.0-fabricacao-2026-10-18",
+  "backup_commit": "dc28515035e67feee37d7c676862a91ea6c0390c"
 }
-

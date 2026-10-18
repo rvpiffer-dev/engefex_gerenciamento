@@ -34,7 +34,7 @@ function recordProgress(order,input){
   cargo.status=cargo.items.every(i=>num(i.received)>=num(i.shipped))?'Recebida':'Expedida';
  }else if(stage==='shipped'){
   if(!number)throw Error('Informe o número da carga.');
-  if(o.loads.some(l=>l.number===number))throw Error('Esta carga já existe. Edite em Liberação e carga para acrescentar peças.');
+  if(o.loads.some(l=>l.number===number))throw Error('Esta carga já existe. Edite em Cargas e recebimento para acrescentar peças.');
   let cargo=load();Object.assign(cargo,{number,date:input.date,checker:owner,note,status:'Expedida'});cargo.items=rows.map(r=>({id:id(),part:r.part,shipped:r.quantity,received:0,note:''}));o.loads.push(cargo);
  }else{
   if(!number)number='Lançamento '+(o.lots.length+1);
@@ -42,5 +42,8 @@ function recordProgress(order,input){
  }
  return o;
 }
-root.EngefexFactoryModel={recordProgress,fresh,part,load,id,keys,num,totals,save,remove,validateState,validate,warnings,analyze,blankChecks};
+function quantityFields(order){let started=false;return order.fields.filter(f=>{if(/quantidades principais/i.test(f.group||''))started=true;return started&&(/quantidades principais/i.test(f.group||'')||['cobertura','fechamento','outros'].includes(String(f.group||'').toLowerCase()))})}
+function seedParts(order){if(order.parts.length)throw Error('Esta ordem já tem peças. Edite o cadastro existente para não duplicar quantidades.');let o=clone(order),fields=quantityFields(o);if(!fields.length)throw Error('A ficha não contém uma lista de quantidades. Adicione as peças manualmente.');o.parts=fields.map(f=>({...part(),name:f.name,group:/quantidades principais/i.test(f.group)?'Estrutura principal':f.group,planned:num(f.value)}));return o}
+root.EngefexFactoryModel={quantityFields,seedParts,recordProgress,fresh,part,load,id,keys,num,totals,save,remove,validateState,validate,warnings,analyze,blankChecks};
 })(typeof window==='undefined'?globalThis:window);
+
