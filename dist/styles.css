@@ -119,3 +119,5 @@ th{position:sticky;padding-right:15px!important}.column-resizer{position:absolut
 #reader .purchase-editor{width:100%;max-width:none;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
 
 input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:130px}nav>a{margin-bottom:3px}
+
+.budget-hierarchy-main td{background:#e8efff!important;font-weight:700;border-top:2px solid #1557ff}.budget-hierarchy-sub td{background:#f0f3f7!important}.budget-hierarchy-main .source-line,.budget-hierarchy-sub .source-line{display:block;font-weight:400}

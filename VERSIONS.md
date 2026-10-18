@@ -1,3 +1,11 @@
+## 2.18.0 — 18/10/2026
+
+- Compras e notas permitem vincular cada item diretamente aos grupos principais do orçamento, sem selecionar um serviço.
+- O rateio entre etapas e obras oferece grupos principais; vínculos históricos com subgrupos e serviços são preservados e identificados.
+- Orçamento distingue visualmente grupo principal, subgrupo e serviço, com códigos, recuo, cores e subtotais de serviços sem dupla contagem.
+- Mantida a contabilização por parcela e destino e a proteção de pagamentos existentes; cronograma e medições permanecem independentes.
+- Validação: 214 testes de regressão.
+
 ## 2.17.0 — 18/10/2026
 
 - Campos monetários compartilham apresentação BRL (R$150.000,00) ao abrir e ao sair da edição, incluindo formulários, grades, compras, mão de obra, pagamentos e filtros. Quantidades e percentuais continuam separados.
