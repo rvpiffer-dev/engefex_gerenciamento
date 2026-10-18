@@ -1,3 +1,10 @@
+## 2.16.1 — 18/10/2026
+
+- Medições agrupadas por número e obra, com vários itens, valor bruto e detalhes individuais.
+- Nova medição em planilha como ação principal, com acumulado anterior preenchido e lançamento somente do incremento.
+- Itens já medidos em 100% continuam visíveis e bloqueados na próxima planilha, inclusive no preenchimento em lote e após falha ao salvar.
+- Mantida a edição dos lançamentos anteriores para correções e a separação entre orçamento e cronograma.
+
 ## 2.16.0 — 18/10/2026
 
 - Distribuição mensal de etapas segue automaticamente as datas planejadas das atividades e subetapas, por dias corridos, com meses de calendário e horizonte ampliado.
