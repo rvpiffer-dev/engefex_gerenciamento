@@ -1,3 +1,10 @@
+## v2.22.0 — Características da obra no celular
+
+- Acesso direto em Fabricação → Características da obra e em cada ordem.
+- Campos da planilha organizados por seção em formulário, com edição de nomes e seções.
+- Listagem de ordens em cartões no celular e botão de salvar acessível.
+- Mantém os registros e valores importados, sem alterar totais de produção.
+
 ## v2.21.0 — Lançamento central da fabricação
 
 - Nova tela Lançar andamento com formulário rápido e grade para várias peças.
@@ -304,3 +311,4 @@ existam migrações futuras.
 - Logotipo original no menu e na tela de acesso. Azul, preto e cinza aplicados à navegação, botões, destaques e seleções.
 - Ícone do aplicativo usa o símbolo da marca original; cores de tema e manifesto atualizadas.
 - Identidade adaptada ao celular, com indicadores de pago, vencido e alerta mantidos por significado. Sem alterações de dados ou regras de negócio.
+
