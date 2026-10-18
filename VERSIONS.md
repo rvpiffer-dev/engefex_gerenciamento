@@ -1,3 +1,9 @@
+## 2.18.1 — 18/10/2026
+
+- Grupo principal para todos os itens aplica o mesmo destino às linhas atuais da compra, permitindo ajustar as exceções depois.
+- Substituição de vínculos e rateios somente na prévia; valores e parcelas preservados, gravação apenas ao salvar.
+- Validação: 216 testes, incluindo nota com 101 itens e uma exceção.
+
 ## 2.18.0 — 18/10/2026
 
 - Compras e notas permitem vincular cada item diretamente aos grupos principais do orçamento, sem selecionar um serviço.
