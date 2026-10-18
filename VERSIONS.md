@@ -1,3 +1,9 @@
+## 2.16.3 — 18/10/2026
+
+- Botão Liberar por medição inteira, com datas e evidência comuns, gravação atômica e proteção contra dados desatualizados e duplo clique.
+- Após aprovação de todos os itens, botão verde Liberada. Grupo com status diferentes pode ser liberado respeitando o saldo do orçamento.
+- Contas a receber atualizado conforme retenção; liberação não registra recebimento nem libera retenções contratuais.
+
 ## 2.16.2 — 18/10/2026
 
 - Planilha de medição ocupa toda a janela no computador e no celular, com cabeçalho e fechamento acessíveis e respeito às áreas seguras da tela.

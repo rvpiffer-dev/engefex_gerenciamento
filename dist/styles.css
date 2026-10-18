@@ -112,3 +112,6 @@ th{position:sticky;padding-right:15px!important}.column-resizer{position:absolut
 #reader .measurement-sheet-editor{width:100%;max-width:none;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
 #reader .measurement-sheet-wrap{max-height:65vh;max-height:65dvh}
 #reader .measurement-sheet-actions{padding-bottom:max(12px,env(safe-area-inset-bottom));z-index:4}
+
+.measurement-released,.measurement-released:disabled{background:var(--green);color:#fff;opacity:1;cursor:default}
+.measurement-release-editor input,.measurement-release-editor textarea{display:block;width:100%;padding:10px;border:1px solid var(--line);border-radius:5px}

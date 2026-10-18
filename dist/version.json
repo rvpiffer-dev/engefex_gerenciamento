@@ -1,8 +1,8 @@
 {
-  "version": "2.16.2",
+  "version": "2.16.3",
   "date": "2026-10-18",
-  "name": "Planilha de medição em tela cheia",
-  "previous_version": "2.16.1",
+  "name": "Liberação de medição completa",
+  "previous_version": "2.16.2",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }
