@@ -1,3 +1,8 @@
+## 2.16.2 — 18/10/2026
+
+- Planilha de medição ocupa toda a janela no computador e no celular, com cabeçalho e fechamento acessíveis e respeito às áreas seguras da tela.
+- Demais diálogos preservam suas dimensões.
+
 ## 2.16.1 — 18/10/2026
 
 - Medições agrupadas por número e obra, com vários itens, valor bruto e detalhes individuais.
