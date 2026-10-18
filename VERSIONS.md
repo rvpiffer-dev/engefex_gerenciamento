@@ -1,3 +1,8 @@
+## 2.16.5 — 18/10/2026
+
+- Lançamento e edição de compras e notas abrem em tela cheia, com mais espaço para itens, parcelas e rateios.
+- Cabeçalho e fechamento acessíveis, com respeito às áreas seguras no celular.
+
 ## 2.16.4 — 18/10/2026
 
 - Botão Medir 100% por item na nova medição em planilha preenche o acumulado e seleciona a linha, contabilizando somente o saldo restante.

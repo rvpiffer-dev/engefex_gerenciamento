@@ -1,8 +1,8 @@
 {
-  "version": "2.16.4",
+  "version": "2.16.5",
   "date": "2026-10-18",
-  "name": "Atalho Medir 100% por item",
-  "previous_version": "2.16.3",
+  "name": "Compras e notas em tela cheia",
+  "previous_version": "2.16.4",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }
