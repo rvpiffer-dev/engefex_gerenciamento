@@ -1,3 +1,9 @@
+## 2.18.2 — 18/10/2026
+
+- Corrigida a edição de baixas de mão de obra e compras: campos da origem são somente leitura, sem normalização ou alteração acidental ao corrigir pagamento.
+- Incorrido, pago, desconto, acréscimo, data de pagamento e observações continuam editáveis. A grade respeita campos de origem somente leitura.
+- Validação: 217 testes, incluindo correção de baixa nos dois tipos de origem.
+
 ## 2.18.1 — 18/10/2026
 
 - Grupo principal para todos os itens aplica o mesmo destino às linhas atuais da compra, permitindo ajustar as exceções depois.
