@@ -1,3 +1,10 @@
+## 2.16.0 — 18/10/2026
+
+- Distribuição mensal de etapas segue automaticamente as datas planejadas das atividades e subetapas, por dias corridos, com meses de calendário e horizonte ampliado.
+- Alterações e importações do cronograma recalculam a distribuição; datas ausentes são sinalizadas.
+- Ajuste manual disponível no cronograma e pela grade, exigindo soma de 100% e justificativa. Retorno ao automático preserva o ajuste salvo.
+- Orçamento financeiro e medições permanecem independentes.
+
 ## 2.15.0 — 17/10/2026
 
 - Importação de orçamento oferece Tipo 1 — Matheus (Excel .xlsx) e Tipo 2 — Orlando (PDF com texto selecionável).
