@@ -2,7 +2,7 @@
 (function(root){'use strict';const D=root.Obras,clone=D.clone,id=()=>root.crypto?.randomUUID?.()||'FAB-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),keys=['prepared','fabricated','painted','released'],norm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const blankChecks=rows=>(rows||[]).map(r=>({...clone(r),id:id(),status:'Pendente',owner:'',note:''}));
 function fresh(project){let t=root.EngefexFactoryTemplate||{};return {id:id(),project,number:'',revision:'',owner:'',start:'',due:'',note:'',fields:(t.fields||[]).map(f=>({...clone(f),id:id()})),preparation:blankChecks(t.preparation),shipping:blankChecks(t.shipping),parts:[],lots:[],loads:[],warnings:[],sourceName:'',attachments:[]}}
-function part(){return {id:id(),code:'',group:'',name:'',unit:'un',planned:0,dimensions:'',prepared:0,fabricated:0,painted:0,released:0,shipped:0,received:0,note:''}}
+function part(){return {id:id(),code:'',group:'',name:'',unit:'un',planned:0,dimensions:'',size:'',prepared:0,fabricated:0,painted:0,released:0,shipped:0,received:0,note:''}}
 function load(){return {id:id(),number:'',date:'',driver:'',vehicle:'',destination:'',receiver:'',receivedDate:'',checker:'',status:'Em preparação',pending:'',note:'',items:[],checks:blankChecks(root.EngefexFactoryTemplate?.shipping)}}
 function num(v){let s=String(v??'').trim();if(!s)return 0;if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');let n=Number(s);if(!Number.isFinite(n)||n<0)throw Error('Quantidades devem ser números não negativos.');return n}
 function validDate(v){return !v||/^\d{4}-\d{2}-\d{2}$/.test(v)&&D.date(v)?.toLocaleDateString('sv-SE')===v}

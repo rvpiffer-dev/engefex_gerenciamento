@@ -1,8 +1,8 @@
 {
-  "version": "4.1.0",
+  "version": "4.1.1",
   "date": "2026-10-18",
-  "name": "Cadastro de peças em lote e ordem de fabricação em PDF",
-  "previous_version": "4.0.0",
+  "name": "Tamanho das peças no cadastro em lote e na ordem de fabricação",
+  "previous_version": "4.1.0",
   "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
   "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
 }
