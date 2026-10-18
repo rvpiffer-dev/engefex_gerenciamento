@@ -1,3 +1,12 @@
+## 2.20.0 — 18/10/2026
+
+- Fabricação passa a ter itens laterais próprios: checklist geral, quantidades e andamento geral, acompanhamento da fabricação, controle geral de fabricação, lotes, checklist de expedição, liberação e carga e controle geral de expedição.
+- Cada tabela abre diretamente na página principal, com seletor da ordem e salvamento independente da navegação.
+- Produção e expedição possuem resumos separados; todas as telas usam a mesma ordem e registros existentes, sem nova importação ou duplicação.
+- Ordens e importação permanecem como entrada para cadastrar, importar, consultar e excluir ordens. Edição completa no diálogo continua disponível.
+- Proteção de alterações pendentes ao navegar ou trocar de obra/ordem; dados e fórmulas preservados.
+- Validação: 231 testes.
+
 ## 2.19.0 — 18/10/2026
 
 - Módulo Fabricação: ordens por obra com cadastro, edição em grade, consulta e exclusão com histórico.

@@ -1,8 +1,8 @@
 {
-  "version": "2.19.0",
+  "version": "2.20.0",
   "date": "2026-10-18",
-  "name": "Fabricação: ordens, preparação, lotes, cargas e recebimentos",
-  "previous_version": "2.18.3",
+  "name": "Tabelas de fabricação separadas no menu",
+  "previous_version": "2.19.0",
   "backup_branch": "backup/v2.1.0-2026-10-17",
   "backup_commit": "225c2e13a8a1aa5a4de9063f10ceef5d4ed57e71"
 }
