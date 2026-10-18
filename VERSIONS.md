@@ -1,3 +1,8 @@
+## 2.16.4 — 18/10/2026
+
+- Botão Medir 100% por item na nova medição em planilha preenche o acumulado e seleciona a linha, contabilizando somente o saldo restante.
+- A alteração só é gravada ao salvar a medição; itens já concluídos permanecem bloqueados.
+
 ## 2.16.3 — 18/10/2026
 
 - Botão Liberar por medição inteira, com datas e evidência comuns, gravação atômica e proteção contra dados desatualizados e duplo clique.
