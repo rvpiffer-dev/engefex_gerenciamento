@@ -47,26 +47,24 @@ test('se Supabase não responder, o bloqueio termina com aviso claro e login rec
   assert.match(h.el('engefex-cloud-message').textContent,/20 segundos/);
   assert.equal(h.panels.find(p=>p.dataset.cloudPanel==='login').hidden,false);
 });
-test('login e primeira inicialização liberam interface só após confirmação do Supabase',async()=>{
+test('login libera interface após carregar base online existente, sem inicialização pelo aparelho',async()=>{
   const seen=[];
   const fetch=async(url,options)=>{
     seen.push({url,method:options.method||'GET'});
     let data;
     if(url.includes('/auth/v1/token?'))data={access_token:'teste',refresh_token:'teste',expires_in:3600,user:{id:'u1',email:'teste@empresa.com'}};
     else if(url.includes('engefex_members?'))data=[{workspace_id:'e0cc3a76-0f33-4a07-8acf-c52a74e5de39'}];
-    else if(url.includes('engefex_state?'))data=[{revision:0,payload:null}];
+    else if(url.includes('engefex_state?'))data=[{revision:1,payload:{version:1,projects:[{id:'online'}]}}];
     else if(url.includes('/rpc/engefex_save_state'))data=[{revision:1}];
     else throw Error('Rota inesperada: '+url);
     return {ok:true,text:async()=>JSON.stringify(data)};
   };
   const h=harness(fetch);
   await h.login();
-  assert.equal(h.panels.find(p=>p.dataset.cloudPanel==='setup').hidden,false);
-  assert.equal(h.root.EngefexCloud.ready,false);
-  await h.el('engefex-cloud-empty').onclick();
   assert.equal(h.root.EngefexCloud.ready,true);
   assert.equal(h.cover.hidden,true);
   assert.equal(h.locked,false);
   assert.equal(h.accepted,1);
-  assert.ok(seen.some(x=>x.url.includes('/rpc/engefex_save_state')));
+  assert.equal(seen.some(x=>x.url.includes('/rpc/engefex_save_state')),false);
 });
+

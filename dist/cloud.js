@@ -97,14 +97,6 @@
       <p><small>O administrador precisa cadastrar sua conta e vinculá-la à área de trabalho da Engefex no Supabase.</small></p>
      </div>
      <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p><p><small>Se o Supabase não responder, será mostrado um erro após 20 segundos.</small></p><button type="button" id="engefex-cloud-cancel" class="secondary">Cancelar e voltar ao login</button></div>
-     <div data-cloud-panel="setup" hidden>
-      <p id="engefex-cloud-setup-info"></p>
-      <button type="button" id="engefex-cloud-local-backup" class="secondary">Exportar backup local</button>
-      <button type="button" id="engefex-cloud-migrate">Usar meus registros locais como base online</button>
-      <button type="button" id="engefex-cloud-empty" class="secondary">Começar base online vazia</button>
-      <button type="button" id="engefex-cloud-load" class="secondary">Abrir base online existente</button>
-      <p><small>Um backup antes da migração protege seus registros. Nunca use dados de um navegador para substituir uma base online que já contém registros.</small></p>
-     </div>
      <div data-cloud-panel="error" hidden>
       <p>A edição está bloqueada até resolver a comunicação com o banco. Dados ainda não confirmados continuam guardados neste aparelho.</p>
       <button type="button" id="engefex-cloud-export" class="secondary">Exportar backup deste aparelho</button>
@@ -125,10 +117,6 @@
    try{setPhase('loading');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
    catch(e){if(phase!=='login'){saveSession(null);setPhase('login',e.message)}}finally{button.disabled=false}
   });
-  $('engefex-cloud-migrate').onclick=()=>initializeWith(current());
-  $('engefex-cloud-empty').onclick=()=>initializeWith(root.EngefexManager.separate(root.Obras.clone(root.OBRAS_SEED)));
-  $('engefex-cloud-load').onclick=()=>{if(remoteSnapshot)acceptRemote(remoteSnapshot)};
-  $('engefex-cloud-local-backup').onclick=()=>client?.exportBackup();
   $('engefex-cloud-export').onclick=()=>client?.exportBackup();
   $('engefex-cloud-retry').onclick=()=>connect().catch(e=>setPhase('error',e.message));
   $('engefex-cloud-cancel').onclick=()=>logout();
@@ -136,25 +124,14 @@
   $('engefex-cloud-logout').onclick=()=>logout();
   $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>{paintStatus('Erro de sincronização: '+e.message);setPhase('error',e.message)});
  }
- function localHasData(){const s=current();return !!(s?.projects?.length||s?.history?.length||s?.diary?.length||s?.budgetItems?.length)}
- function ensureBackupBeforeReplace(){
-  if(!localHasData())return;
-  const before=localStorage.getItem('engefex-gerenciamento-v2');
-  if(!before)return;
-  const key='engefex-cloud-pre-migration-backup-v1';
-  if(localStorage.getItem(key))return;
-  try{localStorage.setItem(key,before)}
-  catch{throw Error('Sem espaço para guardar a cópia local. Exporte o backup antes de carregar a base online.')}
- }
  function acceptRemote(snapshot){
   try{
    root.Obras.backupValid(snapshot);
-   ensureBackupBeforeReplace();
    client.acceptState(snapshot);
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
-  }catch(e){setPhase('setup',e.message)}
+  }catch(e){setPhase('error',e.message)}
  }
  async function connect(){
   const generation=authGeneration;
@@ -168,25 +145,8 @@
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
   revision=Number(rows[0].revision);
   remoteSnapshot=rows[0].payload||null;
-  if(!remoteSnapshot||(localHasData()&&JSON.stringify(remoteSnapshot)!==JSON.stringify(current()))){
-   setPhase('setup');
-   $('engefex-cloud-setup-info').textContent=remoteSnapshot?'A base online já contém registros. Faça um backup de qualquer trabalho local antes de abrir a base compartilhada.':'A base online está vazia. Escolha iniciar com os dados deste aparelho ou com uma base vazia.';
-   $('engefex-cloud-migrate').hidden=!!remoteSnapshot||!localHasData();
-   $('engefex-cloud-empty').hidden=!!remoteSnapshot;
-   $('engefex-cloud-load').hidden=!remoteSnapshot;
-  }else acceptRemote(remoteSnapshot);
- }
- async function initializeWith(snapshot){
-  if(remoteSnapshot){setMessage('A base online já contém dados. Não será substituída.');return}
-  if(!confirm('Criar agora a base compartilhada no Supabase? Confira antes se seus dados locais estão corretos e se o backup foi exportado.'))return;
-  setPhase('loading');
-  try{
-   root.Obras.backupValid(snapshot);
-   await uploadFiles(snapshot);
-   const out=await writeState(snapshot);
-   revision=Number(out.revision);
-   acceptRemote(snapshot);
-  }catch(e){setPhase('setup',e.message)}
+  if(!remoteSnapshot)throw Error('A base online ainda não foi inicializada. Solicite a configuração ao administrador.');
+  acceptRemote(remoteSnapshot);
  }
  async function writeState(payload){
   const result=await raw('/rest/v1/rpc/engefex_save_state',{method:'POST',json:true,body:{p_workspace:workspace,p_revision:revision,p_payload:payload}});
@@ -227,7 +187,6 @@
   if(phase!=='ready'||pending||ownDirty())return;
   if(Number(row.revision)!==revision){
    root.Obras.backupValid(row.payload);
-   ensureBackupBeforeReplace();
    client.acceptState(row.payload);for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
   }else if(force)paintStatus('Dados atualizados · revisão '+revision);
