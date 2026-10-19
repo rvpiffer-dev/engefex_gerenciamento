@@ -1,7 +1,7 @@
 {
-  "version": "4.9.0",
+  "version": "4.10.0",
   "date": "2026-10-19",
-  "name": "Checklist de fabricação com 44 itens e histórico das conferências anteriores",
-  "previous_version": "4.8.1",
+  "name": "Agenda compartilhada da equipe",
+  "previous_version": "4.9.0",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
