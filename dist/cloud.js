@@ -13,7 +13,7 @@
  const current=()=>client?.getState();
  const ownDirty=()=>!!client?.isDirty?.();
  const setMessage=value=>{if(messageEl)messageEl.textContent=value||''};
- function saveSession(s){session=s;if(s)localStorage.setItem(SESSION_KEY,JSON.stringify(s));else localStorage.removeItem(SESSION_KEY)}
+ function saveSession(s){session=s;try{if(s)localStorage.setItem(SESSION_KEY,JSON.stringify(s));else localStorage.removeItem(SESSION_KEY)}catch(e){if(!(/quota/i.test(e?.name+' '+e?.message)||e?.code===22||e?.code===1014))throw e}}
  function expiring(){return !session||!session.access_token||Date.now()>=Number(session.expires_at||0)-60000}
  async function raw(path,options={}){
   const headers={apikey:API_KEY,...options.headers};
@@ -138,6 +138,7 @@
  }
  function localHasData(){const s=current();return !!(s?.projects?.length||s?.history?.length||s?.diary?.length||s?.budgetItems?.length)}
  function ensureBackupBeforeReplace(){
+  if(!localHasData())return;
   const before=localStorage.getItem('engefex-gerenciamento-v2');
   if(!before)return;
   const key='engefex-cloud-pre-migration-backup-v1';
@@ -287,4 +288,5 @@
  }
  root.EngefexCloud={boot,requireWrite,send,get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
 })(window);
+
 
