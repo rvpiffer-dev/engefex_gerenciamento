@@ -1,8 +1,8 @@
 {
-  "version": "4.4.0",
+  "version": "4.5.0",
   "date": "2026-10-19",
-  "name": "Despesas gerais únicas e recorrentes com filtro Geral",
-  "previous_version": "4.3.0",
+  "name": "Atualizar datas, planejado e avanço concluído pelo cronograma PDF",
+  "previous_version": "4.4.0",
   "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
   "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
 }
