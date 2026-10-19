@@ -1,7 +1,7 @@
 {
-  "version": "4.8.1",
+  "version": "4.9.0",
   "date": "2026-10-19",
-  "name": "Oito novos itens no checklist de preparação da fábrica",
-  "previous_version": "4.8.0",
+  "name": "Checklist de fabricação com 44 itens e histórico das conferências anteriores",
+  "previous_version": "4.8.1",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
