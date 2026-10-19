@@ -1,8 +1,8 @@
 {
-  "version": "4.1.6",
+  "version": "4.1.7",
   "date": "2026-10-19",
-  "name": "Acesso online com armazenamento local cheio no iOS",
-  "previous_version": "4.1.5",
+  "name": "Botão explícito para pagamento com desconto",
+  "previous_version": "4.1.6",
   "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
   "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
 }
