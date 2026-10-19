@@ -1,7 +1,7 @@
 {
-  "version": "4.7.0",
+  "version": "4.7.1",
   "date": "2026-10-19",
-  "name": "Sincronização otimizada: revisão leve e salvamento incremental",
-  "previous_version": "4.6.0",
+  "name": "Download de anexos em todos os módulos e catálogo de arquivos",
+  "previous_version": "4.7.0",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
