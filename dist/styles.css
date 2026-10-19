@@ -147,3 +147,5 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .receivable-plan .table-wrap input{min-width:140px;min-height:44px;font-size:16px}.receivable-plan .table-wrap td{vertical-align:middle}.receivable-plan>button{margin:8px 8px 8px 0}
 
 .schedule-face{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;margin:3px 0;max-width:230px}.schedule-face svg{flex:none}.schedule-face small{font-size:11px;line-height:1.25;color:#475569;white-space:normal}.planning-group-progress .schedule-face{margin-bottom:6px}
+
+.issue-responsibles{display:grid;gap:8px;padding:12px;border:1px solid #d5dfef;border-radius:10px;max-height:280px;overflow:auto}.issue-responsibles label{display:flex;align-items:center;gap:10px;padding:8px;margin:0;min-height:44px}.issue-responsibles input[type=checkbox]{width:20px;height:20px;flex:none;margin:0}

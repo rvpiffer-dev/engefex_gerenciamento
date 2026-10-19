@@ -1,7 +1,7 @@
 {
-  "version": "4.7.1",
+  "version": "4.8.0",
   "date": "2026-10-19",
-  "name": "Download de anexos em todos os módulos e catálogo de arquivos",
-  "previous_version": "4.7.0",
+  "name": "Múltiplos responsáveis por pendência e caracterização das telhas",
+  "previous_version": "4.7.1",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
