@@ -1,8 +1,7 @@
 {
-  "version": "4.5.1",
+  "version": "4.6.0",
   "date": "2026-10-19",
-  "name": "Indicadores com carinhas no cronograma e em etapas e atividades",
-  "previous_version": "4.5.0",
-  "backup_branch": "backup/v4.0.0-antes-cadastro-lote-pdf-2026-10-18",
-  "backup_commit": "dc3ec998c47f1988242cfd00d4ced679b25a6cfe"
+  "name": "PDF do cronograma em A4 e A1 com planilha, Gantt e carinhas",
+  "previous_version": "4.5.1",
+  "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
