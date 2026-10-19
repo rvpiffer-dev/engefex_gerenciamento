@@ -8,6 +8,7 @@
  const API_KEY='sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS';
  const SESSION_KEY='engefex-cloud-auth-v1';
  let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
+ let confirmedState=null,patchSupported=null,refreshing=false,tokenRefresh=null,lastSync=null;
  let cover, messageEl, statusEl, originalLoad=null, originalPut=null;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
@@ -40,9 +41,12 @@
   if(!res.ok){let error=new Error((parsed?.message||parsed?.msg||parsed?.error_description||parsed?.error||('HTTP '+res.status)));error.status=res.status;error.code=parsed?.code;throw error}
   return parsed;
  }
- async function refreshToken(){
+ async function refreshToken(){if(tokenRefresh)return tokenRefresh;tokenRefresh=performTokenRefresh();try{return await tokenRefresh}finally{tokenRefresh=null}}
+ async function performTokenRefresh(){
+  const generation=authGeneration;
   if(!session?.refresh_token)throw Error('Sessão expirada. Faça login novamente.');
   const s=await raw('/auth/v1/token?grant_type=refresh_token',{method:'POST',json:true,body:{refresh_token:session.refresh_token},auth:false,skipRefresh:true});
+  if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');
   saveSession({...s,user:s.user||session.user,expires_at:Date.now()+Number(s.expires_in||3600)*1000});
  }
  async function login(email,password){
@@ -129,7 +133,7 @@
    root.Obras.backupValid(snapshot);
    client.acceptState(snapshot);
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
-   remoteSnapshot=null;
+   remoteSnapshot=null;confirmedState=JSON.parse(JSON.stringify(snapshot));
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
   }catch(e){setPhase('error',e.message)}
  }
@@ -139,7 +143,7 @@
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
   if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
-  workspace=memberships[0].workspace_id;
+  workspace=memberships[0].workspace_id;patchSupported=null;
   const rows=await raw('/rest/v1/engefex_state?select=payload,revision,updated_at&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');
   if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
@@ -148,12 +152,35 @@
   if(!remoteSnapshot)throw Error('A base online ainda não foi inicializada. Solicite a configuração ao administrador.');
   acceptRemote(remoteSnapshot);
  }
- async function writeState(payload){
-  const result=await raw('/rest/v1/rpc/engefex_save_state',{method:'POST',json:true,body:{p_workspace:workspace,p_revision:revision,p_payload:payload}});
-  const row=Array.isArray(result)?result[0]:result;
-  if(!row||!Number.isFinite(Number(row.revision)))throw Error('Supabase não confirmou a revisão salva.');
-  return row;
+ function buildPatch(before,next){
+  const changes=[],same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+  for(const key of new Set([...Object.keys(before||{}),...Object.keys(next)])){
+   if(!Object.prototype.hasOwnProperty.call(next,key)||next[key]===undefined){changes.push({key,remove:true});continue}
+   const old=before?.[key],value=next[key];if(same(old,value))continue;
+   if(Array.isArray(old)&&Array.isArray(value)){
+    const a=old.map(x=>JSON.stringify(x)),b=value.map(x=>JSON.stringify(x));let start=0,end=0;
+    while(start<a.length&&start<b.length&&a[start]===b[start])start++;
+    while(end<a.length-start&&end<b.length-start&&a[a.length-1-end]===b[b.length-1-end])end++;
+    let edits=[];
+    if(a.length===b.length){for(let i=start;i<a.length-end;i++)if(a[i]!==b[i])edits.push({key,start:i,deleteCount:1,items:[value[i]]})}
+    else edits=[{key,start,deleteCount:a.length-start-end,items:value.slice(start,b.length-end)}];
+    const replace={key,value};
+    changes.push(...(edits.length<=32&&JSON.stringify(edits).length<JSON.stringify(replace).length?edits:[replace]));
+   }else changes.push({key,value});
+  }return changes;
  }
+ async function writeState(payload){
+  const changes=confirmedState?buildPatch(confirmedState,payload):null,full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
+  const fullText=JSON.stringify(full),usePatch=patchSupported!==false&&changes&&changes.length<=1000&&JSON.stringify(patch).length<fullText.length*.9;
+  let result,mode='full',bytes=fullText.length;
+  if(usePatch){try{result=await raw('/rest/v1/rpc/engefex_patch_state',{method:'POST',json:true,body:patch});patchSupported=true;mode='patch';bytes=JSON.stringify(patch).length}catch(e){if(e.status===404&&e.code==='PGRST202')patchSupported=false;else throw e}}
+  if(!result)result=await raw('/rest/v1/rpc/engefex_save_state',{method:'POST',json:true,body:full});
+  const row=Array.isArray(result)?result[0]:result;
+  if(!row||!Number.isFinite(Number(row.revision))||Number(row.revision)<=revision)throw Error('Supabase não confirmou a revisão salva.');
+  lastSync={mode,characters:bytes,fullCharacters:fullText.length};
+  confirmedState=JSON.parse(JSON.stringify(payload));return row;
+ }
+
  function requireWrite(){
   if(phase!=='ready'||pending||failed)throw Error(failed||'Aguarde a sincronização e o carregamento da base online antes de editar.');
   if(!navigator.onLine)throw Error('Sem conexão: a edição compartilhada está bloqueada.');
@@ -179,18 +206,23 @@
   });
  }
  async function refreshRemote(force=false){
-  if(phase!=='ready'||pending||ownDirty()||document.hidden)return;
-  if(!navigator.onLine)return;
-  const rows=await raw('/rest/v1/engefex_state?select=payload,revision&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');
-  const row=rows?.[0];
-  if(!row)throw Error('Área de trabalho não encontrada.');
-  if(phase!=='ready'||pending||ownDirty())return;
-  if(Number(row.revision)!==revision){
-   root.Obras.backupValid(row.payload);
-   client.acceptState(row.payload);for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
+  if(phase!=='ready'||pending||ownDirty()||document.hidden||refreshing||!navigator.onLine)return;
+  refreshing=true;const generation=authGeneration,startRevision=revision,startWorkspace=workspace;
+  const stillCurrent=()=>generation===authGeneration&&phase==='ready'&&!pending&&!ownDirty()&&revision===startRevision&&workspace===startWorkspace;
+  try{
+   const heads=await raw('/rest/v1/engefex_state?select=revision&workspace_id=eq.'+encodeURIComponent(startWorkspace)+'&limit=1');
+   if(!stillCurrent())return;
+   if(!heads?.[0])throw Error('Área de trabalho não encontrada.');
+   if(Number(heads[0].revision)===revision){if(force)paintStatus('Dados atualizados · revisão '+revision);return}
+   const rows=await raw('/rest/v1/engefex_state?select=payload,revision&workspace_id=eq.'+encodeURIComponent(startWorkspace)+'&limit=1');
+   if(!stillCurrent())return;const row=rows?.[0];
+   if(!row||!Number.isFinite(Number(row.revision))||Number(row.revision)<=revision)throw Error('Não foi possível confirmar a revisão atual da área de trabalho.');
+   root.Obras.backupValid(row.payload);client.acceptState(row.payload);
+   confirmedState=JSON.parse(JSON.stringify(row.payload));for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
-  }else if(force)paintStatus('Dados atualizados · revisão '+revision);
+  }finally{refreshing=false}
  }
+
  function decodeDataURL(file){
   if(!file?.dataURL||!/^data:[\w.+/-]+;base64,/.test(file.dataURL))throw Error('Anexo inválido: '+(file?.id||'?'));
   const text=file.dataURL.slice(file.dataURL.indexOf(',')+1),data=atob(text),bytes=new Uint8Array(data.length);
@@ -234,7 +266,7 @@
   const token=session?.access_token;
   const wasConnected=phase==='ready';
   authGeneration++;
-  saveSession(null);workspace=null;revision=null;remoteSnapshot=null;knownFiles.clear();failed='';
+  saveSession(null);workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;lastSync=null;knownFiles.clear();failed='';
   setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
@@ -245,7 +277,7 @@
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={boot,requireWrite,send,get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
+ root.EngefexCloud={boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
 })(window);
 
 

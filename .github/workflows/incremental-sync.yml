@@ -1,0 +1,34 @@
+name: Verificar sincronização incremental
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dist/cloud.js'
+      - 'supabase/**'
+      - 'tests/cloud*.test.cjs'
+      - '.github/workflows/incremental-sync.yml'
+  pull_request:
+    paths:
+      - 'dist/cloud.js'
+      - 'supabase/**'
+      - 'tests/cloud*.test.cjs'
+      - '.github/workflows/incremental-sync.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Testar cliente, compatibilidade e conflitos
+        run: node --test tests/cloud.test.cjs tests/cloud-timeout.test.cjs tests/cloud-optimization.test.cjs
+      - name: Preparar PostgreSQL local em WASM
+        run: npm install --prefix "$RUNNER_TEMP/engefex-pg" @electric-sql/pglite@0.3.14 --ignore-scripts --no-audit --no-fund
+      - name: Testar SQL e permissões sem acessar produção
+        env:
+          ENGEFEX_PGLITE_MODULE: ${{ runner.temp }}/engefex-pg/node_modules/@electric-sql/pglite
+        run: node --test supabase/tests/incremental_sync.cjs

@@ -1,7 +1,7 @@
 {
-  "version": "4.6.0",
+  "version": "4.7.0",
   "date": "2026-10-19",
-  "name": "PDF do cronograma em A4 e A1 com planilha, Gantt e carinhas",
-  "previous_version": "4.5.1",
+  "name": "Sincronização otimizada: revisão leve e salvamento incremental",
+  "previous_version": "4.6.0",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
