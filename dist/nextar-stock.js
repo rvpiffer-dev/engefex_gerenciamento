@@ -2,7 +2,7 @@
 (function(root){'use strict';
 const VERSION=1,KEY=root.EngefexEnvironment?.storageKey('engefex-nextar-snapshot-v1')||'engefex-nextar-snapshot-v1',decoder=new TextDecoder('utf-16le');
 const units=new Set(['Lata','Metro','Peça','Kg','Unidade','Un','M','m','KG','Pacote','Caixa','Rolo','Barra','Pç','Litro','Par','Jogo','Saco','Tubo','Chapa','Galão']);
-let snapshot=null,loaded=false,busy=false,find='',onlyStock=false,showDuplicates=false,fetching=false,error='',lastFetch=0;
+let snapshot=null,loaded=false,busy=false,find='',onlyStock=false,showDuplicates=false,fetching=false,error='',lastFetch=0,progressValue=0,progressLabel='';
 function escape(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function strings(bytes){let out=[];for(let i=0;i<bytes.length-3;){if(bytes[i]>=32&&bytes[i+1]===0){let p=i;do{i+=2}while(i+1<bytes.length&&bytes[i]>=32&&bytes[i+1]===0);if(i-p>=4)out.push({pos:p,end:i,value:decoder.decode(bytes.subarray(p,i))});}else i++;}return out;}
 function rawAt(view,p){return p>=0&&p+8<=view.byteLength?view.getFloat64(p,true):NaN;}
@@ -11,11 +11,12 @@ function proper(n){return Number.isFinite(n)&&n>=0&&n<1e8&&(n===0||n>1e-25)&&Mat
 function quartet(view,at){let a=[0,8,16,24].map(k=>floatAt(view,at+k));return a.every(proper)&&Math.abs(a[2]-a[0]-a[1])<=.0001?Math.round(a[0]*100)/100:null;}
 function fallbackQuartet(view,at){let a=[0,8,16,24].map(k=>rawAt(view,at+k));return a.every(proper)&&!a.every(n=>n===0)&&Math.abs(a[2]-a[0]-a[1])<=.0001?Math.round(a[0]*100)/100:null;}
 function catalogue(bytes){return strings(bytes).map(x=>x.value).filter(x=>x.length>=3&&x.length<48&&/^[\p{L}\p{N} \-`'./]+$/u.test(x));}
-function parseProduto(bytes,categories){
+async function parseProduto(bytes,categories,onProgress=()=>{}){
  const lines=strings(bytes),cats=new Set(categories),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),codes=[];
  for(let i=0;i<lines.length;i++)if(/^0{2,3}[0-9]{3,4}$/.test(lines[i].value))codes.push(i);
  const rows=[],unresolved=[];
  for(let j=0;j<codes.length;j++){
+  if(j%30===0){onProgress(codes.length?j/codes.length:0);await new Promise(done=>setTimeout(done,0));}
   const i=codes[j],tag=lines[i],end=j+1<codes.length?lines[codes[j+1]].pos:bytes.length,w=[];
   for(let n=i+1;n<lines.length&&lines[n].pos<Math.min(end,tag.end+260)&&w.length<15;n++)w.push(lines[n]);
   const cut=w.findIndex(x=>units.has(x.value));
@@ -38,18 +39,34 @@ function parseProduto(bytes,categories){
  rows.sort((a,b)=>a.code.localeCompare(b.code)||a.description.localeCompare(b.description));
  return {rows,unresolved,duplicates:[...counts].filter(([,n])=>n>1).map(([code,count])=>({code,count}))};
 }
-async function parse(input){
+async function parse(input,onProgress=()=>{}){
+ const report=(n,label)=>onProgress(Math.min(100,Math.max(0,Math.round(n))),label);
  if(!root.JSZip)throw Error('Leitor ZIP indisponível. Atualize a página.');
  if(input?.size>250*1024*1024)throw Error('O ZIP ultrapassa 250 MB.');
- const zip=await root.JSZip.loadAsync(input,{checkCRC32:false});
+ report(2,'Lendo o arquivo ZIP…');
+ const inputBytes=await new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onprogress=e=>{if(e.lengthComputable)report(2+e.loaded/e.total*16,'Lendo o arquivo ZIP…')};
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=()=>reject(new Error('Não foi possível abrir o arquivo selecionado.'));
+  reader.readAsArrayBuffer(input);
+ });
+ report(20,'Identificando tabelas do Nextar…');
+ const zip=await root.JSZip.loadAsync(inputBytes,{checkCRC32:false});
  const product=zip.file(/(^|\/)Produto\.nx1$/i)[0],category=zip.file(/(^|\/)Categoria\.nx1$/i)[0];
  if(!product)throw Error('Produto.nx1 não encontrado no ZIP.');
  if(!category)throw Error('Categoria.nx1 não encontrado no ZIP.');
  if(product._data?.uncompressedSize>35*1024*1024||category._data?.uncompressedSize>2*1024*1024)throw Error('Uma das tabelas excede o limite de leitura.');
- const bytes=await product.async('uint8array'),catBytes=await category.async('uint8array');
+ const bytes=await product.async('uint8array',meta=>report(24+meta.percent*.30,'Extraindo cadastro de produtos…'));
+ const catBytes=await category.async('uint8array',meta=>report(56+meta.percent*.10,'Extraindo categorias…'));
  if(bytes.length>35*1024*1024||catBytes.length>2*1024*1024)throw Error('Backup excede o limite de leitura.');
+ report(68,'Reconhecendo categorias e campos…');
+ await new Promise(done=>setTimeout(done,0));
  const cats=catalogue(catBytes);if(!cats.length)throw Error('Categorias não reconhecidas. Leitura interrompida para evitar dados incorretos.');
- return parseProduto(bytes,cats);
+ report(74,'Interpretando quantidades dos produtos…');
+ const result=await parseProduto(bytes,cats,ratio=>report(74+ratio*18,'Interpretando quantidades dos produtos…'));
+ report(93,'Conferindo dados recuperados…');
+ return result;
 }
 function retrieve(){return snapshot;}
 async function refresh(force=false){if(!root.EngefexCloud?.ready)return;if(fetching||!force&&Date.now()-lastFetch<30000)return;fetching=true;try{snapshot=await root.EngefexCloud.loadNextar();loaded=true;error='';lastFetch=Date.now();}catch(e){error=e.message;}finally{fetching=false;const main=document.getElementById('main');if(location.hash==='#nextarstock'&&main){main.innerHTML=render();bind();}}}
