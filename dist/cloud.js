@@ -11,7 +11,7 @@
  let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let accessVersion='',sessionFiles=new Set();
  let confirmedState=null,patchSupported=null,refreshing=false,tokenRefresh=null,lastSync=null;
- let cover, messageEl, statusEl, originalLoad=null, originalPut=null;
+ let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
  const ownDirty=()=>!!client?.isDirty?.();
@@ -64,12 +64,17 @@
   if(footer&&phase==='ready')footer.textContent=value;
  }
  function setPhase(next,note){
-  phase=next;cover.hidden=next==='ready';
-  document.documentElement.classList.toggle('engefex-cloud-locked',next!=='ready');
+  phase=next;
+  const connecting=next==='loading';
+  cover.hidden=connecting||next==='ready';
+  document.documentElement.classList.toggle('engefex-cloud-locked',next==='login'||next==='error');
+  document.documentElement.classList.toggle('engefex-cloud-loading',connecting);
+  if(loadingNote)loadingNote.hidden=!connecting;
+  if(statusEl&&connecting)statusEl.textContent='Conectando ao Supabase…';
   const view=$('engefex-cloud-view');
   if(!view)return;
   for(const panel of cover.querySelectorAll('[data-cloud-panel]'))panel.hidden=panel.dataset.cloudPanel!==next;
-  if(note)setMessage(note);else setMessage('');
+  setMessage(note||'');
  }
  function setupVisual(){
   const style=document.createElement('style');
@@ -88,6 +93,14 @@
     #engefex-cloud-status{display:inline-block;font-size:.82rem;opacity:.9;margin-right:10px}
     #engefex-cloud-header{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 12px}
     #engefex-cloud-header button{font-size:.78rem;border:1px solid #748ba4;background:none;color:inherit;border-radius:6px;padding:5px 9px;cursor:pointer}
+    #engefex-cloud-connecting{position:fixed;right:22px;bottom:22px;z-index:100;padding:11px 16px;display:flex;gap:11px;align-items:center;border-radius:11px;background:#163e68;color:#fff;box-shadow:0 6px 24px #15273c35;font-size:12px;font-weight:600;pointer-events:none;max-width:calc(100vw - 44px)}
+    #engefex-cloud-connecting[hidden]{display:none}
+    #engefex-cloud-connecting:before{content:"";width:14px;height:14px;flex:0 0 auto;border:2px solid #ffffff60;border-top-color:#fff;border-radius:50%;animation:engefex-sync-spin .8s linear infinite}
+    @keyframes engefex-sync-spin{to{transform:rotate(360deg)}}
+    .engefex-cloud-loading #main,.engefex-cloud-loading #nav{visibility:hidden;pointer-events:none}
+    .engefex-cloud-loading .top-actions,.engefex-cloud-loading .sidebar a{pointer-events:none}
+    @media(max-width:560px){#engefex-cloud-connecting{right:12px;bottom:14px;left:12px;max-width:none}}
+    @media(prefers-reduced-motion:reduce){#engefex-cloud-connecting:before{animation:none}}
   `;
   document.head.append(style);
   cover=document.createElement('div');cover.id='engefex-cloud-cover';cover.setAttribute('role','dialog');cover.setAttribute('aria-modal','true');cover.setAttribute('aria-label','Acesso ao Gerenciador Engefex');
@@ -102,7 +115,6 @@
       <button type="submit">Entrar</button></form>
       <p><small>O administrador precisa cadastrar sua conta e vinculá-la à área de trabalho da Engefex no Supabase.</small></p>
      </div>
-     <div data-cloud-panel="loading" hidden><p>Validando conta e lendo dados compartilhados…</p><p><small>Se o Supabase não responder, será mostrado um erro após 20 segundos.</small></p><button type="button" id="engefex-cloud-cancel" class="secondary">Cancelar e voltar ao login</button></div>
      <div data-cloud-panel="error" hidden>
       <p>A edição está bloqueada até resolver a comunicação com o banco. Dados ainda não confirmados continuam guardados neste aparelho.</p>
       <button type="button" id="engefex-cloud-export" class="secondary">Exportar backup deste aparelho</button>
@@ -112,6 +124,7 @@
     </div><p id="engefex-cloud-message" role="alert"></p>
   </div>`;
   document.body.append(cover);
+  loadingNote=document.createElement('div');loadingNote.id='engefex-cloud-connecting';loadingNote.hidden=true;loadingNote.setAttribute('role','status');loadingNote.textContent='Conectando à base compartilhada…';document.body.append(loadingNote);
   messageEl=$('engefex-cloud-message');
   const top=document.createElement('div');top.id='engefex-cloud-header';
   top.innerHTML='<span id="engefex-cloud-status">Aguardando login</span><button id="engefex-cloud-refresh" type="button">Atualizar dados</button><button id="engefex-cloud-logout" type="button">Sair</button>';
@@ -120,12 +133,12 @@
   statusEl=$('engefex-cloud-status');
   $('engefex-cloud-login').addEventListener('submit',async event=>{
    event.preventDefault();const button=event.submitter;button.disabled=true;
-   try{setPhase('loading');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
-   catch(e){if(phase!=='login'){saveSession(null);setPhase('login',e.message)}}finally{button.disabled=false}
+   const label=button.textContent;button.textContent='Entrando…';
+   try{setMessage('Entrando na sua conta…');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
+   catch(e){saveSession(null);setPhase('login',e.message)}finally{button.disabled=false;button.textContent=label}
   });
   $('engefex-cloud-export').onclick=()=>client?.exportBackup();
   $('engefex-cloud-retry').onclick=()=>connect().catch(e=>setPhase('error',e.message));
-  $('engefex-cloud-cancel').onclick=()=>logout();
   $('engefex-cloud-out').onclick=()=>logout();
   $('engefex-cloud-logout').onclick=()=>logout();
   $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>{paintStatus('Erro de sincronização: '+e.message);setPhase('error',e.message)});
@@ -282,7 +295,7 @@
  function start(app){
   client=app;setupVisual();patchFileLoading();setPhase('login');
   try{const cached=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(cached?.refresh_token)session=cached}catch{}
-  if(session)connect().catch(e=>{saveSession(null);setPhase('login',e.message)});
+  if(session)connect().catch(e=>{if(e.status===401||e.status===403){saveSession(null);setPhase('login','Sua sessão expirou. Entre novamente.')}else setPhase('error',e.message)});
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
