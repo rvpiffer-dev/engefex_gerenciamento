@@ -16,7 +16,32 @@ children.push(heading('1. Condições Climáticas'),table([['Manhã','Tarde'],[c
 children.push(heading('2. Efetivo da Obra'),table([['Função','Qtd.','Empresa','Horas'],...(record.staff?.length?record.staff.map(r=>[r.role,r.quantity,r.company,r.hours]):[['','','','']])],[3300,1000,3300,2000],true));
 children.push(heading('3. Atividades Executadas',true),p(text(record.description)),heading('4. Equipamentos Utilizados'),p(text(record.equipment)),heading('5. Observações Relevantes'));
 let observations=[record.observations,record.materials?'Materiais: '+record.materials:'',record.inspections?'Inspeções e liberações: '+record.inspections:'',record.interference?'Interferências e pendências: '+record.interference:'',record.instructions?'Orientações recebidas: '+record.instructions:'',record.nextDay?'Planejamento do próximo dia: '+record.nextDay:''].filter(Boolean);children.push(p(observations.join('\n\n')||'—'));
-children.push(heading('6. Registro Fotográfico',true));if(!photos.length)children.push(p('Sem fotos anexadas a este registro.'));photos.forEach((photo,i)=>{if(i)children.push(heading('6. Registro Fotográfico',true));children.push(p('Foto '+(i+1)+' de '+photos.length,{keepNext:true}),new Paragraph({children:[new ImageRun({type:photo.dataURL.startsWith('data:image/png')?'png':'jpg',data:photo.dataURL,transformation:dimensions(photo.width,photo.height),altText:{title:'Foto '+(i+1),description:photo.caption||photo.name,name:photo.name}})],alignment:AlignmentType.CENTER,keepNext:true,spacing:{after:140}}),p(text(photo.caption||photo.name)));});
+children.push(heading('6. Registro Fotográfico',true));
+if(!photos.length)children.push(p('Sem fotos anexadas a este registro.'));
+const portrait=photo=>photo.width<photo.height;
+const photoImage=(photo,i)=>new ImageRun({type:photo.dataURL.startsWith('data:image/png')?'png':'jpg',data:photo.dataURL,transformation:dimensions(photo.width,photo.height),altText:{title:'Foto '+(i+1),description:photo.caption||photo.name,name:photo.name}});
+function photoContents(photo,i){
+ return [
+   p('Foto '+(i+1)+' de '+photos.length,{keepNext:true,spacing:{after:80}}),
+   new Paragraph({children:[photoImage(photo,i)],alignment:AlignmentType.CENTER,keepNext:true,spacing:{after:100}}),
+   p(text(photo.caption||photo.name),{spacing:{after:80}})
+ ];
+}
+function portraitPair(i){
+ const cell=(idx)=>new TableCell({width:{size:5400,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},children:photoContents(photos[idx],idx)});
+ // 2 x 9,35 cm, with at least 0,30 cm between images inside the 19,05-cm table.
+ return new Table({width:{size:10800,type:WidthType.DXA},columnWidths:[5400,5400],
+  borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideVertical:{style:BorderStyle.NONE},insideHorizontal:{style:BorderStyle.NONE}},
+  rows:[new TableRow({cantSplit:true,children:[cell(i),cell(i+1)]})]});
+}
+for(let i=0;i<photos.length;){
+ if(portrait(photos[i])&&i+1<photos.length&&portrait(photos[i+1])){
+  children.push(portraitPair(i));i+=2;
+ }else{
+  // Fotos em paisagem ocupam uma linha exclusiva; retratos ímpares também.
+  children.push(...photoContents(photos[i],i));i++;
+ }
+}
 children.push(heading('7. Assinaturas',true),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n________________________\n'+text(record.author),'\n\n________________________\n'+text(record.engineer),'\n\n________________________\n'+text(record.inspector)]],[3200,3200,3200],true));
 return new Document({creator:'Engefex Engenharia e Estruturas Metálicas',title:'Diário de Obra '+text(record.number),styles:{default:{document:{run:{font:'Arial',size:22,color:'000000'},paragraph:{spacing:{after:130,line:260}}}},paragraphStyles:[{id:'Title',name:'Title',basedOn:'Normal',next:'Normal',run:{font:'Arial',size:30,bold:true,color:'365F91'}},{id:'Heading1',name:'heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'Arial',size:24,bold:true,color:'4F81BD'},paragraph:{keepNext:true}}]},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:900,bottom:1000,left:510,right:510}}},children}]});}
 function filename(project,record){return ('Diario_'+(record.number||'sem_numero')+'_'+project.name+'_'+(record.date||'sem_data')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]/g,'_')+'.docx'}
