@@ -1,7 +1,7 @@
 {
-  "version": "4.11.9",
+  "version": "4.11.10",
   "date": "2026-10-20",
-  "name": "Atualização automática da interface antes do login ao abrir e recarregar",
-  "previous_version": "4.11.8",
+  "name": "Botão branco Concluir e verde Concluído na produção",
+  "previous_version": "4.11.9",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }

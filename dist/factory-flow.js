@@ -19,7 +19,7 @@ function legacy(o,p){let t=M.totals(o,p.id);return {fabricated:t.fabricated,pain
 function total(o,p,stage){let b=legacy(o,p),base=Object.hasOwn(o.workflow?.baselineResets?.[p.id]||{},stage)?o.workflow.baselineResets[p.id][stage]:stage==='paint'?b.painted:b.fabricated;return base+D.sum((o.workflow?.events||[]).filter(e=>e.part===p.id&&e.stage===stage),e=>M.num(e.quantity))}
 function previous(o,p,stage){let list=route(o,p),i=list.indexOf(stage);return i===0?M.num(p.planned):i>0?total(o,p,list[i-1]):0}
 function available(o,p,stage){return Math.max(0,Math.min(M.num(p.planned),previous(o,p,stage))-total(o,p,stage))}
-function operationStatus(o,p,stage){let done=total(o,p,stage),planned=M.num(p.planned);return planned>0&&done>=planned-1e-8?{key:'done',label:'Concluído'}:done>0?{key:'progress',label:'Em andamento'}:{key:'pending',label:'Não iniciado'}}
+function operationStatus(o,p,stage){let done=total(o,p,stage),planned=M.num(p.planned);return planned>0&&done>=planned-1e-8?{key:'done',label:'Concluído'}:done>0?{key:'progress',label:'Concluir'}:{key:'pending',label:'Concluir'}}
 function complete(o,p){return M.num(p.planned)>0&&route(o,p).every(stage=>total(o,p,stage)>=M.num(p.planned)-1e-8)}
 function checkDone(c){return c.status==='ok'||c.status==='na'&&!!String(c.note||'').trim()}
 function profileIssues(o){let w=o.workflow,p=w.profile,out=[];if(!String(o.owner||'').trim())out.push('Defina o responsável pela fabricação.');if(!p.structureType.trim())out.push('Informe o tipo de estrutura.');if(!p.scope.trim())out.push('Descreva o escopo de fabricação.');if(!p.drawing.trim())out.push('Informe a referência do projeto de fabricação.');if(!p.steel.trim())out.push('Informe os materiais / aços previstos.');return out}
