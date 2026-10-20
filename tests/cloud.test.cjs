@@ -26,7 +26,7 @@ test('cliente expõe apenas a chave publicável e a URL raiz do projeto',()=>{
 });
 test('a interface bloqueia gravações enquanto não houver conexão confirmada',()=>{
  const app=read('dist/app.js'),index=read('dist/index.html');
- assert.match(index,/<script src="cloud\.js"><\/script><script src="app\.js"><\/script>/);
+ assert.match(index,/<script src="cloud\.js(?:\?v=[^"]+)?"><\/script><script src="app\.js(?:\?v=[^"]+)?"><\/script>/);
  assert.match(app,/if\(cloud\)cloud\.requireWrite\(\)/);
  assert.match(app,/cloud\.send\(next\)/);
  assert.match(app,/cloud\.boot\(/);
