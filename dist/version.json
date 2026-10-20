@@ -1,7 +1,7 @@
 {
-  "version": "4.12.1",
+  "version": "4.12.2",
   "date": "2026-10-20",
-  "name": "Alternar Concluir e Concluído na produção",
-  "previous_version": "4.12.0",
-  "backup_branch": "backup/producao-v4.12.0-2026-10-20"
+  "name": "Tamanho da peça ao lado do nome na produção",
+  "previous_version": "4.12.1",
+  "backup_branch": "backup/producao-v4.12.1-2026-10-20"
 }

@@ -168,3 +168,5 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .wf-reopen-banner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;margin-bottom:18px;border:1px solid #bcd4ef;border-radius:8px;background:#eff6ff;font-size:13px}.wf-operation-list>div>[data-wf-restart-part]{justify-self:end;font-size:11px}@media(max-width:700px){.wf-reopen-banner{flex-direction:column;align-items:stretch}}
 
 .wf-inline-operation [data-wf-complete-part][data-wf-state="pending"]{background:#fff;border-color:#cbd5e1;color:#334155}.wf-inline-operation [data-wf-complete-part][data-wf-state="progress"]{background:#fff;border-color:#cbd5e1;color:#334155}.wf-inline-operation [data-wf-complete-part][data-wf-state="done"]{background:#15803d;border-color:#15803d;color:#fff;opacity:1}
+
+.wf-production-title h3 .wf-production-size{font-size:.8em;font-weight:600;color:#475569;white-space:normal;overflow-wrap:anywhere}
