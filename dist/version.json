@@ -1,7 +1,7 @@
 {
-  "version": "4.11.5",
+  "version": "4.11.6",
   "date": "2026-10-20",
-  "name": "Reabrir fabricação e reiniciar etapas com histórico preservado",
-  "previous_version": "4.11.4",
+  "name": "Pendência de quantidade da fábrica não bloqueia login nem leitura da base online",
+  "previous_version": "4.11.5",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }

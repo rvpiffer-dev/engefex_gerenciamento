@@ -131,7 +131,7 @@
  }
  function acceptRemote(snapshot){
   try{
-   root.Obras.backupValid(snapshot);
+   (root.Obras.onlineValid||root.Obras.backupValid)(snapshot);
    client.acceptState(snapshot);
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;confirmedState=JSON.parse(JSON.stringify(snapshot));
@@ -218,7 +218,7 @@
    const rows=await raw('/rest/v1/engefex_state?select=payload,revision&workspace_id=eq.'+encodeURIComponent(startWorkspace)+'&limit=1');
    if(!stillCurrent())return;const row=rows?.[0];
    if(!row||!Number.isFinite(Number(row.revision))||Number(row.revision)<=revision)throw Error('Não foi possível confirmar a revisão atual da área de trabalho.');
-   root.Obras.backupValid(row.payload);client.acceptState(row.payload);
+   (root.Obras.onlineValid||root.Obras.backupValid)(row.payload);client.acceptState(row.payload);
    confirmedState=JSON.parse(JSON.stringify(row.payload));for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
   }finally{refreshing=false}
