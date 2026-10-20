@@ -69,6 +69,8 @@
   cover.hidden=connecting||next==='ready';
   document.documentElement.classList.toggle('engefex-cloud-locked',next==='login'||next==='error');
   document.documentElement.classList.toggle('engefex-cloud-loading',connecting);
+  // Bloqueia teclado e cliques nas áreas sem validação, sem exigir uma tela modal.
+  for(const node of document.querySelectorAll?.('.shell,.sidebar')||[])node.inert=next!=='ready';
   if(loadingNote)loadingNote.hidden=!connecting;
   if(statusEl&&connecting)statusEl.textContent='Conectando ao Supabase…';
   const view=$('engefex-cloud-view');
