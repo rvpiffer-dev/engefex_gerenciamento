@@ -1,8 +1,21 @@
 (function(root){'use strict';
 // Word interpreta as dimensões de ImageRun em pixels CSS (96 dpi).
-// Paisagem: caixa de até 19 x 13 cm; retrato: até 9,35 x 13 cm.
-// Mantém a proporção original para evitar fotos esticadas ou cortadas.
-function dimensions(w,h){const pxPerCm=96/2.54;const landscape=w>=h;const maxWidth=(landscape?19:9.35)*pxPerCm,maxHeight=13*pxPerCm;const scale=Math.min(maxWidth/w,maxHeight/h);return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))}}
+// Paisagem: até 19 x 13 cm; retrato: 9 x 16 cm (9:16).
+// Retratos são recortados apenas durante a exportação: os anexos originais não são modificados.
+function dimensions(w,h){const pxPerCm=96/2.54;const landscape=w>=h;const maxWidth=(landscape?19:9)*pxPerCm,maxHeight=(landscape?13:16)*pxPerCm;const scale=Math.min(maxWidth/w,maxHeight/h);return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))}}
+async function formatPhotos(photos){
+ return Promise.all(photos.map(async photo=>{
+  if(photo.width>=photo.height)return photo;
+  const img=new Image();
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não foi possível ajustar uma foto para 9:16.'));img.src=photo.dataURL;});
+  const canvas=document.createElement('canvas');canvas.width=900;canvas.height=1600;
+  const context=canvas.getContext('2d');if(!context)throw Error('Não foi possível preparar a fotografia.');
+  const ratio=9/16;let sw=img.naturalWidth,sh=img.naturalHeight;
+  if(sw/sh>ratio)sw=sh*ratio;else sh=sw/ratio;
+  context.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,0,0,900,1600);
+  return {...photo,width:900,height:1600,dataURL:canvas.toDataURL('image/jpeg',0.9)};
+ }));
+}
 function createDocument(lib,{project,record,photos=[],logo}){const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ImageRun,AlignmentType,BorderStyle,HeadingLevel,TableLayoutType}=lib;let children=[],text=x=>String(x??'').trim()||'—';
 const p=(v,opt={})=>new Paragraph({children:String(v).split('\n').flatMap((s,i)=>[...(i?[new TextRun({break:1})]:[]),new TextRun({text:s})]),spacing:{after:130,line:260},...opt});
 const heading=(s,pageBreakBefore=false)=>new Paragraph({text:s,heading:HeadingLevel.HEADING_1,pageBreakBefore,keepNext:true,spacing:{before:240,after:160}});
@@ -46,5 +59,5 @@ for(let i=0;i<photos.length;){
 children.push(heading('7. Assinaturas',true),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n________________________\n'+text(record.author),'\n\n________________________\n'+text(record.engineer),'\n\n________________________\n'+text(record.inspector)]],[3200,3200,3200],true));
 return new Document({creator:'Engefex Engenharia e Estruturas Metálicas',title:'Diário de Obra '+text(record.number),styles:{default:{document:{run:{font:'Arial',size:22,color:'000000'},paragraph:{spacing:{after:130,line:260}}}},paragraphStyles:[{id:'Title',name:'Title',basedOn:'Normal',next:'Normal',run:{font:'Arial',size:30,bold:true,color:'365F91'}},{id:'Heading1',name:'heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'Arial',size:24,bold:true,color:'4F81BD'},paragraph:{keepNext:true}}]},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:284,bottom:284,left:284,right:284}}},children}]});}
 function filename(project,record){return ('Diario_'+(record.number||'sem_numero')+'_'+project.name+'_'+(record.date||'sem_data')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]/g,'_')+'.docx'}
-let api={createDocument,dimensions,filename};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
+let api={createDocument,dimensions,formatPhotos,filename};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
 })(typeof window==='undefined'?globalThis:window);
