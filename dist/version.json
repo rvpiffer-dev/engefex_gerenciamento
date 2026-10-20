@@ -1,7 +1,7 @@
 {
-  "version": "4.12.2",
+  "version": "4.12.3",
   "date": "2026-10-20",
-  "name": "Tamanho da peça ao lado do nome na produção",
-  "previous_version": "4.12.1",
+  "name": "Consulta de estoque Nextar por ZIP (somente leitura)",
+  "previous_version": "4.12.2",
   "backup_branch": "backup/producao-v4.12.1-2026-10-20"
 }
