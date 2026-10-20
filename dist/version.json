@@ -1,7 +1,7 @@
 {
-  "version": "4.11.2",
+  "version": "4.11.3",
   "date": "2026-10-20",
-  "name": "Excluir despesas gerais e simplificar operações de produção com botão Concluído",
-  "previous_version": "4.11.1",
+  "name": "Botão Concluído verde e quantidades centralizadas na produção",
+  "previous_version": "4.11.2",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
