@@ -104,7 +104,7 @@ function summary(){
  return {products:s.rows.length,available:s.rows.filter(r=>typeof r.stock==='number'&&r.stock>0).length,empty:s.rows.filter(r=>r.stock===0).length,unknown:s.rows.filter(r=>r.stock===null).length};
 }
 function tableRows(rows){
- return rows.length?rows.map((r,i)=>`<tr><td><span class="nextar-code">${escape(r.code)}</span></td><td class="nextar-description">${escape(r.description)}</td><td class="nextar-qty">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="3" class="nextar-empty-table">Nenhum produto corresponde aos filtros selecionados.</td></tr>';
+ return rows.length?rows.map((r,i)=>`<tr><td><span class="nextar-code">${escape(r.code)}</span></td><td class="nextar-description">${escape(r.description)}</td><td class="nextar-unit">${r.unit?escape(r.unit):'<span title="Unidade não identificada no backup">—</span>'}</td><td class="nextar-qty">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="4" class="nextar-empty-table">Nenhum produto corresponde aos filtros selecionados.</td></tr>';
 }
 function render(){
  const s=retrieve(),rows=filterRows(),canUpload=!!root.EngefexAccess?.canWrite('nextarstock'),stats=summary();
@@ -134,6 +134,7 @@ function render(){
     </div>
    </div>
    ${canUpload?'<p class="nextar-permission-note">Usuários com permissão <strong>Editar</strong> podem publicar um novo backup semanal. A importação substitui o retrato anterior apenas após confirmação do Supabase.</p>':''}
+   ${s?.rows?.length&&s.rows.every(r=>r.unit===undefined)?'<p class="nextar-permission-note">A base atual foi importada antes da inclusão das unidades. Importe novamente o ZIP para preencher essa coluna.</p>':''}
    <div id="nextarProgressPanel" class="nextar-progress-panel" ${busy?'':'hidden'} role="status" aria-live="polite">
     <div class="nextar-progress-copy"><strong id="nextarProgressLabel">${escape(progressLabel||'Preparando importação…')}</strong><span id="nextarProgressPercent">${progressValue}%</span></div>
     <progress id="nextarProgress" max="100" value="${progressValue}"></progress>
@@ -148,17 +149,17 @@ function render(){
     </div>
     <div class="nextar-list-caption"><span id="nextarCount">${formatInt(rows.length)} resultado(s)</span><span>${(s.duplicates||[]).length} código(s) repetido(s) no backup · A exportação completa ignora os filtros</span></div>
     <div class="nextar-table-wrap"><table class="nextar-stock-table">
-     <thead><tr><th scope="col">Código</th><th scope="col">Descrição do produto</th><th scope="col" class="nextar-qty">Estoque atual</th></tr></thead>
+     <thead><tr><th scope="col">Código</th><th scope="col">Descrição do produto</th><th scope="col" class="nextar-unit">Unidade</th><th scope="col" class="nextar-qty">Estoque atual</th></tr></thead>
      <tbody id="nextarTableBody">${tableRows(rows)}</tbody>
     </table></div>`:'<div class="nextar-empty-state"><span aria-hidden="true">▤</span><strong>Nenhum estoque compartilhado ainda</strong><p>Depois que o primeiro ZIP for importado, os produtos aparecerão aqui para todos os usuários autorizados.</p></div>'}
   </section>
-  <p class="nextar-disclaimer">Consulta somente leitura · Os saldos refletem a data do backup, não a posição em tempo real. Quantidades não reconhecidas são identificadas como “Não identificado”.</p>
+  <p class="nextar-disclaimer">Consulta somente leitura · Os saldos refletem a data do backup, não a posição em tempo real. Quantidades não reconhecidas são identificadas como “Não identificado”; unidades ausentes aparecem como —.</p>
  </section>`;
 }
 
 function exportCsv(){
  if(!retrieve())return;
- const data=[['Código','Descrição','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.stock===null?'':String(r.stock).replace('.',',')])];
+ const data=[['Código','Descrição','Unidade','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.unit||'',r.stock===null?'':String(r.stock).replace('.',',')])];
  const csv='\ufeff'+data.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
  const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  a.href=url;a.download='estoque-nextar-filtrado-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
@@ -169,12 +170,12 @@ async function downloadAll(){
  const button=document.getElementById('nextarDownloadAll');
  if(button){button.disabled=true;button.textContent='Preparando Excel…';}
  try{
-  const xmlRows=[['Código','Descrição','Estoque atual'],...s.rows.map(r=>[r.code,r.description,r.stock])];
+  const xmlRows=[['Código','Descrição','Unidade','Estoque atual'],...s.rows.map(r=>[r.code,r.description,r.unit||'',r.stock])];
   const cells=xmlRows.map((r,i)=>{
    const n=i+1;
    return `<row r="${n}" ${i===0?'ht="31" customHeight="1"':''}>`+r.map((v,j)=>{
-    const col='ABC'[j],head=i===0,style=head?' s="1"':j===2?' s="2"':'';
-    if(!head&&j===2&&typeof v==='number'&&Number.isFinite(v))return `<c r="${col}${n}"${style}><v>${v}</v></c>`;
+    const col='ABCD'[j],head=i===0,style=head?' s="1"':j===3?' s="2"':'';
+    if(!head&&j===3&&typeof v==='number'&&Number.isFinite(v))return `<c r="${col}${n}"${style}><v>${v}</v></c>`;
     return `<c r="${col}${n}"${style} t="inlineStr"><is><t xml:space="preserve">${excelXml(v??'')}</t></is></c>`;
    }).join('')+'</row>';
   }).join('');
@@ -184,7 +185,7 @@ async function downloadAll(){
   zip.file('xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Estoque Nextar" sheetId="1" r:id="rId1"/></sheets></workbook>');
   zip.file('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
   zip.file('xl/styles.xml','<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF182B49"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
-  zip.file('xl/worksheets/sheet1.xml',`<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:C${xmlRows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="17"/><cols><col min="1" max="1" width="16" customWidth="1"/><col min="2" max="2" width="65" customWidth="1"/><col min="3" max="3" width="19" customWidth="1"/></cols><sheetData>${cells}</sheetData><autoFilter ref="A1:C${xmlRows.length}"/></worksheet>`);
+  zip.file('xl/worksheets/sheet1.xml',`<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:D${xmlRows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="17"/><cols><col min="1" max="1" width="16" customWidth="1"/><col min="2" max="2" width="65" customWidth="1"/><col min="3" max="3" width="15" customWidth="1"/><col min="4" max="4" width="19" customWidth="1"/></cols><sheetData>${cells}</sheetData><autoFilter ref="A1:C${xmlRows.length}"/></worksheet>`);
   const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   a.href=url;a.download='estoque-nextar-completo-'+new Date().toISOString().slice(0,10)+'.xlsx';a.click();
