@@ -1,7 +1,7 @@
 {
-  "version": "4.13.0",
+  "version": "4.12.4",
   "date": "2026-10-20",
-  "name": "Usuários e permissões por módulo e tela",
+  "name": "Estoque Nextar compartilhado no Supabase com importação semanal",
   "previous_version": "4.12.3",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
