@@ -4,9 +4,10 @@
  */
 (function(root){
  'use strict';
- const URL_BASE='https://kxekeeysonrppechegsq.supabase.co';
- const API_KEY='sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS';
- const SESSION_KEY='engefex-cloud-auth-v1';
+ if(root.location?.pathname?.split('/').includes('testes')&&root.EngefexEnvironment?.name!=='test'){root.EngefexCloud={boot(){document.body.textContent='Ambiente de testes bloqueado: a configuração isolada não carregou. Atualize a página.';},requireWrite(){throw Error('Ambiente de testes sem configuração.');}};return;}
+ const URL_BASE=root.EngefexEnvironment?.url||'https://kxekeeysonrppechegsq.supabase.co';
+ const API_KEY=root.EngefexEnvironment?.key||'sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS';
+ const SESSION_KEY=root.EngefexEnvironment?.storageKey('engefex-cloud-auth-v1')||'engefex-cloud-auth-v1';
  let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let confirmedState=null,patchSupported=null,refreshing=false,tokenRefresh=null,lastSync=null;
  let cover, messageEl, statusEl, originalLoad=null, originalPut=null;

@@ -1,0 +1,4 @@
+{
+  "production": {"name":"production","label":"PRODUÇÃO","url":"https://kxekeeysonrppechegsq.supabase.co","key":"sb_publishable_wFz7tUNhE1QjyIh315bGVA_ZKi61KjS"},
+  "test": {"name":"test","label":"AMBIENTE DE TESTES","url":"https://idqknqijqurwpsjrqzzh.supabase.co","key":"sb_publishable_XhL9bObQUfdkiecrD8o4MQ_bFqIkqWh"}
+}

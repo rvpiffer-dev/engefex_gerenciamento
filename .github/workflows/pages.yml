@@ -1,8 +1,12 @@
-name: Verificar e publicar aplicativo
+name: Verificar e publicar produção e testes
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: [Validar desenvolvimento]
+    branches: [desenvolvimento]
+    types: [completed]
 permissions:
   contents: read
   pages: write
@@ -12,22 +16,39 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publicar:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Buscar produção estável
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+      - name: Buscar desenvolvimento
+        uses: actions/checkout@v4
+        with:
+          ref: desenvolvimento
+          path: development
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/*.test.cjs
+      - name: Validar produção
+        working-directory: production
+        run: node --test tests/*.test.cjs
+      - name: Validar testes
+        working-directory: development
+        run: node --test tests/*.test.cjs
+      - name: Montar ambientes com conexões isoladas
+        run: node production/scripts/build-environments.cjs production development _site
       - uses: actions/configure-pages@v5
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
       - name: Publicar
         id: deployment
         uses: actions/deploy-pages@v4

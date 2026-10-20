@@ -1,6 +1,6 @@
 /* Aplicação sem dependências de rede. Armazenamento local com backup JSON. */
 (()=>{'use strict';
- const D=window.Obras,E=window.EngefexAlerts,KEY='engefex-gerenciamento-v2',UIKEY='engefex-gerenciamento-ui-v2',cloud=window.EngefexCloud;
+ const D=window.Obras,E=window.EngefexAlerts,KEY=window.EngefexEnvironment?.storageKey('engefex-gerenciamento-v2')||'engefex-gerenciamento-v2',UIKEY=window.EngefexEnvironment?.storageKey('engefex-gerenciamento-ui-v2')||'engefex-gerenciamento-ui-v2',cloud=window.EngefexCloud;
  let volatileCache=null;
  function readCache(){return volatileCache!==null?volatileCache:localStorage.getItem(KEY)}
  function writeCache(text){try{localStorage.setItem(KEY,text);volatileCache=null;return true}catch(e){if(!cloud||!(e?.name==='QuotaExceededError'||e?.name==='NS_ERROR_DOM_QUOTA_REACHED'||e?.code===22||e?.code===1014||/quota/i.test(e?.message||'')))throw e;volatileCache=text;return false}}
@@ -14,7 +14,7 @@
  const fmt=x=>x?D.date(x)?.toLocaleDateString('pt-BR')||h(x):'A definir';
  const uid=p=>p+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
  let state,storageError='',view='dashboard',project='all',tab={},search='',filter='',editContext=null,photoEditor=null,submitting=false,files=new Map(),lastScheduleImport=null,recordsMode=null;
- try{if(cloud){state=D.clone(window.OBRAS_SEED)}else{const saved=readCache(),legacy=localStorage.getItem('engefex-gerenciamento-v1');state=saved?{...D.clone(window.OBRAS_SEED),...JSON.parse(saved)}:legacy?window.EngefexManager.migrate(JSON.parse(legacy)):D.clone(window.OBRAS_SEED);if(state.version!==1)throw Error('Versão incompatível');D.backupValid(state);state=window.EngefexManager.separate(state);}}catch(e){storageError='Não foi possível ler os dados locais. A base documental está em modo de consulta. Importe um backup válido antes de registrar alterações. '+e.message;state=D.clone(window.OBRAS_SEED)}
+ try{if(cloud){state=D.clone(window.OBRAS_SEED)}else{const saved=readCache(),legacy=localStorage.getItem(window.EngefexEnvironment?.storageKey('engefex-gerenciamento-v1')||'engefex-gerenciamento-v1');state=saved?{...D.clone(window.OBRAS_SEED),...JSON.parse(saved)}:legacy?window.EngefexManager.migrate(JSON.parse(legacy)):D.clone(window.OBRAS_SEED);if(state.version!==1)throw Error('Versão incompatível');D.backupValid(state);state=window.EngefexManager.separate(state);}}catch(e){storageError='Não foi possível ler os dados locais. A base documental está em modo de consulta. Importe um backup válido antes de registrar alterações. '+e.message;state=D.clone(window.OBRAS_SEED)}
  try{project=JSON.parse(localStorage.getItem(UIKEY)||'{}').project||'all'}catch{}
  state=window.EngefexManager.separate(state);
  const now=D.today();let selectedDay=now,selectedWeek=now;
