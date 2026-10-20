@@ -1,7 +1,7 @@
 {
-  "version": "4.13.1",
+  "version": "4.13.2",
   "date": "2026-10-20",
-  "name": "Estoque Nextar: visual melhorado, Excel completo, rolagem estável e progresso no ZIP",
-  "previous_version": "4.13.0",
+  "name": "Unidade de medida na consulta e nas exportações do estoque Nextar",
+  "previous_version": "4.13.1",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
