@@ -1,7 +1,7 @@
 {
-  "version": "4.11.4",
+  "version": "4.11.5",
   "date": "2026-10-20",
-  "name": "Concluir produção sem abrir detalhes, com data automática e edição opcional",
-  "previous_version": "4.11.3",
+  "name": "Reabrir fabricação e reiniciar etapas com histórico preservado",
+  "previous_version": "4.11.4",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }
