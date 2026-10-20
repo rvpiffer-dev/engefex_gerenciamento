@@ -69,7 +69,28 @@ async function parse(input,onProgress=()=>{}){
  return result;
 }
 function retrieve(){return snapshot;}
-async function refresh(force=false){if(!root.EngefexCloud?.ready)return;if(fetching||!force&&Date.now()-lastFetch<30000)return;fetching=true;try{snapshot=await root.EngefexCloud.loadNextar();loaded=true;error='';lastFetch=Date.now();}catch(e){error=e.message;}finally{fetching=false;const main=document.getElementById('main');if(location.hash==='#nextarstock'&&main){main.innerHTML=render();bind();}}}
+
+async function refresh(force=false){
+ if(!root.EngefexCloud?.ready)return;
+ if(fetching||busy||(!force&&Date.now()-lastFetch<30000))return;
+ fetching=true;
+ try{
+  snapshot=await root.EngefexCloud.loadNextar();
+  loaded=true;error='';lastFetch=Date.now();
+ }catch(e){loaded=true;error=e.message;}
+ finally{
+  fetching=false;
+  if(location.hash==='#nextarstock'){
+   const old=document.querySelector('#main .nextar-page');
+   if(old){
+    const originalY=root.scrollY||0,scroller=old.querySelector('.nextar-table-wrap'),x=scroller?.scrollLeft||0,y=scroller?.scrollTop||0;
+    const container=document.createElement('div');container.innerHTML=render();
+    const replacement=container.firstElementChild;
+    if(replacement){old.replaceWith(replacement);bind();const updated=replacement.querySelector('.nextar-table-wrap');if(updated){updated.scrollLeft=x;updated.scrollTop=y;}root.scrollTo({top:originalY,behavior:'instant'});}
+   }
+  }
+ }
+}
 function cleanText(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function filterRows(){let s=retrieve();if(!s)return [];const q=cleanText(find),dup=new Set((s.duplicates||[]).map(x=>x.code));return s.rows.filter(r=>(!onlyStock||r.stock!==null&&r.stock>0)&&(!showDuplicates||dup.has(r.code))&&(!q||cleanText(r.code+' '+r.description).includes(q)));}
 function number(v){return v===null?'<span class="tag amber">Não identificado</span>':new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(v);}
@@ -131,21 +152,104 @@ function render(){
   <p class="nextar-disclaimer">Consulta somente leitura · Os saldos refletem a data do backup, não a posição em tempo real. Quantidades não reconhecidas são identificadas como “Não identificado”.</p>
  </section>`;
 }
-function exportCsv(){if(!retrieve())return;const data=[['Código','Descrição','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.stock===null?'':String(r.stock).replace('.',',')])];const csv='\ufeff'+data.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='estoque-nextar-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+
+function exportCsv(){
+ if(!retrieve())return;
+ const data=[['Código','Descrição','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.stock===null?'':String(r.stock).replace('.',',')])];
+ const csv='\ufeff'+data.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
+ const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ a.href=url;a.download='estoque-nextar-filtrado-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+const excelXml=x=>String(x??'').replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+async function downloadAll(){
+ const s=retrieve();if(!s||!root.JSZip)return;
+ const button=document.getElementById('nextarDownloadAll');
+ if(button){button.disabled=true;button.textContent='Preparando Excel…';}
+ try{
+  const xmlRows=[['Código','Descrição','Estoque atual'],...s.rows.map(r=>[r.code,r.description,r.stock])];
+  const cells=xmlRows.map((r,i)=>{
+   const n=i+1;
+   return `<row r="${n}" ${i===0?'ht="31" customHeight="1"':''}>`+r.map((v,j)=>{
+    const col='ABC'[j],head=i===0,style=head?' s="1"':j===2?' s="2"':'';
+    if(!head&&j===2&&typeof v==='number'&&Number.isFinite(v))return `<c r="${col}${n}"${style}><v>${v}</v></c>`;
+    return `<c r="${col}${n}"${style} t="inlineStr"><is><t xml:space="preserve">${excelXml(v??'')}</t></is></c>`;
+   }).join('')+'</row>';
+  }).join('');
+  const zip=new root.JSZip();
+  zip.file('[Content_Types].xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  zip.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  zip.file('xl/workbook.xml','<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Estoque Nextar" sheetId="1" r:id="rId1"/></sheets></workbook>');
+  zip.file('xl/_rels/workbook.xml.rels','<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>');
+  zip.file('xl/styles.xml','<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.##"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF182B49"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFill="1" applyFont="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>');
+  zip.file('xl/worksheets/sheet1.xml',`<?xml version="1.0" encoding="UTF-8"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:C${xmlRows.length}"/><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="17"/><cols><col min="1" max="1" width="16" customWidth="1"/><col min="2" max="2" width="65" customWidth="1"/><col min="3" max="3" width="19" customWidth="1"/></cols><sheetData>${cells}</sheetData><autoFilter ref="A1:C${xmlRows.length}"/></worksheet>`);
+  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=url;a.download='estoque-nextar-completo-'+new Date().toISOString().slice(0,10)+'.xlsx';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }catch(e){showFeedback('Não foi possível exportar a planilha: '+e.message,true);}
+ finally{if(button){button.disabled=false;button.textContent='↓ Baixar estoque completo';}}
+}
+function showFeedback(message,isError=false){
+ const el=document.getElementById('nextarMessage');
+ if(el){el.textContent=message;el.dataset.error=isError?'true':'false';}
+}
+function showProgress(percent,label){
+ progressValue=percent;progressLabel=label;
+ const panel=document.getElementById('nextarProgressPanel'),bar=document.getElementById('nextarProgress');
+ if(panel)panel.hidden=false;
+ if(bar)bar.value=percent;
+ const p=document.getElementById('nextarProgressPercent');if(p)p.textContent=percent+'%';
+ const title=document.getElementById('nextarProgressLabel');if(title)title.textContent=label;
+}
+function updateTable(){
+ const table=document.getElementById('nextarTableBody');
+ if(!table)return;
+ // Só o conteúdo da lista muda: não recriar a página nem perder a rolagem.
+ const data=filterRows();
+ table.innerHTML=tableRows(data);
+ const label=document.getElementById('nextarCount');
+ if(label)label.textContent=new Intl.NumberFormat('pt-BR').format(data.length)+' resultado(s)';
+}
 function bind(){
- const refreshButton=document.getElementById('nextarRefresh');if(refreshButton)refreshButton.onclick=()=>refresh(true);if(!loaded&&!fetching)refresh(true);
+ const refreshButton=document.getElementById('nextarRefresh');
+ if(refreshButton)refreshButton.onclick=()=>refresh(true);
+ if(!loaded&&!fetching&&!busy)refresh(true);
+ const all=document.getElementById('nextarDownloadAll');if(all)all.onclick=downloadAll;
+ const filtered=document.getElementById('nextarCsv');if(filtered)filtered.onclick=exportCsv;
+ const search=document.getElementById('nextarSearch');
+ if(search)search.oninput=e=>{find=e.target.value;updateTable();};
+ const only=document.getElementById('nextarOnlyStock');
+ if(only)only.onchange=e=>{onlyStock=e.target.checked;updateTable();};
+ const duplicates=document.getElementById('nextarDuplicates');
+ if(duplicates)duplicates.onchange=e=>{showDuplicates=e.target.checked;updateTable();};
  const file=document.getElementById('nextarZip');
  if(file)file.onchange=async e=>{
-  let f=e.target.files?.[0];if(!f)return;busy=true;file.disabled=true;const msg=document.getElementById('nextarMessage');if(msg)msg.textContent='Interpretando o arquivo Produto.nx1…';
-  try{const result=await parse(f);if(result.rows.length<1)throw Error('Importação sem produtos. O estoque anterior foi preservado.');if(result.rows.some(x=>x.stock!==null&&(!Number.isFinite(x.stock)||x.stock<0)))throw Error('Saldo inválido detectado. O estoque anterior foi preservado.');const incoming={v:VERSION,file:f.name,imported:new Date().toISOString(),...result};await root.EngefexCloud.publishNextar(incoming);snapshot=incoming;lastFetch=Date.now();error='';busy=false;const main=document.getElementById('main');if(main){main.innerHTML=render();bind();}}
-  catch(error){busy=false;file.disabled=false;if(msg)msg.textContent='Falha na leitura: '+error.message;}
-  finally{file.value='';}
+  const input=e.target,f=e.target.files?.[0];
+  if(!f||busy)return;
+  if(!root.EngefexAccess?.canWrite('nextarstock')){showFeedback('Você não tem permissão para atualizar este estoque.',true);return;}
+  busy=true;input.disabled=true;
+  const upload=document.getElementById('nextarUploadLabel');if(upload)upload.textContent='Importando…';
+  if(refreshButton)refreshButton.disabled=true;
+  error='';showFeedback('Importando o backup do Nextar…');
+  showProgress(0,'Preparando leitura do arquivo…');
+  try{
+   const result=await parse(f,showProgress);
+   if(result.rows.length<1)throw Error('Importação sem produtos. O estoque anterior foi preservado.');
+   if(result.rows.some(x=>x.stock!==null&&(!Number.isFinite(x.stock)||x.stock<0)))throw Error('Saldo inválido. O estoque anterior foi preservado.');
+   const incoming={v:VERSION,file:f.name,imported:new Date().toISOString(),...result};
+   showProgress(95,'Enviando o estoque compartilhado ao Supabase…');
+   await root.EngefexCloud.publishNextar(incoming);
+   showProgress(100,'Importação concluída e salva no Supabase.');
+   snapshot=incoming;lastFetch=Date.now();loaded=true;error='';
+   showFeedback('Importação concluída: '+result.rows.length+' produtos compartilhados.');
+  }catch(err){error='Falha na importação: '+err.message;showFeedback(error,true);}
+  finally{
+   busy=false;input.value='';input.disabled=false;
+   if(refreshButton)refreshButton.disabled=false;
+   const beforeY=root.scrollY||0,old=document.querySelector('#main .nextar-page');
+   if(old){const next=document.createElement('div');next.innerHTML=render();old.replaceWith(next.firstElementChild);bind();root.scrollTo({top:beforeY,behavior:'instant'});}
+  }
  };
- const search=document.getElementById('nextarSearch');if(search)search.oninput=e=>{find=e.target.value;updateTable();};
- const only=document.getElementById('nextarOnlyStock');if(only)only.onchange=e=>{onlyStock=e.target.checked;updateTable();};
- const duplicates=document.getElementById('nextarDuplicates');if(duplicates)duplicates.onchange=e=>{showDuplicates=e.target.checked;updateTable();};
- const csv=document.getElementById('nextarCsv');if(csv)csv.onclick=exportCsv;
 }
-function updateTable(){const main=document.getElementById('main');if(!main)return;const holder=document.createElement('div');holder.innerHTML=render();const current=main.querySelector('.nextar-stock-panel'),fresh=holder.querySelector('.nextar-stock-panel');if(current&&fresh)current.replaceWith(fresh);bind();}
-root.EngefexNextarStock={parse,render,bind,refresh};
+root.EngefexNextarStock={parse,render,bind,refresh,downloadAll,updateTable};
 })(window);
