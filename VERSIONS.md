@@ -1,3 +1,11 @@
+## v4.12.0 — Destinação de compras e rateio após pagamento
+
+- Compras e notas permitem Obra, Estoque ou Geral, sem criar uma obra fictícia ou movimentar estoque.
+- Parcelas continuam em Contas a pagar, identificadas por destinação e separadas por vencimento.
+- Botão Rateio permite redistribuir itens entre obras, Estoque e Geral, inclusive após pagamentos.
+- A tela de rateio trava valores, parcelas e documento; preserva baixas, datas, descontos, acréscimos, incorrido e comprovantes, com histórico antes/depois.
+- Custos sem obra não entram nos totais de obras específicas.
+
 ## v4.1.0 — Cadastro rápido e ordem de fabricação em PDF
 
 - Grade para editar a relação de peças; TAB entre campos e ENTER entre linhas, com criação de nova linha ao final.

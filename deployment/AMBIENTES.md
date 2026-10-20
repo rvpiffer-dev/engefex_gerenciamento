@@ -3,8 +3,8 @@
 Produção: https://rvpiffer-dev.github.io/engefex_gerenciamento/dist/
 Testes: https://rvpiffer-dev.github.io/engefex_gerenciamento/testes/
 
-- `main`: versão estável usada pela equipe. Não publicar novidades aqui antes da aprovação do Ramon.
-- `desenvolvimento`: implementar e testar todas as próximas mudanças nesta branch.
+- Orientação temporária do Ramon em 20/10/2026: publicar as mudanças solicitadas diretamente em produção enquanto a equipe ainda não foi liberada. Validar antes de cada publicação e manter desenvolvimento alinhada.
+- Quando Ramon avisar que liberou produção para a equipe, voltar ao fluxo: novidades em `desenvolvimento`, promoção para `main` após aprovação.
 - Cada push publica os dois diretórios, lendo a produção sempre da main e os testes sempre de desenvolvimento.
 - A configuração pública de conexão é injetada pelo montador da main. Os projetos Supabase devem ser diferentes.
 - Produção conserva login, cache e banco atuais. Testes usa outro projeto, outros usuários, bucket privado e chaves locais próprias.
