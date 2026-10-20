@@ -28,8 +28,9 @@
   .report-photo-grid figure.landscape { grid-column: 1 / -1 !important; }
   .report-photo-grid img { object-fit: contain !important; margin: 0 auto !important; display: block !important; }
   .report-photo-grid figure:not(.landscape) img {
-    width: 93.5mm !important; height: 130mm !important;
-    max-width: 100% !important; max-height: 130mm !important;
+    width: 90mm !important; height: 160mm !important;
+    aspect-ratio: 9 / 16 !important; object-fit: cover !important;
+    max-width: 100% !important; max-height: 160mm !important;
   }
   .report-photo-grid figure.landscape img {
     width: 190mm !important; height: 130mm !important;
