@@ -1,7 +1,7 @@
 {
-  "version": "4.13.4",
+  "version": "4.13.5",
   "date": "2026-10-20",
-  "name": "Conexão discreta sem tela bloqueante e interface protegida",
-  "previous_version": "4.13.3",
+  "name": "Consulta de observações do Nextar em janela por produto",
+  "previous_version": "4.13.4",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
