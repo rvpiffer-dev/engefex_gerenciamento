@@ -231,3 +231,9 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 @media(max-width:1050px){.nextar-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.nextar-panel-header{align-items:flex-start}.nextar-main-actions{width:100%}}
 @media(max-width:640px){.nextar-hero{padding:23px 19px}.nextar-hero h1{font-size:25px}.nextar-hero-side{width:100%;min-width:0;align-items:flex-start;text-align:left}.nextar-stats{gap:9px;margin:14px 0}.nextar-stat{min-height:109px;padding:14px 12px}.nextar-stat strong{font-size:23px}.nextar-stat-label{font-size:11px}.nextar-panel-header{padding:18px 15px}.nextar-main-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nextar-main-actions .button{font-size:11px;padding:10px 7px;white-space:normal}.nextar-upload{grid-column:1/-1}.nextar-permission-note,.nextar-feedback{padding-left:15px;padding-right:15px}.nextar-progress-panel{margin-left:15px;margin-right:15px}.nextar-searchbar{padding:15px;gap:11px}.nextar-search-field{flex-basis:100%}.nextar-filter-download{width:100%}.nextar-list-caption{padding:11px 15px}.nextar-stock-table th,.nextar-stock-table td{padding:11px 14px}.nextar-stock-table th:first-child{width:116px}.nextar-stock-table th:last-child{width:145px}}
 @media(prefers-reduced-motion:reduce){.nextar-progress-panel progress::-webkit-progress-value{transition:none}}
+
+/* Nextar v4.13.2 — coluna Unidade no inventário */
+.nextar-stock-table{min-width:700px}
+.nextar-stock-table th:nth-child(3){width:118px}
+.nextar-stock-table th.nextar-unit,.nextar-stock-table td.nextar-unit{text-align:center;white-space:nowrap;color:#65788e;font-size:12px}
+@media(max-width:640px){.nextar-stock-table{min-width:680px}.nextar-stock-table th:nth-child(3){width:98px}}
