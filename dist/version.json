@@ -1,7 +1,7 @@
 {
-  "version": "4.13.3",
+  "version": "4.13.4",
   "date": "2026-10-20",
-  "name": "Remoção da tela bloqueante de validação da conta",
-  "previous_version": "4.13.2",
+  "name": "Conexão discreta sem tela bloqueante e interface protegida",
+  "previous_version": "4.13.3",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
