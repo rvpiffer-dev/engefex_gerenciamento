@@ -1,7 +1,7 @@
 {
-  "version": "4.12.4",
+  "version": "4.12.5",
   "date": "2026-10-20",
-  "name": "Estoque Nextar compartilhado no Supabase com importação semanal",
-  "previous_version": "4.12.3",
+  "name": "Permissão Editar permite atualizar ZIP Nextar",
+  "previous_version": "4.12.4",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
