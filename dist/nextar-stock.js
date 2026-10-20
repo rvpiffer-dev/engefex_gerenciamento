@@ -20,6 +20,9 @@ async function parseProduto(bytes,categories,onProgress=()=>{}){
   const i=codes[j],tag=lines[i],end=j+1<codes.length?lines[codes[j+1]].pos:bytes.length,w=[];
   for(let n=i+1;n<lines.length&&lines[n].pos<Math.min(end,tag.end+260)&&w.length<15;n++)w.push(lines[n]);
   const cut=w.findIndex(x=>units.has(x.value));
+  let unit=cut>=0?w[cut].value:'';
+  // Algumas unidades precedem o código do registro no backup do Nextar.
+  if(!unit)for(let k=i-1;k>=Math.max(0,i-8);k--){if(tag.pos-lines[k].pos>=70)break;if(units.has(lines[k].value)){unit=lines[k].value;break;}}
   const candidates=(cut<0?w:w.slice(0,cut)).filter(x=>x.value.length>=6&&!cats.has(x.value)&&! /^\d{5,15}$/.test(x.value)&&!x.value.startsWith('@'));
   if(!candidates.length)continue;
   const name=candidates.reduce((best,x)=>!best||x.value.length>best.value.length||x.value.length===best.value.length&&x.pos>best.pos?x:best,null).value;
@@ -31,7 +34,7 @@ async function parseProduto(bytes,categories,onProgress=()=>{}){
    for(let at=tag.pos+110;at<Math.min(end-35,tag.pos+700);at++){let q=fallbackQuartet(view,at);if(q!==null)hits.push(q);}
    if(hits.length===1)stock=hits[0];else reason='Saldo não identificado com segurança';
   }
-  rows.push({code:tag.value,description:name,stock});
+  rows.push({code:tag.value,description:name,unit,stock});
   if(reason)unresolved.push({code:tag.value,description:name,reason});
  }
  if(!rows.length)throw Error('Nenhum produto reconhecido em Produto.nx1. O formato deste backup pode ser diferente.');
