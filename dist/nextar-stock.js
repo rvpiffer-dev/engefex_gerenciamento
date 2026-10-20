@@ -2,7 +2,7 @@
 (function(root){'use strict';
 const VERSION=1,KEY=root.EngefexEnvironment?.storageKey('engefex-nextar-snapshot-v1')||'engefex-nextar-snapshot-v1',decoder=new TextDecoder('utf-16le');
 const units=new Set(['Lata','Metro','Peça','Kg','Unidade','Un','M','m','KG','Pacote','Caixa','Rolo','Barra','Pç','Litro','Par','Jogo','Saco','Tubo','Chapa','Galão']);
-let snapshot=null,loaded=false,busy=false,find='',onlyStock=false,showDuplicates=false;
+let snapshot=null,loaded=false,busy=false,find='',onlyStock=false,showDuplicates=false,fetching=false,error='',lastFetch=0;
 function escape(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function strings(bytes){let out=[];for(let i=0;i<bytes.length-3;){if(bytes[i]>=32&&bytes[i+1]===0){let p=i;do{i+=2}while(i+1<bytes.length&&bytes[i]>=32&&bytes[i+1]===0);if(i-p>=4)out.push({pos:p,end:i,value:decoder.decode(bytes.subarray(p,i))});}else i++;}return out;}
 function rawAt(view,p){return p>=0&&p+8<=view.byteLength?view.getFloat64(p,true):NaN;}
@@ -51,28 +51,29 @@ async function parse(input){
  const cats=catalogue(catBytes);if(!cats.length)throw Error('Categorias não reconhecidas. Leitura interrompida para evitar dados incorretos.');
  return parseProduto(bytes,cats);
 }
-function retrieve(){if(loaded)return snapshot;loaded=true;try{let r=JSON.parse(localStorage.getItem(KEY)||'null');if(r?.v===VERSION&&Array.isArray(r.rows)&&r.rows.every(x=>typeof x.code==='string'&&typeof x.description==='string'&&(x.stock===null||typeof x.stock==='number')))snapshot=r;}catch{}return snapshot;}
-function save(r){snapshot=r;loaded=true;try{localStorage.setItem(KEY,JSON.stringify(r));return true;}catch{return false;}}
+function retrieve(){return snapshot;}
+async function refresh(force=false){if(!root.EngefexCloud?.ready)return;if(fetching||!force&&Date.now()-lastFetch<30000)return;fetching=true;try{snapshot=await root.EngefexCloud.loadNextar();loaded=true;error='';lastFetch=Date.now();}catch(e){error=e.message;}finally{fetching=false;const main=document.getElementById('main');if(location.hash==='#nextarstock'&&main){main.innerHTML=render();bind();}}}
 function cleanText(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function filterRows(){let s=retrieve();if(!s)return [];const q=cleanText(find),dup=new Set((s.duplicates||[]).map(x=>x.code));return s.rows.filter(r=>(!onlyStock||r.stock!==null&&r.stock>0)&&(!showDuplicates||dup.has(r.code))&&(!q||cleanText(r.code+' '+r.description).includes(q)));}
 function number(v){return v===null?'<span class="tag amber">Não identificado</span>':new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(v);}
 function render(){
- const s=retrieve(),rows=filterRows();
- const notes=s?`<p class="section-note">Origem: <strong>${escape(s.file)}</strong> · Importado em ${escape(new Date(s.imported).toLocaleString('pt-BR'))} · ${s.rows.length} registros · ${s.duplicates.length} códigos repetidos · ${s.unresolved.length} saldos não identificados. A quantidade corresponde ao backup, não ao estoque em tempo real.</p>`:'';
+ const s=retrieve(),rows=filterRows(),admin=!!root.EngefexAccess?.isAdmin;
+ const notes=s?`<p class="section-note">Origem: <strong>${escape(s.file)}</strong> · Atualizado em ${escape(new Date(s.imported).toLocaleString('pt-BR'))} · ${s.rows.length} registros · ${s.duplicates.length} códigos repetidos · ${s.unresolved.length} saldos não identificados. A quantidade corresponde ao backup, não ao estoque em tempo real.</p>`:'';
  return `<section class="page-head"><div><div class="eyebrow">CONSULTA · SOMENTE LEITURA</div><h1>Estoque Nextar</h1><p class="subtitle">Leia o ZIP do Nextar e consulte código, descrição e estoque atual, sem modificar o sistema de origem.</p></div></section>
  <section class="card nextar-stock-panel" aria-label="Estoque do Nextar">
- <div class="nextar-stock-controls"><label class="button primary" for="nextarZip" style="display:inline-flex;align-items:center;cursor:pointer">${busy?'Lendo arquivo…':'Selecionar backup ZIP'}</label><input id="nextarZip" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden ${busy?'disabled':''}><span id="nextarMessage" role="status">${busy?'Lendo arquivo…':s?'Consulta disponível neste navegador. Selecione outro ZIP para atualizar.':'Nenhum backup foi importado neste navegador.'}</span></div>
+ <div class="nextar-stock-controls">${admin?`<label class="button primary" for="nextarZip" style="display:inline-flex;align-items:center;cursor:pointer">${busy?'Importando…':'Atualizar pelo backup ZIP'}</label><input id="nextarZip" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden ${busy?'disabled':''}>`:'<span class="tag">Somente consulta · atualização exclusiva do administrador</span>'}<span id="nextarMessage" role="status">${error?escape(error):busy?'Lendo e publicando…':fetching?'Consultando o banco…':s?'Estoque compartilhado no Supabase':'Nenhum backup publicado ainda.'}</span><button class="button secondary" type="button" id="nextarRefresh">Atualizar consulta</button></div>
  ${notes}
  ${s?`<div class="nextar-stock-controls nextar-stock-search"><input id="nextarSearch" type="search" placeholder="Buscar código ou descrição" value="${escape(find)}" aria-label="Buscar estoque"><label><input id="nextarOnlyStock" type="checkbox" ${onlyStock?'checked':''}> Somente com saldo</label><label><input id="nextarDuplicates" type="checkbox" ${showDuplicates?'checked':''}> Códigos repetidos</label><button class="button secondary" id="nextarCsv" type="button">Exportar CSV</button></div><p class="section-note">${rows.length} resultado(s). Códigos repetidos são exibidos separadamente e nunca somados.</p><div class="table-wrap nextar-table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Estoque atual (backup)</th></tr></thead><tbody>${rows.length?rows.map(r=>`<tr><td><strong>${escape(r.code)}</strong></td><td>${escape(r.description)}</td><td style="text-align:right">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="3">Nenhum produto encontrado.</td></tr>'}</tbody></table></div>`:''}
- <p class="section-note"><strong>Atenção:</strong> compatibilidade validada com o backup de 20/10/2026. Compare alguns saldos com o Nextar antes de utilizar os dados em decisões. A consulta é local neste navegador e não é sincronizada com o Supabase.</p>
+ <p class="section-note"><strong>Atenção:</strong> compatibilidade validada com o backup de 20/10/2026. Compare alguns saldos com o Nextar antes de utilizar os dados em decisões. A consulta é compartilhada no Supabase; somente administradores podem publicar um novo backup.</p>
  </section>`;
 }
 function exportCsv(){if(!retrieve())return;const data=[['Código','Descrição','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.stock===null?'':String(r.stock).replace('.',',')])];const csv='\ufeff'+data.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='estoque-nextar-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 function bind(){
+ const refreshButton=document.getElementById('nextarRefresh');if(refreshButton)refreshButton.onclick=()=>refresh(true);if(!loaded&&!fetching)refresh(true);
  const file=document.getElementById('nextarZip');
  if(file)file.onchange=async e=>{
   let f=e.target.files?.[0];if(!f)return;busy=true;file.disabled=true;const msg=document.getElementById('nextarMessage');if(msg)msg.textContent='Interpretando o arquivo Produto.nx1…';
-  try{const result=await parse(f),stored=save({v:VERSION,file:f.name,imported:new Date().toISOString(),...result});busy=false;const main=document.getElementById('main');if(main){main.innerHTML=render();bind();}if(!stored){const m=document.getElementById('nextarMessage');if(m)m.textContent='Consulta temporária: o navegador não permitiu salvar esta cópia.';}}
+  try{const result=await parse(f);if(result.rows.length<1||result.unresolved.length>0)throw Error('Importação não publicada: há '+result.unresolved.length+' saldo(s) não identificados. Preserve o último backup até validar este arquivo.');const incoming={v:VERSION,file:f.name,imported:new Date().toISOString(),...result};await root.EngefexCloud.publishNextar(incoming);snapshot=incoming;lastFetch=Date.now();error='';busy=false;const main=document.getElementById('main');if(main){main.innerHTML=render();bind();}}
   catch(error){busy=false;file.disabled=false;if(msg)msg.textContent='Falha na leitura: '+error.message;}
   finally{file.value='';}
  };
@@ -82,5 +83,5 @@ function bind(){
  const csv=document.getElementById('nextarCsv');if(csv)csv.onclick=exportCsv;
 }
 function updateTable(){const main=document.getElementById('main');if(!main)return;const holder=document.createElement('div');holder.innerHTML=render();const current=main.querySelector('.nextar-stock-panel'),fresh=holder.querySelector('.nextar-stock-panel');if(current&&fresh)current.replaceWith(fresh);bind();}
-root.EngefexNextarStock={parse,render,bind};
+root.EngefexNextarStock={parse,render,bind,refresh};
 })(window);
