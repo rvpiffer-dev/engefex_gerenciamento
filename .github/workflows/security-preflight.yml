@@ -1,0 +1,19 @@
+name: Segurança e testes antes de publicar
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  seguranca:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Obter código proposto
+        uses: actions/checkout@v4
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Executar testes e controles de segurança
+        run: node --test tests/*.test.cjs
