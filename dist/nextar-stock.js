@@ -73,7 +73,7 @@ function bind(){
  const file=document.getElementById('nextarZip');
  if(file)file.onchange=async e=>{
   let f=e.target.files?.[0];if(!f)return;busy=true;file.disabled=true;const msg=document.getElementById('nextarMessage');if(msg)msg.textContent='Interpretando o arquivo Produto.nx1…';
-  try{const result=await parse(f);if(result.rows.length<1||result.unresolved.length>0)throw Error('Importação não publicada: há '+result.unresolved.length+' saldo(s) não identificados. Preserve o último backup até validar este arquivo.');const incoming={v:VERSION,file:f.name,imported:new Date().toISOString(),...result};await root.EngefexCloud.publishNextar(incoming);snapshot=incoming;lastFetch=Date.now();error='';busy=false;const main=document.getElementById('main');if(main){main.innerHTML=render();bind();}}
+  try{const result=await parse(f);if(result.rows.length<1)throw Error('Importação sem produtos. O estoque anterior foi preservado.');if(result.rows.some(x=>x.stock!==null&&(!Number.isFinite(x.stock)||x.stock<0)))throw Error('Saldo inválido detectado. O estoque anterior foi preservado.');const incoming={v:VERSION,file:f.name,imported:new Date().toISOString(),...result};await root.EngefexCloud.publishNextar(incoming);snapshot=incoming;lastFetch=Date.now();error='';busy=false;const main=document.getElementById('main');if(main){main.innerHTML=render();bind();}}
   catch(error){busy=false;file.disabled=false;if(msg)msg.textContent='Falha na leitura: '+error.message;}
   finally{file.value='';}
  };
