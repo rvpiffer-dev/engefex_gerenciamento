@@ -103,8 +103,16 @@ function summary(){
  if(!s)return {products:0,available:0,empty:0,unknown:0};
  return {products:s.rows.length,available:s.rows.filter(r=>typeof r.stock==='number'&&r.stock>0).length,empty:s.rows.filter(r=>r.stock===0).length,unknown:s.rows.filter(r=>r.stock===null).length};
 }
+function observationText(row){
+ const value=row?.observation??row?.obs;
+ return typeof value==='string'?value.trim():'';
+}
 function tableRows(rows){
- return rows.length?rows.map((r,i)=>`<tr><td><span class="nextar-code">${escape(r.code)}</span></td><td class="nextar-description">${escape(r.description)}</td><td class="nextar-unit">${r.unit?escape(r.unit):'<span title="Unidade não identificada no backup">—</span>'}</td><td class="nextar-qty">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="4" class="nextar-empty-table">Nenhum produto corresponde aos filtros selecionados.</td></tr>';
+ const data=retrieve()?.rows||[],indices=new Map(data.map((r,i)=>[r,i]));
+ return rows.length?rows.map(r=>{
+  const observation=observationText(r),idx=indices.get(r);
+  return `<tr><td><span class="nextar-code">${escape(r.code)}</span></td><td class="nextar-description">${escape(r.description)}</td><td class="nextar-unit">${r.unit?escape(r.unit):'<span title="Unidade não identificada no backup">—</span>'}</td><td class="nextar-qty">${number(r.stock)}</td><td class="nextar-obs-cell"><button class="nextar-obs-open ${observation?'nextar-obs-available':''}" data-nextar-obs="${idx}" type="button" aria-label="Ver observação do produto ${escape(r.code)}">${observation?'Ver mais':'Ver mais'}</button></td></tr>`;
+ }).join(''):'<tr><td colspan="5" class="nextar-empty-table">Nenhum produto corresponde aos filtros selecionados.</td></tr>';
 }
 function render(){
  const s=retrieve(),rows=filterRows(),canUpload=!!root.EngefexAccess?.canWrite('nextarstock'),stats=summary();
@@ -149,10 +157,15 @@ function render(){
     </div>
     <div class="nextar-list-caption"><span id="nextarCount">${formatInt(rows.length)} resultado(s)</span><span>${(s.duplicates||[]).length} código(s) repetido(s) no backup · A exportação completa ignora os filtros</span></div>
     <div class="nextar-table-wrap"><table class="nextar-stock-table">
-     <thead><tr><th scope="col">Código</th><th scope="col">Descrição do produto</th><th scope="col" class="nextar-unit">Unidade</th><th scope="col" class="nextar-qty">Estoque atual</th></tr></thead>
+     <thead><tr><th scope="col">Código</th><th scope="col">Descrição do produto</th><th scope="col" class="nextar-unit">Unidade</th><th scope="col" class="nextar-qty">Estoque atual</th><th scope="col" class="nextar-obs-head">OBS</th></tr></thead>
      <tbody id="nextarTableBody">${tableRows(rows)}</tbody>
     </table></div>`:'<div class="nextar-empty-state"><span aria-hidden="true">▤</span><strong>Nenhum estoque compartilhado ainda</strong><p>Depois que o primeiro ZIP for importado, os produtos aparecerão aqui para todos os usuários autorizados.</p></div>'}
   </section>
+  <dialog id="nextarObservation" class="nextar-observation-modal" aria-labelledby="nextarObsTitle" aria-describedby="nextarObsText">
+   <div class="nextar-obs-dialog-head"><div><small>OBSERVAÇÃO DO PRODUTO</small><h2 id="nextarObsTitle">Observação</h2></div><button type="button" id="nextarObsClose" class="nextar-obs-close" aria-label="Fechar observação">×</button></div>
+   <div class="nextar-obs-dialog-body"><div class="nextar-obs-product"><strong id="nextarObsCode"></strong><span id="nextarObsDescription"></span></div><p id="nextarObsText" class="nextar-obs-text"></p></div>
+   <div class="nextar-obs-dialog-actions"><button id="nextarObsDone" type="button" class="button secondary">Fechar</button></div>
+  </dialog>
   <p class="nextar-disclaimer">Consulta somente leitura · Os saldos refletem a data do backup, não a posição em tempo real. Quantidades não reconhecidas são identificadas como “Não identificado”; unidades ausentes aparecem como —.</p>
  </section>`;
 }
@@ -214,7 +227,35 @@ function updateTable(){
  const label=document.getElementById('nextarCount');
  if(label)label.textContent=new Intl.NumberFormat('pt-BR').format(data.length)+' resultado(s)';
 }
+function openObservation(index){
+ const row=retrieve()?.rows?.[index];
+ if(!row||!Number.isInteger(index)||index<0)return;
+ const dialog=document.getElementById('nextarObservation');
+ if(!dialog)return;
+ const note=observationText(row);
+ document.getElementById('nextarObsTitle').textContent='Observação do produto';
+ document.getElementById('nextarObsCode').textContent=row.code||'';
+ document.getElementById('nextarObsDescription').textContent=row.description||'';
+ const body=document.getElementById('nextarObsText');
+ body.textContent=note||'O campo de observação existe no cadastro do Nextar, mas ainda não foi possível recuperar este texto com segurança do backup. Nenhuma observação foi atribuída a este produto.';
+ body.classList.toggle('nextar-obs-missing',!note);
+ if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+}
 function bind(){
+ const rows=document.getElementById('nextarTableBody');
+ if(rows)rows.onclick=event=>{
+  const button=event.target.closest?.('[data-nextar-obs]');
+  if(!button||!rows.contains(button))return;
+  const index=Number(button.dataset.nextarObs);
+  if(Number.isSafeInteger(index))openObservation(index);
+ };
+ const dialog=document.getElementById('nextarObservation');
+ const close=()=>{if(dialog?.open){if(typeof dialog.close==='function')dialog.close();else dialog.removeAttribute('open')}};
+ const closeButton=document.getElementById('nextarObsClose');
+ if(closeButton)closeButton.onclick=close;
+ const doneButton=document.getElementById('nextarObsDone');
+ if(doneButton)doneButton.onclick=close;
+ if(dialog)dialog.onclick=e=>{if(e.target===dialog)close()};
  const refreshButton=document.getElementById('nextarRefresh');
  if(refreshButton)refreshButton.onclick=()=>refresh(true);
  if(!loaded&&!fetching&&!busy)refresh(true);
@@ -255,5 +296,5 @@ function bind(){
   }
  };
 }
-root.EngefexNextarStock={parse,render,bind,refresh,downloadAll,updateTable};
+root.EngefexNextarStock={parse,render,bind,refresh,downloadAll,updateTable,openObservation};
 })(window);
