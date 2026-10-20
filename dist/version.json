@@ -1,7 +1,7 @@
 {
-  "version": "4.11.8",
+  "version": "4.11.9",
   "date": "2026-10-20",
-  "name": "Recuperação de acesso no celular preservando dados e atualização dos arquivos de login",
-  "previous_version": "4.11.7",
+  "name": "Atualização automática da interface antes do login ao abrir e recarregar",
+  "previous_version": "4.11.8",
   "backup_branch": "backup/v4.6.0-cronograma-pdf-2026-10-19"
 }

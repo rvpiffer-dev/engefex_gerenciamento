@@ -271,14 +271,15 @@
   setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
- function boot(app){
+ function boot(app){if(root.EngefexUpdateGate){root.EngefexUpdateGate.then(ready=>{if(ready!==false)start(app)}).catch(()=>start(app));return}start(app)}
+ function start(app){
   client=app;setupVisual();patchFileLoading();setPhase('login');
   try{const cached=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(cached?.refresh_token)session=cached}catch{}
   if(session)connect().catch(e=>{saveSession(null);setPhase('login',e.message)});
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending}};
+ root.EngefexCloud={boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending}};
 })(window);
 
 
