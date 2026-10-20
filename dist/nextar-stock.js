@@ -73,15 +73,62 @@ async function refresh(force=false){if(!root.EngefexCloud?.ready)return;if(fetch
 function cleanText(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
 function filterRows(){let s=retrieve();if(!s)return [];const q=cleanText(find),dup=new Set((s.duplicates||[]).map(x=>x.code));return s.rows.filter(r=>(!onlyStock||r.stock!==null&&r.stock>0)&&(!showDuplicates||dup.has(r.code))&&(!q||cleanText(r.code+' '+r.description).includes(q)));}
 function number(v){return v===null?'<span class="tag amber">Não identificado</span>':new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(v);}
+
+function summary(){
+ const s=retrieve();
+ if(!s)return {products:0,available:0,empty:0,unknown:0};
+ return {products:s.rows.length,available:s.rows.filter(r=>typeof r.stock==='number'&&r.stock>0).length,empty:s.rows.filter(r=>r.stock===0).length,unknown:s.rows.filter(r=>r.stock===null).length};
+}
+function tableRows(rows){
+ return rows.length?rows.map((r,i)=>`<tr><td><span class="nextar-code">${escape(r.code)}</span></td><td class="nextar-description">${escape(r.description)}</td><td class="nextar-qty">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="3" class="nextar-empty-table">Nenhum produto corresponde aos filtros selecionados.</td></tr>';
+}
 function render(){
- const s=retrieve(),rows=filterRows(),canUpload=!!root.EngefexAccess?.canWrite('nextarstock');
- const notes=s?`<p class="section-note">Origem: <strong>${escape(s.file)}</strong> · Atualizado em ${escape(new Date(s.imported).toLocaleString('pt-BR'))} · ${s.rows.length} registros · ${s.duplicates.length} códigos repetidos · ${s.unresolved.length} saldos não identificados. A quantidade corresponde ao backup, não ao estoque em tempo real.</p>`:'';
- return `<section class="page-head"><div><div class="eyebrow">CONSULTA · SOMENTE LEITURA</div><h1>Estoque Nextar</h1><p class="subtitle">Leia o ZIP do Nextar e consulte código, descrição e estoque atual, sem modificar o sistema de origem.</p></div></section>
- <section class="card nextar-stock-panel" aria-label="Estoque do Nextar">
- <div class="nextar-stock-controls">${canUpload?`<label class="button primary" for="nextarZip" style="display:inline-flex;align-items:center;cursor:pointer">${busy?'Importando…':'Atualizar pelo backup ZIP'}</label><input id="nextarZip" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden ${busy?'disabled':''}>`:'<span class="tag">Somente consulta · atualização disponível para usuários com permissão Editar</span>'}<span id="nextarMessage" role="status">${error?escape(error):busy?'Lendo e publicando…':fetching?'Consultando o banco…':s?'Estoque compartilhado no Supabase':'Nenhum backup publicado ainda.'}</span><button class="button secondary" type="button" id="nextarRefresh">Atualizar consulta</button></div>
- ${notes}
- ${s?`<div class="nextar-stock-controls nextar-stock-search"><input id="nextarSearch" type="search" placeholder="Buscar código ou descrição" value="${escape(find)}" aria-label="Buscar estoque"><label><input id="nextarOnlyStock" type="checkbox" ${onlyStock?'checked':''}> Somente com saldo</label><label><input id="nextarDuplicates" type="checkbox" ${showDuplicates?'checked':''}> Códigos repetidos</label><button class="button secondary" id="nextarCsv" type="button">Exportar CSV</button></div><p class="section-note">${rows.length} resultado(s). Códigos repetidos são exibidos separadamente e nunca somados.</p><div class="table-wrap nextar-table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Estoque atual (backup)</th></tr></thead><tbody>${rows.length?rows.map(r=>`<tr><td><strong>${escape(r.code)}</strong></td><td>${escape(r.description)}</td><td style="text-align:right">${number(r.stock)}</td></tr>`).join(''):'<tr><td colspan="3">Nenhum produto encontrado.</td></tr>'}</tbody></table></div>`:''}
- <p class="section-note"><strong>Atenção:</strong> compatibilidade validada com o backup de 20/10/2026. Compare alguns saldos com o Nextar antes de utilizar os dados em decisões. A consulta é compartilhada no Supabase; usuários com permissão Editar podem publicar um novo backup.</p>
+ const s=retrieve(),rows=filterRows(),canUpload=!!root.EngefexAccess?.canWrite('nextarstock'),stats=summary();
+ const lastUpdate=s?.imported&&Number.isFinite(new Date(s.imported).getTime())?new Date(s.imported).toLocaleString('pt-BR'):'Sem atualização';
+ const formatInt=n=>new Intl.NumberFormat('pt-BR').format(n);
+ const stat=(name,value,subtitle,klass='')=>`<div class="nextar-stat ${klass}"><span class="nextar-stat-label">${name}</span><strong>${formatInt(value)}</strong><small>${subtitle}</small></div>`;
+ return `<section class="nextar-page">
+  <div class="nextar-hero">
+   <div class="nextar-hero-main"><span class="nextar-eyebrow"><span class="nextar-live-dot"></span> ENGEFEX · CONSULTA COMPARTILHADA</span>
+   <h1>Estoque Nextar</h1>
+   <p>Produtos e saldos do último backup, disponíveis para a equipe. Nenhuma alteração é feita no Nextar.</p></div>
+   <div class="nextar-hero-side"><span class="nextar-updated-label">ÚLTIMA ATUALIZAÇÃO</span><strong>${escape(lastUpdate)}</strong><small>${s?'Base compartilhada no Supabase':'Nenhum backup publicado'}</small></div>
+  </div>
+  <div class="nextar-stats" aria-label="Resumo do estoque">
+   ${stat('Produtos cadastrados',stats.products,'Registros do último backup')}
+   ${stat('Com saldo disponível',stats.available,'Saldo maior que zero','nextar-stat-positive')}
+   ${stat('Sem saldo',stats.empty,'Estoque igual a zero')}
+   ${stat('Saldo não identificado',stats.unknown,'Requer conferência no Nextar',stats.unknown?'nextar-stat-warning':'')}
+  </div>
+  <section class="nextar-panel" aria-label="Consulta do estoque Nextar">
+   <div class="nextar-panel-header">
+    <div><h2>Inventário de produtos</h2><p>${s?`Arquivo de origem: <strong>${escape(s.file)}</strong>`:'Envie o primeiro backup ZIP para começar a consulta.'}</p></div>
+    <div class="nextar-main-actions">
+     <button type="button" class="button secondary nextar-refresh" id="nextarRefresh" ${busy?'disabled':''} title="Buscar dados atualizados do Supabase">↻ Atualizar consulta</button>
+     <button type="button" class="button secondary nextar-download" id="nextarDownloadAll" ${s?'':'disabled'} title="Exportar todos os produtos, independentemente dos filtros">↓ Baixar estoque completo</button>
+     ${canUpload?`<label id="nextarUploadLabel" class="button primary nextar-upload" for="nextarZip">${busy?'Importando…':'+ Importar backup ZIP'}</label><input id="nextarZip" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden ${busy?'disabled':''}>`:''}
+    </div>
+   </div>
+   ${canUpload?'<p class="nextar-permission-note">Usuários com permissão <strong>Editar</strong> podem publicar um novo backup semanal. A importação substitui o retrato anterior apenas após confirmação do Supabase.</p>':''}
+   <div id="nextarProgressPanel" class="nextar-progress-panel" ${busy?'':'hidden'} role="status" aria-live="polite">
+    <div class="nextar-progress-copy"><strong id="nextarProgressLabel">${escape(progressLabel||'Preparando importação…')}</strong><span id="nextarProgressPercent">${progressValue}%</span></div>
+    <progress id="nextarProgress" max="100" value="${progressValue}"></progress>
+    <small>O estoque anterior permanece disponível até a nova importação ser concluída.</small>
+   </div>
+   <div id="nextarMessage" class="nextar-feedback" role="status" ${error?'data-error="true"':''}>${error?escape(error):busy?'Lendo arquivo e preparando envio…':fetching?'Consultando dados compartilhados…':s?'Consulta atualizada pelo Supabase.':'Nenhum backup disponível. Solicite a importação a um usuário com permissão Editar.'}</div>
+   ${s?`<div class="nextar-searchbar">
+      <label class="nextar-search-field" for="nextarSearch"><span aria-hidden="true">⌕</span><input id="nextarSearch" type="search" placeholder="Buscar código ou descrição do produto" autocomplete="off" value="${escape(find)}"></label>
+      <label class="nextar-check"><input id="nextarOnlyStock" type="checkbox" ${onlyStock?'checked':''}> Somente com saldo</label>
+      <label class="nextar-check"><input id="nextarDuplicates" type="checkbox" ${showDuplicates?'checked':''}> Códigos repetidos</label>
+      <button type="button" class="button secondary nextar-filter-download" id="nextarCsv">Exportar resultados CSV</button>
+    </div>
+    <div class="nextar-list-caption"><span id="nextarCount">${formatInt(rows.length)} resultado(s)</span><span>${(s.duplicates||[]).length} código(s) repetido(s) no backup · A exportação completa ignora os filtros</span></div>
+    <div class="nextar-table-wrap"><table class="nextar-stock-table">
+     <thead><tr><th scope="col">Código</th><th scope="col">Descrição do produto</th><th scope="col" class="nextar-qty">Estoque atual</th></tr></thead>
+     <tbody id="nextarTableBody">${tableRows(rows)}</tbody>
+    </table></div>`:'<div class="nextar-empty-state"><span aria-hidden="true">▤</span><strong>Nenhum estoque compartilhado ainda</strong><p>Depois que o primeiro ZIP for importado, os produtos aparecerão aqui para todos os usuários autorizados.</p></div>'}
+  </section>
+  <p class="nextar-disclaimer">Consulta somente leitura · Os saldos refletem a data do backup, não a posição em tempo real. Quantidades não reconhecidas são identificadas como “Não identificado”.</p>
  </section>`;
 }
 function exportCsv(){if(!retrieve())return;const data=[['Código','Descrição','Estoque atual'],...filterRows().map(r=>[r.code,r.description,r.stock===null?'':String(r.stock).replace('.',',')])];const csv='\ufeff'+data.map(a=>a.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');const a=document.createElement('a'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.href=url;a.download='estoque-nextar-'+new Date().toISOString().slice(0,10)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
