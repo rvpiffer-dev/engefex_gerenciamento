@@ -2,8 +2,8 @@
 // Word interpreta as dimensões de ImageRun em pixels CSS (96 dpi).
 // Paisagem: caixa de até 19 x 13 cm; retrato: até 9,35 x 13 cm.
 // Mantém a proporção original para evitar fotos esticadas ou cortadas.
-function dimensions(w,h){const pxPerCm=96/2.54;const landscape=w>=h;const maxWidth=(landscape?19:9.35)*pxPerCm,maxHeight=13*pxPerCm;const scale=Math.min(maxWidth/w,maxHeight/h);return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))}}
-function createDocument(lib,{project,record,photos=[],logo}){const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ImageRun,AlignmentType,BorderStyle,HeadingLevel}=lib;let children=[],text=x=>String(x??'').trim()||'—';
+function dimensions(w,h){const pxPerCm=96/2.54;const landscape=w>=h;const maxWidth=(landscape?19:9.0)*pxPerCm,maxHeight=13*pxPerCm;const scale=Math.min(maxWidth/w,maxHeight/h);return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))}}
+function createDocument(lib,{project,record,photos=[],logo}){const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ImageRun,AlignmentType,BorderStyle,HeadingLevel,TableLayoutType}=lib;let children=[],text=x=>String(x??'').trim()||'—';
 const p=(v,opt={})=>new Paragraph({children:String(v).split('\n').flatMap((s,i)=>[...(i?[new TextRun({break:1})]:[]),new TextRun({text:s})]),spacing:{after:130,line:260},...opt});
 const heading=(s,pageBreakBefore=false)=>new Paragraph({text:s,heading:HeadingLevel.HEADING_1,pageBreakBefore,keepNext:true,spacing:{before:240,after:160}});
 const border={style:BorderStyle.SINGLE,size:4,color:'333333'},borders={top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border};
@@ -28,9 +28,10 @@ function photoContents(photo,i){
  ];
 }
 function portraitPair(i){
- const cell=(idx)=>new TableCell({width:{size:5400,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},children:photoContents(photos[idx],idx)});
- // 2 x 9,35 cm, with at least 0,30 cm between images inside the 19,05-cm table.
- return new Table({width:{size:10800,type:WidthType.DXA},columnWidths:[5400,5400],
+ // A largura fixa de 18,34 cm (2 x 5200 twips) fica folgada dentro da área útil A4.
+ // Fotos de retrato recebem no máximo 9,0 cm de largura por coluna.
+ const cell=(idx)=>new TableCell({width:{size:5200,type:WidthType.DXA},margins:{top:40,bottom:40,left:80,right:80},children:photoContents(photos[idx],idx)});
+ return new Table({width:{size:10400,type:WidthType.DXA},columnWidths:[5200,5200],layout:TableLayoutType.FIXED,
   borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideVertical:{style:BorderStyle.NONE},insideHorizontal:{style:BorderStyle.NONE}},
   rows:[new TableRow({cantSplit:true,children:[cell(i),cell(i+1)]})]});
 }
