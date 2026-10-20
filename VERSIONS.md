@@ -1,3 +1,11 @@
+## v4.13.0 — Usuários e acessos
+
+- Matriz de Visualizar, Editar e Sem acesso por módulo e por tela.
+- Administração de acessos restrita à conta administrativa, com revisão e auditoria.
+- Navegação e formulários refletem o perfil, incluindo a consulta e download sem edição.
+- Supabase protege leitura, gravações, anexos e preserva dados de áreas ocultas.
+- Atualização de permissões nas sessões abertas; contas atuais preservam seus acessos até configuração.
+
 ## v4.12.0 — Destinação de compras e rateio após pagamento
 
 - Compras e notas permitem Obra, Estoque ou Geral, sem criar uma obra fictícia ou movimentar estoque.

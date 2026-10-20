@@ -28,3 +28,15 @@ Cadastrar `admin@engefex.com` no Auth do projeto Supabase Engefex-Gerenciador-Te
 ## Segurança revisada
 
 As tabelas usam RLS e o bucket é privado. As RPCs de salvamento são SECURITY DEFINER de forma intencional: verificam auth.uid(), vínculo do usuário com o workspace e revisão antes de escrever. EXECUTE é negado a anon/PUBLIC. O provisionamento de administrador fica em schema não exposto e não pode ser executado por clientes. O linter sinaliza as duas RPCs por serem chamadas por usuários autenticados; revisão: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable
+
+## Usuários e permissões — v4.13.0
+
+A conta `admin@engefex.com` administra a matriz em **Usuários e acessos**. Visualizar permite leitura e downloads; Editar permite criar, alterar e excluir; Sem acesso bloqueia a tela. O nível da tela não pode superar o do módulo. As contas existentes receberam edição integral na implantação; novos membros começam sem acesso, exceto a conta administrativa confirmada já prevista no provisionamento.
+
+A matriz fica fora do JSONB de negócio, em `engefex_access`, sem acesso direto de clientes. RPCs administrativas verificam administrador no banco e usam revisão para evitar sobrescrita concorrente. O acesso do administrador não pode ser removido por essa interface. As alterações são auditadas em `engefex_private.access_audit`.
+
+Usuários restritos recebem uma projeção autorizada da base via RPC. Identificação de obras e origem de notas/parcelas são compartilhadas quando necessárias ao módulo liberado. Gravações são mescladas no servidor com a base completa, preservando áreas ocultas; nenhuma permissão é confiada ao localStorage ou a user_metadata. A rota de leitura direta continua disponível apenas para contas com leitura de todas as telas. O Storage verifica referência em área permitida, e a gravação impede reutilizar IDs de anexos de áreas ocultas.
+
+O cliente verifica permissões a cada sincronização; ao mudar o perfil, fecha formulários e recarrega a projeção autorizada. O banco aplica a nova matriz imediatamente, inclusive para clientes antigos. Faça uma revisão completa dos perfis antes de liberar a equipe.
+
+A migração consolidada foi exercitada em testes antes da produção. `scripts/verify-access.sql` executa verificações com usuários sintéticos e rollback integral, sem criar contas persistentes ou mudar registros reais. Foram revisados os avisos do linter sobre RPCs SECURITY DEFINER (intencionais, com autenticação/vínculo/permissão) e tabelas de ACL/auditoria com RLS e acesso direto negado. Referências: https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable e https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy . O aviso de proteção contra senhas vazadas no projeto de testes já era independente desta implantação.

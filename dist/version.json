@@ -1,7 +1,7 @@
 {
-  "version": "4.12.3",
+  "version": "4.13.0",
   "date": "2026-10-20",
-  "name": "Consulta de estoque Nextar por ZIP (somente leitura)",
-  "previous_version": "4.12.2",
-  "backup_branch": "backup/producao-v4.12.1-2026-10-20"
+  "name": "Usuários e permissões por módulo e tela",
+  "previous_version": "4.12.3",
+  "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
