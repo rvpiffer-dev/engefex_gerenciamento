@@ -11,8 +11,77 @@ function proper(n){return Number.isFinite(n)&&n>=0&&n<1e8&&(n===0||n>1e-25)&&Mat
 function quartet(view,at){let a=[0,8,16,24].map(k=>floatAt(view,at+k));return a.every(proper)&&Math.abs(a[2]-a[0]-a[1])<=.0001?Math.round(a[0]*100)/100:null;}
 function fallbackQuartet(view,at){let a=[0,8,16,24].map(k=>rawAt(view,at+k));return a.every(proper)&&!a.every(n=>n===0)&&Math.abs(a[2]-a[0]-a[1])<=.0001?Math.round(a[0]*100)/100:null;}
 function catalogue(bytes){return strings(bytes).map(x=>x.value).filter(x=>x.length>=3&&x.length<48&&/^[\p{L}\p{N} \-`'./]+$/u.test(x));}
+
+/* NexusDB heap: o campo Obs contém uma referência (posição do item, página NXHD).
+   Não associar memos pela proximidade física no arquivo, pois fotos e outros blobs
+   de produtos diferentes podem ocupar a mesma página. */
+function memoReader(bytes){
+ const pageSize=4096,totalPages=Math.floor(bytes.length/pageSize),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ const cache=new Map(),memoDecoder=new TextDecoder('utf-16le',{fatal:true});
+ const pageContents=page=>{
+  if(cache.has(page))return cache.get(page);
+  const items=[];cache.set(page,items);
+  if(page<0||page>=totalPages)return items;
+  const base=page*pageSize;
+  if(bytes[base]!==78||bytes[base+1]!==88||bytes[base+2]!==72||bytes[base+3]!==68)return items;
+  const count=view.getUint32(base+16,true);
+  if(count<1||count>120)return items;
+  let offset=20;
+  for(let index=1;index<=count;index++){
+   let best=null;
+   for(let delta=-4;delta<64;delta++){
+    const cursor=offset+delta;
+    if(cursor<20||cursor+3>=pageSize)continue;
+    const size=view.getUint16(base+cursor,true),type=bytes[base+cursor+2];
+    if(size<1||!(type===4||type===5)||cursor+3+size>pageSize)continue;
+    if(delta>=40){let hasContent=false;for(let k=offset;k<cursor;k++)if(bytes[base+k]!==0){hasContent=true;break}if(hasContent)continue}
+    const start=base+cursor+3;
+    let score=Math.abs(delta)*3;
+    if(type===4){
+     const a=bytes[start],b=bytes[start+1];
+     if((a===255&&b===216)||(a===77&&b===227)||(b===0&&[80,49,73,32].includes(a)))score-=2;
+    }
+    if(!best||score<best.score)best={score,cursor,size,type,start};
+   }
+   if(!best)break;
+   items.push(best);offset=best.cursor+3+best.size;
+  }
+  return items;
+ };
+ const decode=blob=>{
+  if(!blob||blob.type!==4||blob.size<7)return '';
+  const byteLength=blob.size-(blob.size%2);
+  let t;
+  try{t=memoDecoder.decode(bytes.subarray(blob.start,blob.start+byteLength)).replace(/^\uFEFF/,'').replace(/[\x00\s]+$/g,'').trim()}catch{return ''}
+  if(!t||t.length>2048)return '';
+  let printable=0,meaningful=0,hasLetter=false;
+  for(const ch of t){
+   if(ch==='\r'||ch==='\n'||ch==='\t'||ch.codePointAt(0)>=32)printable++;
+   if(/[\p{L}\p{N}\s,.;:/%+\-$()°"']/u.test(ch))meaningful++;
+   if(/\p{L}/u.test(ch))hasLetter=true;
+  }
+  return hasLetter&&printable>=t.length*.96&&meaningful>=t.length*.8?t:'';
+ };
+ return (begin,end)=>{
+  const until=Math.min(end,begin+300,(Math.floor(begin/pageSize)+1)*pageSize-8,bytes.length-8);
+  let text='',foundRef=false,unreadable=false;
+  for(let at=begin+35;at<until;at++){
+   const slot=view.getUint32(at,true),page=view.getUint32(at+4,true);
+   if(slot<1||slot>40||page<14||page>=totalPages)continue;
+   const entries=pageContents(page);
+   if(slot>entries.length){if(slot<=view.getUint32(page*pageSize+16,true))unreadable=true;continue}
+   foundRef=true;
+   const value=decode(entries[slot-1]);
+   if(!value)continue;
+   if(text&&text!==value)return {observation:'',observationStatus:'unreadable'};
+   text=value;
+  }
+  return {observation:text,observationStatus:text?'found':unreadable?'unreadable':'empty'};
+ };
+}
+
 async function parseProduto(bytes,categories,onProgress=()=>{}){
- const lines=strings(bytes),cats=new Set(categories),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),codes=[];
+ const lines=strings(bytes),cats=new Set(categories),view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength),codes=[],readMemo=memoReader(bytes);
  for(let i=0;i<lines.length;i++)if(/^0{2,3}[0-9]{3,4}$/.test(lines[i].value))codes.push(i);
  const rows=[],unresolved=[];
  for(let j=0;j<codes.length;j++){
@@ -34,7 +103,8 @@ async function parseProduto(bytes,categories,onProgress=()=>{}){
    for(let at=tag.pos+110;at<Math.min(end-35,tag.pos+700);at++){let q=fallbackQuartet(view,at);if(q!==null)hits.push(q);}
    if(hits.length===1)stock=hits[0];else reason='Saldo não identificado com segurança';
   }
-  rows.push({code:tag.value,description:name,unit,stock});
+  const memo=readMemo(tag.pos,end);
+  rows.push({code:tag.value,description:name,unit,stock,...memo});
   if(reason)unresolved.push({code:tag.value,description:name,reason});
  }
  if(!rows.length)throw Error('Nenhum produto reconhecido em Produto.nx1. O formato deste backup pode ser diferente.');
@@ -143,6 +213,7 @@ function render(){
    </div>
    ${canUpload?'<p class="nextar-permission-note">Usuários com permissão <strong>Editar</strong> podem publicar um novo backup semanal. A importação substitui o retrato anterior apenas após confirmação do Supabase.</p>':''}
    ${s?.rows?.length&&s.rows.every(r=>r.unit===undefined)?'<p class="nextar-permission-note">A base atual foi importada antes da inclusão das unidades. Importe novamente o ZIP para preencher essa coluna.</p>':''}
+   ${s?.rows?.length&&s.rows.every(r=>r.observationStatus===undefined)?'<p class="nextar-permission-note">Esta base foi importada antes da leitura das observações. Envie novamente o ZIP para preencher o campo OBS.</p>':''}
    <div id="nextarProgressPanel" class="nextar-progress-panel" ${busy?'':'hidden'} role="status" aria-live="polite">
     <div class="nextar-progress-copy"><strong id="nextarProgressLabel">${escape(progressLabel||'Preparando importação…')}</strong><span id="nextarProgressPercent">${progressValue}%</span></div>
     <progress id="nextarProgress" max="100" value="${progressValue}"></progress>
@@ -237,7 +308,7 @@ function openObservation(index){
  document.getElementById('nextarObsCode').textContent=row.code||'';
  document.getElementById('nextarObsDescription').textContent=row.description||'';
  const body=document.getElementById('nextarObsText');
- body.textContent=note||'O campo de observação existe no cadastro do Nextar, mas ainda não foi possível recuperar este texto com segurança do backup. Nenhuma observação foi atribuída a este produto.';
+ body.textContent=note||(row.observationStatus==='unreadable'?'A observação deste produto não pôde ser interpretada com segurança a partir do backup. Nenhum texto foi atribuído por aproximação.':row.observationStatus==='empty'?'Nenhuma observação cadastrada para este produto no backup do NEX.':'Este backup foi importado antes da implementação da leitura das observações. Importe o ZIP novamente para consultar os textos.');
  body.classList.toggle('nextar-obs-missing',!note);
  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
 }
