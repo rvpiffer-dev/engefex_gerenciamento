@@ -1,6 +1,6 @@
 {
-  "version": "4.13.19",
+  "version": "4.13.20",
   "date": "2026-10-21",
-  "name": "Correção de edição e layout das subtarefas",
-  "previous_version": "4.13.18"
+  "name": "Correção de digitação das subtarefas e redesign do RH",
+  "previous_version": "4.13.19"
 }
