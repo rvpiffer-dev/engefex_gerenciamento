@@ -19,7 +19,9 @@
    const projects=(state.projects||[]).filter(p=>selected==='all'||p.id===selected);
    const ids=new Set(projects.map(p=>p.id));
    const purchaseMap=new Map((state.purchases||[]).map(p=>[p.id,p]));
-   const contract=projects.reduce((a,p)=>a+cents(p.value),0);
+   const originalContract=projects.reduce((a,p)=>a+cents(p.value),0);
+   const approvedAmendments=(state.budgetStages||[]).filter(st=>st.amendment?.kind==='contract_addendum'&&st.amendment.status==='Aprovado'&&ids.has(st.project)).reduce((sum,st)=>sum+cents(st.amendment.amount),0);
+   const contract=originalContract+approvedAmendments;
    const items=(state.costs||[]).filter(c=>ids.has(c.project)&&c.destination!=='stock'&&c.destination!=='general')
      .map(c=>{
        const total=Math.max(0,cents(c.amount)+cents(c.paymentAddition)-cents(c.paymentDiscount));
@@ -52,10 +54,10 @@
    const undated=items.filter(x=>!x.when).reduce((a,x)=>a+x.amount,0);
    const perProject=projects.map(p=>{
      const amount=items.filter(x=>x.project===p.id).reduce((a,x)=>a+x.amount,0);
-     const value=cents(p.value);
+     const value=cents(p.value)+(state.budgetStages||[]).filter(st=>st.project===p.id&&st.amendment?.status==='Aprovado'&&st.amendment?.kind==='contract_addendum').reduce((sum,st)=>sum+cents(st.amendment.amount),0);
      return {id:p.id,name:p.name,code:p.code,contract:value,expenses:amount,balance:value-amount};
    });
-   return {projects,items,contract,expenses,paid,received,result:contract-expenses,
+   return {projects,items,contract,originalContract,approvedAmendments,expenses,paid,received,result:contract-expenses,
      margin:contract?((contract-expenses)/contract):null,remainingToReceive:Math.max(0,contract-received),
      outstanding:Math.max(0,expenses-paid),grouped,monthly,undated,futureLabor,perProject};
  }
@@ -73,7 +75,7 @@
    })():'conic-gradient(#e6ebf2 0 100%)';
    const maxMonthly=Math.max(1,...r.monthly.flatMap(m=>[m.expense,m.received]));
    const moneyCards=[
-     ['Valor do contrato',r.contract,'Base da receita prevista','contract'],
+     ['Contrato atualizado',r.contract,r.approvedAmendments?money(r.originalContract)+' original + '+money(r.approvedAmendments)+' em aditivos':'Contrato original, sem aditivos aprovados','contract'],
      ['Despesas lançadas',r.expenses,r.items.length+' lançamentos de custo','expense'],
      ['Resultado parcial',r.result,r.items.length?'Contrato menos custos lançados':'Sem despesas registradas','result '+(r.result<0?'bad':'good')],
      ['Margem parcial',null,r.contract?pct(r.margin)+' do contrato':'Contrato não informado','margin']
@@ -90,7 +92,7 @@
     <section class="profit-hero">
       <div><span class="profit-eyebrow">DESEMPENHO ECONÔMICO ${selected==='all'?'· TODAS AS OBRAS':'· POR OBRA'}</span>
         <h2>Receita <em>versus</em> despesa</h2>
-        <p>Quanto do valor contratado ainda resta depois dos custos lançados na obra.</p>
+        <p>Quanto resta do contrato original somado aos aditivos aprovados, depois dos custos lançados na obra.</p>
         <span class="profit-status ${badge}">● ${status}</span></div>
       <div class="profit-hero-result"><small>RESULTADO BRUTO PARCIAL</small><strong>${money(r.result)}</strong><span>${r.contract?pct(r.margin)+' de margem parcial':'Defina o valor do contrato'}</span></div>
     </section>
@@ -127,7 +129,7 @@
     <section class="profit-panel"><div class="profit-panel-heading"><div><span class="profit-label">RASTREABILIDADE</span><h3>Últimos lançamentos de despesas</h3></div><span class="profit-counter">${r.items.length} lançamentos</span></div>
       <div class="profit-table-wrap"><table class="profit-table"><thead><tr><th>Origem / descrição</th><th>Obra</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>${recent||'<tr><td colspan="4" class="profit-no-data">Nenhuma nota, medição de mão de obra ou despesa vinculada ainda.</td></tr>'}</tbody></table></div>
     </section>
-    <p class="profit-disclaimer"><strong>Critério de cálculo:</strong> resultado parcial = soma dos valores contratuais − soma das contas de custo vinculadas à obra. Notas confirmadas com rateio e medições de mão de obra liberadas já geram contas em <em>Contas a Pagar</em>; por isso, não são somadas novamente. Descontos e acréscimos de pagamento são considerados. Compras do estoque e despesas gerais ainda não atribuídas a uma obra ficam fora. Não é lucro líquido contábil: impostos, retenções, custos futuros e despesas não lançadas podem mudar o resultado.</p>
+    <p class="profit-disclaimer"><strong>Critério de cálculo:</strong> resultado parcial = soma dos contratos originais e aditivos aprovados − soma das contas de custo vinculadas à obra. Notas confirmadas com rateio e medições de mão de obra liberadas já geram contas em <em>Contas a Pagar</em>; por isso, não são somadas novamente. Descontos e acréscimos de pagamento são considerados. Compras do estoque e despesas gerais ainda não atribuídas a uma obra ficam fora. Não é lucro líquido contábil: impostos, retenções, custos futuros e despesas não lançadas podem mudar o resultado.</p>
    </div>`;
  }
  const api={calculate,render};

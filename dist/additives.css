@@ -1,0 +1,25 @@
+
+/* Aditivos de contrato — quadro gerencial */
+.additive-shell{display:flex;flex-direction:column;gap:18px;margin-bottom:30px}
+.additive-hero{background:linear-gradient(115deg,#152b45,#174d69);color:#fff;padding:25px 28px;border-radius:15px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.additive-hero h2{color:#fff;font-size:22px;margin:8px 0}.additive-hero p{font-size:12px;color:#c7dbe8;line-height:1.7;max-width:560px}.additive-hero small{font-size:10px;letter-spacing:1.2px;color:#a8d5e9}
+.additive-hero .button.primary{background:#fff;color:#16405d;border-color:#fff;font-weight:700}
+.additive-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.additive-kpi{background:#fff;border:1px solid #dce5ee;border-top:3px solid #3c7294;border-radius:13px;padding:18px;display:flex;flex-direction:column;gap:9px}
+.additive-kpi:nth-child(2){border-top-color:#13aa7c}.additive-kpi:nth-child(3){border-top-color:#396fee}.additive-kpi:nth-child(4){border-top-color:#e4a13a}
+.additive-kpi small{color:#6d7f90;font-size:11px}.additive-kpi strong{font-size:22px;letter-spacing:-.6px;overflow-wrap:anywhere}.additive-kpi span{font-size:10px;color:#8899a8}
+.additive-list{padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px}
+.additive-card{border:1px solid #dae4ef;border-radius:12px;padding:16px;background:#fbfcfe;min-width:0}
+.additive-card-head{display:flex;gap:12px;align-items:start;justify-content:space-between}.additive-card-head strong{font-size:13px;display:block}.additive-card-head small{display:block;font-size:10px;color:#8797a7;margin-top:8px}
+.additive-pill{border-radius:12px;padding:5px 9px;font-size:10px;font-weight:700;white-space:nowrap}.additive-pill.approved{background:#dbf7eb;color:#117450}.additive-pill.pending{background:#fff2d9;color:#835d15}.additive-pill.rejected{background:#ffe6e5;color:#9b3333}.additive-pill.draft{background:#e8edf4;color:#546879}
+.additive-card-foot{display:flex;align-items:center;gap:12px;margin-top:22px}.additive-card-foot>strong{font-size:19px}.additive-card-foot>span{font-size:10px;color:#8292a4;margin-right:auto}
+.additive-editor{padding:20px 24px}.additive-form{display:grid;grid-template-columns:1fr 1fr;gap:13px}.additive-form label,.additive-notes{display:flex;flex-direction:column;font-size:11px;font-weight:700;color:#506378;gap:7px}
+.additive-form input,.additive-form select,.additive-notes textarea{font-size:14px;width:100%;background:#f9fbfd;border:1px solid #d4e0ea;border-radius:8px;padding:10px;min-height:41px;color:#24374b}
+.additive-notes{margin:18px 0}.additive-notes textarea{resize:vertical;min-height:85px;font-family:inherit}
+.additive-line-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:25px 0 12px}.additive-line-heading strong{font-size:14px}.additive-line-heading small{font-size:10px;color:#8191a1;display:block;margin-top:4px}
+.additive-grid{overflow-x:auto;border:1px solid #d8e2ec;border-radius:10px}.additive-grid table{width:100%;border-collapse:collapse;min-width:650px}.additive-grid th{background:#f1f6fb;padding:12px;font-size:10px}.additive-grid td{padding:8px}
+.additive-grid input{width:100%;min-width:60px;border:1px solid #d9e3ed;border-radius:6px;padding:9px;color:#21354b;font-size:12px}.additive-grid td:first-child{min-width:170px}.additive-grid td:nth-child(2){max-width:65px}.additive-grid td:nth-child(3){max-width:90px}.additive-grid td:nth-child(4){max-width:120px}
+.additive-line-total{font-weight:700;white-space:nowrap;text-align:right}
+.additive-bottom{border-top:1px solid #e0e9f1;margin-top:20px;padding-top:20px;display:flex;align-items:center;justify-content:space-between;gap:15px;flex-wrap:wrap}.additive-bottom small{font-size:10px;color:#8796a6;display:block;margin-bottom:7px}.additive-bottom strong{font-size:24px;letter-spacing:-.6px}
+@media(max-width:900px){.additive-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.additive-hero{flex-direction:column;align-items:start;padding:23px}.additive-hero .button{width:100%}.additive-kpi{padding:13px}.additive-kpi strong{font-size:17px}.additive-form{grid-template-columns:1fr}.additive-editor{padding:17px 13px}.additive-bottom{align-items:stretch}.additive-bottom .actions{width:100%}.additive-bottom .actions button{flex:1}}
