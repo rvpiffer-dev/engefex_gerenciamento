@@ -1,6 +1,6 @@
 {
-  "version": "4.13.13",
+  "version": "4.13.14",
   "date": "2026-10-21",
-  "name": "Correção do gerenciamento de permissões do administrador",
-  "previous_version": "4.13.12"
+  "name": "Novo cadastro visual da Lousa de Atividades",
+  "previous_version": "4.13.13"
 }
