@@ -260,3 +260,6 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .nextar-obs-text.nextar-obs-missing{background:#f8fafc;border:1px solid #e5eaf0;border-radius:10px;padding:17px;color:#66798d}
 .nextar-obs-dialog-actions{padding:15px 25px 21px;display:flex;justify-content:flex-end}
 @media(max-width:640px){.nextar-stock-table{min-width:800px}.nextar-stock-table th.nextar-obs-head{width:112px}.nextar-observation-modal{margin:auto}.nextar-obs-dialog-head{padding:18px}.nextar-obs-dialog-body{padding:18px}.nextar-obs-dialog-actions{padding:12px 18px 18px}}
+
+
+.access-user-tools{margin:16px 0}.access-create-user{margin:16px 0;padding:20px}.access-user-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.access-user-fields label{display:grid;gap:7px}.access-user-fields input{width:100%;min-width:0}.access-create-user [role=status]{overflow-wrap:anywhere}@media(max-width:600px){.access-user-fields{grid-template-columns:1fr}.access-create-user{padding:14px}}

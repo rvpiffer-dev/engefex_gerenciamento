@@ -1,7 +1,7 @@
 {
-  "version": "4.13.8",
+  "version": "4.13.9",
   "date": "2026-10-21",
-  "name": "Diário com fotos e margens do modelo 076",
-  "previous_version": "4.13.7",
+  "name": "Cadastro de usuários e redefinição de senha pelo administrador",
+  "previous_version": "4.13.8",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }
