@@ -317,3 +317,9 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .hr-edit-field input,.hr-edit-field select{box-shadow:0 2px 4px #20446908}
 .hr-editor-footer{background:#fff}
 @media(max-width:620px){.hr-hero{padding:22px 18px!important}.hr-hero h1{font-size:24px!important}.hr-tabs{gap:4px}.hr-tab-button{flex:1 1 auto;padding:11px 10px;font-size:11px}.hr-panel table td,.hr-panel table th{padding:10px 9px!important}}
+
+/* RH — indicadores de validade */
+.hr-panel .hr-deadline{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;font-weight:800;font-size:12px;border:1px solid transparent;white-space:nowrap}
+.hr-panel .hr-deadline.hr-overdue{background:#fee2e2!important;color:#991b1b!important;border-color:#fca5a5!important}
+.hr-panel .hr-deadline.hr-upcoming{background:#fef3c7!important;color:#92400e!important;border-color:#fcd34d!important}
+.hr-panel .hr-deadline.hr-neutral{background:#e8f2ff!important;color:#225588!important;border-color:#c6daf8!important}
