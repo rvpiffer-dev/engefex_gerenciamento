@@ -414,3 +414,11 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .hr-vac-calendar-day.muted{background:#f6f8fa;color:#a0b0bd}.hr-vac-calendar-day span{display:block;padding:4px 5px;background:#cce4fd;border-radius:5px;font-size:10px;margin-top:7px;color:#155a9d}
 .hr-vac-table-wrap{max-width:100%;overflow-x:auto}.hr-vac-table-wrap input{min-width:110px;max-width:300px;width:100%}.hr-vac-dialog{width:min(940px,calc(100vw - 25px));max-width:940px}.hr-vac-dialog-body{padding:24px;display:grid;gap:15px}.hr-vac-dialog .hr-editor-footer{flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:700px){.hr-vac-indicators{grid-template-columns:1fr}.hr-vac-calendar-day{min-height:52px;padding:4px;font-size:11px}.hr-vac-calendar-day span{font-size:9px}.hr-vac-dialog-body{padding:13px}}
+
+
+/* Indicadores de prazo das férias */
+.hr-vac-due{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;border:1px solid transparent}
+.hr-vac-due-green{color:#146b3a;background:#e2f7e9;border-color:#a7e0b8}
+.hr-vac-due-yellow{color:#815900;background:#fff4cf;border-color:#f2d27a}
+.hr-vac-due-red{color:#a61c31;background:#ffebed;border-color:#f2a4ac}
+.hr-vac-due-neutral{color:#62758b;background:#eef2f6;border-color:#d9e2eb}
