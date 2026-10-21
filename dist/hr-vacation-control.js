@@ -33,20 +33,29 @@ async function extract(file){
  const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
  const rows=[],rejected=[];
  for(let p=1;p<=doc.numPages;p++){
-  const page=await doc.getPage(p),items=(await page.getTextContent()).items,groups=[];
-  for(const item of items){
-   const txt=String(item.str||'').trim(),y=item.transform?.[5],x=item.transform?.[4];
-   if(!txt||!Number.isFinite(y))continue;
-   let g=groups.find(g=>Math.abs(g.y-y)<=3);
-   if(!g){g={y,parts:[]};groups.push(g)}
-   g.parts.push({x:x||0,text:txt});
-  }
-  for(const group of groups){
-   const line=group.parts.sort((a,b)=>a.x-b.x).map(v=>v.text).join(' ').replace(/\s+/g,' ').trim();
-   const parsed=parseLine(line,p);
-   if(parsed)rows.push(parsed);
-   else if(/^\d+\s+[A-Za-zÀ-ÿ]/.test(line)&&/\d{2}\/\d{2}\/\d{4}/.test(line))rejected.push(line.slice(0,180));
-  }
+  const page=await doc.getPage(p),items=(await page.getTextContent()).items;
+  const tokens=items.map(t=>({text:String(t.str||'').trim(),x:t.transform?.[4],y:t.transform?.[5]})).filter(t=>t.text&&Number.isFinite(t.x)&&Number.isFinite(t.y));
+  const tryAxis=(axis,ascending)=>{
+   const groups=[];
+   for(const token of tokens){
+    const pos=token[axis];let group=groups.find(g=>Math.abs(g.pos-pos)<=2.5);
+    if(!group){group={pos,tokens:[]};groups.push(group)}
+    group.tokens.push(token);
+   }
+   const found=[],bad=[];
+   for(const group of groups){
+    const secondary=axis==='x'?'y':'x';
+    const line=group.tokens.sort((a,b)=>ascending?a[secondary]-b[secondary]:b[secondary]-a[secondary]).map(t=>t.text).join(' ').replace(/\\s+/g,' ').trim();
+    const parsed=parseLine(line,p);
+    if(parsed)found.push(parsed);
+    else if(/^\\d{1,6}\\s+[A-Za-zÀ-ÿ]/.test(line)&&/\\d{2}\\/\\d{2}\\/\\d{4}/.test(line))bad.push(line.slice(0,170));
+   }
+   return {found,bad};
+  };
+  const possibilities=[tryAxis('y',true),tryAxis('y',false),tryAxis('x',true),tryAxis('x',false)];
+  possibilities.sort((a,b)=>b.found.length-a.found.length);
+  rows.push(...possibilities[0].found);
+  rejected.push(...possibilities[0].bad);
  }
  if(!rows.length)throw Error('Não foi possível reconhecer as linhas do relatório. '+(rejected.length?'Linhas encontradas, mas fora do padrão: '+rejected.slice(0,2).join(' | '):'Nenhuma linha de funcionário reconhecida no texto do PDF.'));
  return rows;
