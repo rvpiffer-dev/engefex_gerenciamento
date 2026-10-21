@@ -5,7 +5,7 @@ const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').repl
 const iso=x=>/^\d\d\/\d\d\/\d{4}$/.test(x||'')?x.slice(6)+'-'+x.slice(3,5)+'-'+x.slice(0,2):'';
 const num=x=>/^\d+$/.test(x||'')?Number(x):0;
 const label=s=>root.EngefexNameCase?root.EngefexNameCase(s):s;
-async function extract(file){const pdf=await import('./vendor/pdf-4.10.38.min.mjs');const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer()),disableWorker:true}).promise;const rows=[];
+async function extract(file){const pdf=await import('./vendor/pdf-4.10.38.min.mjs');pdf.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdf.worker-4.10.38.min.mjs',import.meta.url).href;const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;const rows=[];
 for(let p=1;p<=doc.numPages;p++){const page=await doc.getPage(p),items=(await page.getTextContent()).items;const grouped=new Map();
 for(const t of items){const tx=String(t.str||'').trim(),x=t.transform?.[4],y=t.transform?.[5];if(!tx||!Number.isFinite(x)||!Number.isFinite(y))continue;const rowY=Math.round(y*2)/2;const key=[...grouped.keys()].find(k=>Math.abs(k-rowY)<=2)||rowY;grouped.set(key,[...(grouped.get(key)||[]),{x,text:tx}])}
 for(const parts of grouped.values()){const at=(a,b)=>parts.filter(q=>q.x>=a&&q.x<b).sort((x,y)=>x.x-y.x).map(x=>x.text).join(' ').trim();const code=at(18,38),name=at(38,205),admission=at(205,255),periodStart=at(358,420),periodEnd=at(420,478),deadline=at(681,732);if(!/^\d+$/.test(code)||!name||!iso(admission)||!iso(periodStart)||!iso(periodEnd))continue;
