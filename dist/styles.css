@@ -422,3 +422,7 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .hr-vac-due-yellow{color:#815900;background:#fff4cf;border-color:#f2d27a}
 .hr-vac-due-red{color:#a61c31;background:#ffebed;border-color:#f2a4ac}
 .hr-vac-due-neutral{color:#62758b;background:#eef2f6;border-color:#d9e2eb}
+
+/* Ordenação do estoque Nextar */
+.nextar-sort-field{display:flex;gap:8px;align-items:center;color:#355a7b;font-size:12px;font-weight:750;white-space:nowrap}
+.nextar-sort-field select{min-height:38px;padding:7px 11px;border:1px solid #c9dbea;border-radius:9px;background:#fff;color:#173e61;font:inherit}
