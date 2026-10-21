@@ -34,7 +34,7 @@ body.activity-focus .shell{padding:0!important}
 .at-project{margin:0 0 15px;background:#e0e9f8}
 .at-project-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px}
 
-.at-modal{position:fixed;inset:0;background:#0c1d39a9;z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px}
+.at-dialog .at-sheet-scroll{width:100%;overflow-x:auto;border:1px solid #cfdbed;border-radius:10px;background:white}.at-dialog .at-sheet{width:100%;border-collapse:collapse;table-layout:fixed;min-width:330px;color:#263b59}.at-dialog .at-sheet th{background:#e3ecfa;color:#26476b;text-align:left;font-size:12px;padding:10px;border-bottom:1px solid #cfdced}.at-dialog .at-sheet td{border-bottom:1px solid #e5ebf4;padding:4px 7px;vertical-align:middle;box-sizing:border-box}.at-dialog .at-sheet .at-check-row{display:table-row!important;width:auto!important}.at-dialog .at-sheet .at-row-number{text-align:center;font-size:12px;color:#73849b}.at-dialog .at-sheet .at-sheet-entry{display:block!important;width:100%!important;min-width:0!important;max-width:none!important;box-sizing:border-box!important;border:1px solid transparent!important;border-radius:5px!important;padding:10px!important;height:40px!important;background:white!important;color:#183152!important;opacity:1!important;pointer-events:auto!important;position:static!important;font-size:14px!important}.at-dialog .at-sheet .at-sheet-entry:focus{border-color:#3479e8!important;outline:2px solid #afcdfb!important}.at-dialog .at-sheet input[type=checkbox]{width:17px!important;height:17px!important;cursor:pointer}.at-dialog .at-sheet button{background:#fee6ea;border:0;color:#b32643;padding:7px 10px;border-radius:6px;cursor:pointer}.at-dialog .at-sheet tr:nth-child(even){background:#f5f8fe}.at-modal{position:fixed;inset:0;background:#0c1d39a9;z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px}
 .at-dialog{background:#f8fbff;color:#1c304e;width:min(780px,100%);max-height:94vh;overflow:auto;border-radius:20px;box-shadow:0 25px 80px #081d3d66}
 .at-dialog-head{background:linear-gradient(120deg,#173d77,#366dd4);color:white;padding:20px 24px;display:flex;justify-content:space-between;align-items:center}
 .at-dialog-head h2{color:white;margin:0;font-size:22px}.at-dialog-head button{color:#173d77;background:white;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
@@ -75,26 +75,48 @@ function edit(old,initialStatus='A fazer',again=false){
  '<label class="at-field">Situação<select name="status">'+choices(statuses,old?.status||initialStatus)+'</select></label>'+
  '<label class="at-field">Categoria / etiqueta<input name="tag" placeholder="Projeto, compra, montagem..." value="'+esc(old?.tag||'')+'"></label>'+
  '<label class="at-field wide">Observações<textarea name="notes" placeholder="Informações adicionais">'+esc(old?.notes||'')+'</textarea></label>'+
- '<div class="at-field wide"><strong>Checklist / subtarefas</strong><div id="atCheckList"></div><button class="at-check-add" id="atCheckAdd" type="button">＋ Adicionar subtarefa</button></div></div>'+
+ '<div class="at-field wide"><strong>Planilha de subtarefas</strong><small>Cole uma coluna do Excel (Ctrl+V) para adicionar várias linhas. Enter cria uma nova linha.</small><div class="at-sheet-scroll"><table class="at-sheet"><thead><tr><th style="width:45px">Nº</th><th>Subtarefa</th><th style="width:83px">Feita</th><th style="width:40px"></th></tr></thead><tbody id="atCheckList"></tbody></table></div><button class="at-check-add" id="atCheckAdd" type="button">＋ Nova linha</button></div></div>'+
  '<div class="at-dialog-actions"><button id="atCancel" type="button">Cancelar</button>'+(old?'<button id="atDelete" type="button" style="background:#ffe0e0;color:#b42340;margin-right:auto">Excluir atividade</button>':'<button id="atSaveAnother" type="button">Salvar e criar outra</button>')+'<button class="primary" type="submit" id="atSave">Salvar atividade</button></div></form></div>';
  document.body.appendChild(modal);
  const form=modal.querySelector('#atTaskForm'),list=modal.querySelector('#atCheckList');
- function addCheck(t='',done=false){
-  const row=document.createElement('div');row.className='at-check-row';
-  const checked=document.createElement('input');checked.type='checkbox';checked.checked=done;checked.setAttribute('aria-label','Subtarefa concluída');
-  const entry=document.createElement('input');entry.type='text';entry.placeholder='Digite a subtarefa aqui';entry.value=t;entry.setAttribute('aria-label','Descrição da subtarefa');
-  const remove=document.createElement('button');remove.type='button';remove.textContent='✕';remove.setAttribute('aria-label','Remover subtarefa');remove.addEventListener('click',()=>row.remove());
-  row.append(checked,entry,remove);list.appendChild(row);entry.focus();return row;
+ function renumber(){[...list.rows].forEach((row,i)=>row.querySelector('.at-row-number').textContent=String(i+1))}
+ function addCheck(t='',done=false,focus=true){
+  const row=document.createElement('tr');row.className='at-check-row';
+  const num=document.createElement('td');num.className='at-row-number';
+  const cell=document.createElement('td');
+  const entry=document.createElement('input');entry.type='text';entry.className='at-sheet-entry';entry.placeholder='Digite ou cole uma subtarefa';entry.value=t;entry.setAttribute('aria-label','Texto da subtarefa');
+  cell.appendChild(entry);
+  const completion=document.createElement('td');const checked=document.createElement('input');checked.type='checkbox';checked.checked=done;checked.setAttribute('aria-label','Concluída');completion.appendChild(checked);
+  const actions=document.createElement('td');const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Remover linha');remove.onclick=()=>{row.remove();renumber();if(!list.rows.length)addCheck()};actions.appendChild(remove);
+  row.append(num,cell,completion,actions);list.appendChild(row);renumber();if(focus)entry.focus();return row
  }
- check.forEach(x=>addCheck(x.text||'',!!x.done));
- if(!check.length)addCheck();
- const addButton=modal.querySelector('#atCheckAdd');
- addButton.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();addCheck()});
- list.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('input[type="text"]')){event.preventDefault();addCheck()}});
+ check.forEach(x=>addCheck(x.text||'',!!x.done,false));
+ if(!check.length)addCheck('',false,false);
+ modal.querySelector('#atCheckAdd').onclick=e=>{e.preventDefault();addCheck()};
+ list.addEventListener('paste',event=>{
+  if(!event.target.classList.contains('at-sheet-entry'))return;
+  const raw=event.clipboardData?.getData('text/plain')||'';
+  if(!/[\r\n\t]/.test(raw))return;
+  event.preventDefault();
+  const lines=raw.replace(/\r\n?/g,'\n').split('\n').filter((line,i,arr)=>i<arr.length-1||line!=='');
+  if(!lines.length)return;
+  const entry=event.target;let row=entry.closest('tr');
+  const first=lines[0].split('\t');entry.value=first.find(x=>x.trim())||'';
+  if(first.length>1){const marker=first.map(x=>x.trim().toLowerCase());row.querySelector('input[type=checkbox]').checked=marker.some(x=>['sim','feito','concluída','concluido','true','1','x'].includes(x))}
+  for(const line of lines.slice(1)){
+   const cells=line.split('\t');const item=addCheck(cells.find(x=>x.trim())||'',cells.some(x=>['sim','feito','concluída','concluido','true','1','x'].includes(x.trim().toLowerCase())),false);
+   row.after(item);row=item;
+  }
+  renumber();
+ });
+ list.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'||!event.target.classList.contains('at-sheet-entry'))return;
+  event.preventDefault();const row=event.target.closest('tr');const newRow=addCheck('',false,false);row.after(newRow);renumber();newRow.querySelector('.at-sheet-entry').focus();
+ });
  const close=()=>modal.remove();
  modal.querySelector('#atClose').onclick=close;modal.querySelector('#atCancel').onclick=close;
  modal.addEventListener('click',e=>{if(e.target===modal)close()});
- async function commit(repeat=false){if(!form.reportValidity())return;const fd=new FormData(form),newStatus=fd.get('status');const task={...old,id:old?.id||crypto.randomUUID(),title:String(fd.get('title')).trim(),description:String(fd.get('description')||''),project:fd.get('project'),assignee:'',due:fd.get('due'),priority:fd.get('priority'),status:newStatus,tag:fd.get('tag'),notes:fd.get('notes'),checklist:[...list.querySelectorAll('.at-check-row')].map(r=>({text:r.querySelector('input[type=text]').value.trim(),done:r.querySelector('input[type=checkbox]').checked})).filter(x=>x.text),createdAt:old?.createdAt||new Date().toISOString(),completedAt:newStatus==='Concluída'?(old?.completedAt||new Date().toISOString()):null};if(!task.title)return;form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await save(task);close();if(repeat){const fresh=(window.EngefexBoardState?.state)||null;setTimeout(()=>document.getElementById('atAdd')?.click(),0)}}catch(e){toast(e.message);form.querySelectorAll('button').forEach(b=>b.disabled=false)}}
+ async function commit(repeat=false){if(!form.reportValidity())return;const fd=new FormData(form),newStatus=fd.get('status');const task={...old,id:old?.id||crypto.randomUUID(),title:String(fd.get('title')).trim(),description:String(fd.get('description')||''),project:fd.get('project'),assignee:'',due:fd.get('due'),priority:fd.get('priority'),status:newStatus,tag:fd.get('tag'),notes:fd.get('notes'),checklist:[...list.querySelectorAll('.at-check-row')].map(r=>({text:r.querySelector('.at-sheet-entry').value.trim(),done:r.querySelector('input[type=checkbox]').checked})).filter(x=>x.text),createdAt:old?.createdAt||new Date().toISOString(),completedAt:newStatus==='Concluída'?(old?.completedAt||new Date().toISOString()):null};if(!task.title)return;form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await save(task);close();if(repeat){const fresh=(window.EngefexBoardState?.state)||null;setTimeout(()=>document.getElementById('atAdd')?.click(),0)}}catch(e){toast(e.message);form.querySelectorAll('button').forEach(b=>b.disabled=false)}}
  form.onsubmit=e=>{e.preventDefault();commit(false)};const another=modal.querySelector('#atSaveAnother');if(another)another.onclick=()=>commit(true);
  const del=modal.querySelector('#atDelete');if(del)del.onclick=async()=>{if(!confirm('Excluir esta atividade definitivamente?'))return;let next=structuredClone(s);next.boardTasks=model(next).filter(t=>t.id!==old.id);try{await persist(next,'Atividade excluída.');close();render()}catch(e){toast(e.message)}};
  form.elements.title.focus()
