@@ -5,10 +5,11 @@ const heading=(text)=>new Paragraph({children:[new TextRun({text,font:'Arial',si
 const br=()=>new Paragraph({children:[new PageBreak()]});
 function cell(content,width){return new TableCell({children:typeof content==='string'?[p(content,{spacing:{after:40}})]:content,width:{size:width,type:WidthType.DXA},margins:{top:60,bottom:60,left:80,right:80}})}
 function table(rows,widths){return new Table({width:{size:100,type:WidthType.PERCENTAGE},columnWidths:widths,rows:rows.map(row=>new TableRow({cantSplit:true,children:row.map((x,i)=>cell(x,widths[i]))})),borders:Object.fromEntries(['top','bottom','left','right','insideHorizontal','insideVertical'].map(x=>[x,{style:BorderStyle.SINGLE,size:4,color:'000000'}]))})}
-function photoCell(photo,width){const scale=Math.min(width/photo.width,390/photo.height);return new TableCell({children:[new Paragraph({children:[new ImageRun({data:photo.bytes,type:photo.bytes[0]===137?'png':'jpg',transformation:{width:Math.round(photo.width*scale),height:Math.round(photo.height*scale)},altText:{title:'Registro fotográfico',description:photo.caption||'Foto da obra',name:'Foto'}})],alignment:AlignmentType.CENTER,spacing:{after:70}}),...(photo.caption?[p(photo.caption,{spacing:{after:90}})]:[])],margins:{top:0,bottom:30,left:0,right:60}})}
+async function formatReportPhoto(e){const blob=new Blob([e.bytes],{type:e.bytes[0]===137?`image/png`:`image/jpeg`}),url=URL.createObjectURL(blob),img=new Image();try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error(`Não foi possível preparar a foto do diário.`));img.src=url})}finally{URL.revokeObjectURL(url)}const canvas=document.createElement(`canvas`);canvas.width=e.width>=e.height?1900:935;canvas.height=1300;const ctx=canvas.getContext(`2d`);if(!ctx)throw Error(`Falha ao preparar foto.`);let w=img.naturalWidth,h=img.naturalHeight,ratio=canvas.width/canvas.height;if(w/h>ratio)w=h*ratio;else h=w/ratio;ctx.drawImage(img,(img.naturalWidth-w)/2,(img.naturalHeight-h)/2,w,h,0,0,canvas.width,canvas.height);const result=await new Promise((resolve,reject)=>canvas.toBlob(e=>e?resolve(e):reject(Error(`Não foi possível processar a foto.`)),`image/jpeg`,.9));return{...e,bytes:new Uint8Array(await result.arrayBuffer()),width:canvas.width,height:canvas.height}}
+function photoCell(photo,newPage=false){return new TableCell({children:[new Paragraph({children:[new ImageRun({data:photo.bytes,type:photo.bytes[0]===137?'png':'jpg',transformation:{width:(photo.width>=photo.height?19:9.35)*96/2.54,height:13*96/2.54},altText:{title:'Registro fotográfico',description:photo.caption||'Foto da obra',name:'Foto'}})],alignment:AlignmentType.LEFT,pageBreakBefore:newPage,keepNext:!!photo.caption,spacing:{before:0,after:0}}),...(photo.caption?[p(photo.caption,{spacing:{before:40,after:0,line:220}})]:[])],margins:{top:0,bottom:0,left:0,right:0}})}
 function orderPhotosForReport(photos){const portraits=[],landscapes=[];for(const photo of photos)(photo.height>photo.width?portraits:landscapes).push(photo);return [...portraits,...landscapes];}
 export async function buildDocx(r,w,logo,photos){
- photos=orderPhotosForReport(photos);
+ photos=await Promise.all(orderPhotosForReport(photos).map(formatReportPhoto));
  const children=[new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:logo,type:'png',transformation:{width:150,height:111},altText:{title:'Engefex',description:'Engefex Engenharia e Estruturas Metálicas',name:'Logo'}})],spacing:{before:280,after:200}}),new Paragraph({alignment:AlignmentType.CENTER,children:[new TextRun({text:'DIÁRIO DE OBRA',font:'Arial',size:26,bold:true,color:'315D98'})],spacing:{after:350}}),table([['Obra',w.name,'Cliente',w.client],['Data',r.date.split('-').reverse().join('/'),'DO nº',r.number],['Responsável Técnico',w.technical,'CREA',w.crea]],[2100,4200,1400,2500]),heading('1. Condições Climáticas')];
  const checks=v=>['Sol','Chuva','Nublado'].map(x=>`( ${v===x?'X':' '} ) ${x}`).join('    ');
  const climate=new Table({width:{size:100,type:WidthType.PERCENTAGE},columnWidths:[5100,5100],borders:Object.fromEntries(['top','bottom','left','right','insideHorizontal','insideVertical'].map(x=>[x,{style:BorderStyle.NONE,size:0,color:'FFFFFF'}])),rows:[new TableRow({children:[cell([p('Manhã'),p(checks(r.morning))],5100),cell([p('Tarde'),p(checks(r.afternoon))],5100)]})]});
@@ -16,19 +17,18 @@ export async function buildDocx(r,w,logo,photos){
  for(const a of r.activities.split('\n').filter(x=>x.trim()))children.push(p(a.replace(/^[•\-]\s*/,''),{bullet:{level:0},spacing:{after:70}}));
  children.push(new Paragraph({text:'',spacing:{before:1400,after:0}}),heading('4. Equipamentos Utilizados'),p(['Munck','Caminhão','Máquina de Solda','Betoneira','Rompedor'].map(x=>`( ${r.equipment.includes(x)?'X':' '} ) ${x}`).join('  ')),p(`( ${r.other?'X':' '} ) Outros: ${r.other}`),new Paragraph({text:'',spacing:{before:1700,after:0}}),heading('5. Observações Relevantes'));
  for(const line of r.observations.split('\n'))children.push(p(line));
- children.push(br(),heading('6. Registro Fotográfico'));
+ children.push(br(),new Paragraph({children:[new TextRun({text:'6. Registro Fotográfico',font:'Arial',size:22,bold:true,color:blue})],spacing:{before:0,after:210,line:260},keepNext:true}));
  let used=0;
  if(!photos.length)children.push(p('Nenhuma foto anexada.'));
- for(let i=0;i<photos.length;){let group=[photos[i++]];if(group[0].height>group[0].width&&photos[i]&&photos[i].height>photos[i].width)group.push(photos[i++]);
- const width=group.length===2?330:680;
- const h=Math.max(...group.map(ph=>Math.min(390,ph.height*width/ph.width)))+20+(group.some(x=>x.caption)?25:0);
- if(used+h>890){children.push(br());used=0}
+ for(let i=0,rowIndex=0;i<photos.length;rowIndex++){let group=[photos[i++]];if(group[0].height>group[0].width&&photos[i]&&photos[i].height>photos[i].width)group.push(photos[i++]);
+ const h=13*96/2.54+12+(group.some(x=>x.caption)?30:0);
  const none={style:BorderStyle.NONE,size:0,color:'FFFFFF'};
- children.push(new Table({width:{size:100,type:WidthType.PERCENTAGE},borders:{top:none,bottom:none,left:none,right:none,insideHorizontal:none,insideVertical:none},rows:[new TableRow({cantSplit:true,children:group.map(ph=>photoCell(ph,width))})]}));used+=h;
+ const newPage=rowIndex>0&&rowIndex%2===0,cells=group.length===2?[photoCell(group[0],newPage),new TableCell({width:{size:170,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},children:[new Paragraph({text:'',spacing:{before:0,after:0,line:1}})]}),photoCell(group[1]) ]:[photoCell(group[0],newPage)];
+ children.push(new Table({width:{size:10772,type:WidthType.DXA},columnWidths:group.length===2?[5301,170,5301]:[10772],layout:'fixed',borders:{top:none,bottom:none,left:none,right:none,insideHorizontal:none,insideVertical:none},rows:[new TableRow({cantSplit:true,children:cells})]}));used+=h;
+ if(i<photos.length&&rowIndex%2===0)children.push(new Paragraph({text:'',spacing:{before:0,after:0,line:182,lineRule:'exact'}}));
  }
- if(used>650)children.push(br());
  children.push(heading('7. Assinaturas'),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n','\n\n','\n\n'],[r.author,r.engineer,r.inspector]],[3400,3400,3400]));
- const doc=new Document({creator:'Diário de Obras',title:`Diário de Obra ${r.number}`,description:w.name,styles:{default:{document:{run:{font:'Arial',size:20},paragraph:{spacing:{line:250}}}}},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:850,bottom:850,left:720,right:720}}},children}]});
+ const doc=new Document({creator:'Diário de Obras',title:`Diário de Obra ${r.number}`,description:w.name,styles:{default:{document:{run:{font:'Arial',size:20},paragraph:{spacing:{line:250}}}}},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:822,bottom:567,left:709,right:425}}},children}]});
  return new Uint8Array(await Packer.toArrayBuffer(doc));
 }
 

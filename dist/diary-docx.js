@@ -1,19 +1,18 @@
 (function(root){'use strict';
-// Word interpreta as dimensões de ImageRun em pixels CSS (96 dpi).
-// Paisagem: até 19 x 13 cm; retrato: 9 x 16 cm (9:16).
-// Retratos são recortados apenas durante a exportação: os anexos originais não são modificados.
-function dimensions(w,h){const pxPerCm=96/2.54;const landscape=w>=h;const maxWidth=(landscape?19:9)*pxPerCm,maxHeight=(landscape?13:16)*pxPerCm;const scale=Math.min(maxWidth/w,maxHeight/h);return {width:Math.max(1,Math.round(w*scale)),height:Math.max(1,Math.round(h*scale))}}
+// Modelo Diário 076: A4, retratos 9,35 x 13 cm, paisagens 19 x 13 cm.
+// O enquadramento acontece só na exportação, preservando os anexos originais.
+const PHOTO_LAYOUT={portraitWidth:9.35,landscapeWidth:19,height:13,margins:{top:822,bottom:567,left:709,right:425}};
+function dimensions(w,h){return {width:(w>=h?PHOTO_LAYOUT.landscapeWidth:PHOTO_LAYOUT.portraitWidth)*96/2.54,height:PHOTO_LAYOUT.height*96/2.54}}
 async function formatPhotos(photos){
  return Promise.all(photos.map(async photo=>{
-  if(photo.width>=photo.height)return photo;
   const img=new Image();
-  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não foi possível ajustar uma foto para 9:16.'));img.src=photo.dataURL;});
-  const canvas=document.createElement('canvas');canvas.width=900;canvas.height=1600;
+  await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('Não foi possível preparar a foto do diário.'));img.src=photo.dataURL;});
+  const landscape=photo.width>=photo.height,canvas=document.createElement('canvas');canvas.width=landscape?1900:935;canvas.height=1300;
   const context=canvas.getContext('2d');if(!context)throw Error('Não foi possível preparar a fotografia.');
-  const ratio=9/16;let sw=img.naturalWidth,sh=img.naturalHeight;
+  const ratio=canvas.width/canvas.height;let sw=img.naturalWidth,sh=img.naturalHeight;
   if(sw/sh>ratio)sw=sh*ratio;else sh=sw/ratio;
-  context.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,0,0,900,1600);
-  return {...photo,width:900,height:1600,dataURL:canvas.toDataURL('image/jpeg',0.9)};
+  context.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,0,0,canvas.width,canvas.height);
+  return {...photo,width:canvas.width,height:canvas.height,dataURL:canvas.toDataURL('image/jpeg',0.9)};
  }));
 }
 function orderPhotosForReport(photos){const portraits=[],landscapes=[];for(const photo of photos)(photo.height>photo.width?portraits:landscapes).push(photo);return [...portraits,...landscapes];}
@@ -30,36 +29,22 @@ children.push(heading('1. Condições Climáticas'),table([['Manhã','Tarde'],[c
 children.push(heading('2. Efetivo da Obra'),table([['Função','Qtd.','Empresa','Horas'],...(record.staff?.length?record.staff.map(r=>[r.role,r.quantity,r.company,r.hours]):[['','','','']])],[3300,1000,3300,2000],true));
 children.push(heading('3. Atividades Executadas',true),p(text(record.description)),heading('4. Equipamentos Utilizados'),p(text(record.equipment)),heading('5. Observações Relevantes'));
 let observations=[record.observations,record.materials?'Materiais: '+record.materials:'',record.inspections?'Inspeções e liberações: '+record.inspections:'',record.interference?'Interferências e pendências: '+record.interference:'',record.instructions?'Orientações recebidas: '+record.instructions:'',record.nextDay?'Planejamento do próximo dia: '+record.nextDay:''].filter(Boolean);children.push(p(observations.join('\n\n')||'—'));
-children.push(heading('6. Registro Fotográfico',true));
+children.push(new Paragraph({text:'6. Registro Fotográfico',heading:HeadingLevel.HEADING_1,pageBreakBefore:true,keepNext:true,spacing:{before:0,after:180,line:260}}));
 if(!photos.length)children.push(p('Sem fotos anexadas a este registro.'));
 const portrait=photo=>photo.width<photo.height;
-const photoImage=(photo,i)=>new ImageRun({type:photo.dataURL.startsWith('data:image/png')?'png':'jpg',data:photo.dataURL,transformation:dimensions(photo.width,photo.height),altText:{title:'Foto '+(i+1),description:photo.caption||photo.name,name:photo.name}});
-function photoContents(photo,i){
- return [
-   p('Foto '+(i+1)+' de '+photos.length,{keepNext:true,spacing:{after:80}}),
-   new Paragraph({children:[photoImage(photo,i)],alignment:AlignmentType.CENTER,keepNext:true,spacing:{after:100}}),
-   p(text(photo.caption||photo.name),{spacing:{after:80}})
- ];
+const photoImage=(photo,i)=>new ImageRun({type:photo.dataURL.startsWith('data:image/png')?'png':'jpg',data:photo.dataURL,transformation:dimensions(photo.width,photo.height),altText:{title:'Foto '+(i+1),description:photo.caption||photo.name||'Foto da obra',name:photo.name||'Foto'}});
+function photoContents(photo,i,newPage=false){return [new Paragraph({children:[photoImage(photo,i)],alignment:AlignmentType.LEFT,pageBreakBefore:newPage,keepNext:!!photo.caption,spacing:{before:0,after:0}}),...(photo.caption?[p(photo.caption,{spacing:{before:40,after:0,line:220}})]:[])];}
+function photoRow(group,start,newPage){
+ const gap=170,portraitWidth=5301,fullWidth=10772;
+ const cell=(photo,i,width)=>new TableCell({width:{size:width,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},children:photoContents(photo,start+i,newPage&&i===0)});
+ const cells=group.length===2?[cell(group[0],0,portraitWidth),new TableCell({width:{size:gap,type:WidthType.DXA},margins:{top:0,bottom:0,left:0,right:0},children:[new Paragraph({text:'',spacing:{before:0,after:0,line:1}})]}),cell(group[1],1,portraitWidth)]:[cell(group[0],0,fullWidth)];
+ const none={style:BorderStyle.NONE,size:0,color:'FFFFFF'};
+ return new Table({width:{size:fullWidth,type:WidthType.DXA},columnWidths:group.length===2?[portraitWidth,gap,portraitWidth]:[fullWidth],layout:TableLayoutType.FIXED,borders:{top:none,bottom:none,left:none,right:none,insideVertical:none,insideHorizontal:none},rows:[new TableRow({cantSplit:true,children:cells})]});
 }
-function portraitPair(i){
- // Duas colunas de aproximadamente 9,70 cm permitem retratos de até 9,35 cm
- // e folga para margens internas, dentro da área útil de 20 cm no A4.
- const cell=(idx)=>new TableCell({width:{size:5500,type:WidthType.DXA},margins:{top:40,bottom:40,left:55,right:55},children:photoContents(photos[idx],idx)});
- return new Table({width:{size:11000,type:WidthType.DXA},columnWidths:[5500,5500],layout:TableLayoutType.FIXED,
-  borders:{top:{style:BorderStyle.NONE},bottom:{style:BorderStyle.NONE},left:{style:BorderStyle.NONE},right:{style:BorderStyle.NONE},insideVertical:{style:BorderStyle.NONE},insideHorizontal:{style:BorderStyle.NONE}},
-  rows:[new TableRow({cantSplit:true,children:[cell(i),cell(i+1)]})]});
-}
-for(let i=0;i<photos.length;){
- if(portrait(photos[i])&&i+1<photos.length&&portrait(photos[i+1])){
-  children.push(portraitPair(i));i+=2;
- }else{
-  // Fotos em paisagem ocupam uma linha exclusiva; retratos ímpares também.
-  children.push(...photoContents(photos[i],i));i++;
- }
-}
-children.push(heading('7. Assinaturas',true),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n________________________\n'+text(record.author),'\n\n________________________\n'+text(record.engineer),'\n\n________________________\n'+text(record.inspector)]],[3200,3200,3200],true));
-return new Document({creator:'Engefex Engenharia e Estruturas Metálicas',title:'Diário de Obra '+text(record.number),styles:{default:{document:{run:{font:'Arial',size:22,color:'000000'},paragraph:{spacing:{after:130,line:260}}}},paragraphStyles:[{id:'Title',name:'Title',basedOn:'Normal',next:'Normal',run:{font:'Arial',size:30,bold:true,color:'365F91'}},{id:'Heading1',name:'heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'Arial',size:24,bold:true,color:'4F81BD'},paragraph:{keepNext:true}}]},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:284,bottom:284,left:284,right:284}}},children}]});}
+for(let i=0,rowIndex=0;i<photos.length;rowIndex++){const start=i,group=[photos[i++]];if(portrait(group[0])&&photos[i]&&portrait(photos[i]))group.push(photos[i++]);children.push(photoRow(group,start,rowIndex>0&&rowIndex%2===0));if(i<photos.length&&rowIndex%2===0)children.push(new Paragraph({text:'',spacing:{before:0,after:0,line:182,lineRule:'exact'},run:{size:2}}));}
+children.push(heading('7. Assinaturas'),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n________________________\n'+text(record.author),'\n\n________________________\n'+text(record.engineer),'\n\n________________________\n'+text(record.inspector)]],[3200,3200,3200],true));
+return new Document({creator:'Engefex Engenharia e Estruturas Metálicas',title:'Diário de Obra '+text(record.number),styles:{default:{document:{run:{font:'Arial',size:22,color:'000000'},paragraph:{spacing:{after:130,line:260}}}},paragraphStyles:[{id:'Title',name:'Title',basedOn:'Normal',next:'Normal',run:{font:'Arial',size:30,bold:true,color:'365F91'}},{id:'Heading1',name:'heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'Arial',size:24,bold:true,color:'4F81BD'},paragraph:{keepNext:true}}]},sections:[{properties:{page:{size:{width:11906,height:16838},margin:PHOTO_LAYOUT.margins}},children}]});}
 function filename(project,record){return ('Diario_'+(record.number||'sem_numero')+'_'+project.name+'_'+(record.date||'sem_data')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]/g,'_')+'.docx'}
-let api={createDocument,dimensions,formatPhotos,filename,orderPhotosForReport};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
+let api={createDocument,dimensions,formatPhotos,filename,orderPhotosForReport,PHOTO_LAYOUT};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
 })(typeof window==='undefined'?globalThis:window);
 
