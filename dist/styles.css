@@ -323,3 +323,45 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .hr-panel .hr-deadline.hr-overdue{background:#fee2e2!important;color:#991b1b!important;border-color:#fca5a5!important}
 .hr-panel .hr-deadline.hr-upcoming{background:#fef3c7!important;color:#92400e!important;border-color:#fcd34d!important}
 .hr-panel .hr-deadline.hr-neutral{background:#e8f2ff!important;color:#225588!important;border-color:#c6daf8!important}
+
+
+/* RH DESIGN SYSTEM v4.13.28 — alinhamento, hierarquia, legibilidade e responsividade */
+body:has(.hr-hero) #main{--rh-ink:#18324d;--rh-muted:#61768e;--rh-line:#dce6f1;--rh-surface:#fff;--rh-blue:#1762b4}
+body:has(.hr-hero) .hr-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;min-height:132px;padding:27px 32px!important;border:0!important;border-radius:18px!important;background:linear-gradient(120deg,#102b4d 0%,#20558f 67%,#3979b4 100%)!important;box-shadow:0 10px 25px #1c41672b!important}
+body:has(.hr-hero) .hr-hero:after{content:"";position:absolute;right:-70px;top:-120px;width:360px;height:340px;pointer-events:none;border:1px solid #ffffff36;border-radius:50%;box-shadow:0 0 0 55px #ffffff09,0 0 0 105px #ffffff07}
+body:has(.hr-hero) .hr-hero h1{font-size:clamp(25px,3vw,34px)!important;line-height:1.15!important;font-weight:800}
+body:has(.hr-hero) .hr-panel,body:has(.hr-hero) section.panel{border:1px solid var(--rh-line)!important;border-radius:16px!important;box-shadow:0 4px 17px #183c6210!important;background:#fff!important;padding:22px 24px!important;margin-bottom:18px!important;overflow:visible}
+body:has(.hr-hero) .panel-head{display:flex;align-items:center;justify-content:space-between;gap:15px;min-height:46px;border-bottom:1px solid #e8eef5;padding:0 0 16px!important;margin:0 0 19px!important}
+body:has(.hr-hero) .panel-head h2{font-size:18px!important;font-weight:800!important;color:#183a5d!important;margin:0!important}
+.hr-section-kicker{display:block;font-size:10px;font-weight:800;letter-spacing:1.2px;color:#5386bb;margin-bottom:6px}
+.hr-panel-subtitle{font-size:12px;color:#72869a;margin:5px 0 0}
+body:has(.hr-hero) .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:end;gap:15px!important}
+body:has(.hr-hero) .form-grid label{display:flex;flex-direction:column;justify-content:flex-end;gap:8px;min-width:0;margin:0;color:#3a5774;font-weight:750}
+body:has(.hr-hero) .form-grid select,body:has(.hr-hero) .form-grid input{width:100%;min-height:44px;min-width:0;background:#f9fbff!important;color:#173650!important;border:1px solid #cad9e9!important;border-radius:10px!important;padding:10px 12px!important;font-size:13px}
+body:has(.hr-hero) .form-grid input:focus,body:has(.hr-hero) .form-grid select:focus{outline:3px solid #b9d9fc;border-color:#2678c9!important}
+body:has(.hr-hero) .button{display:inline-flex!important;align-items:center;justify-content:center;gap:8px;min-height:37px;border-radius:9px!important;font-weight:750!important;line-height:1.2;white-space:nowrap;transition:transform .12s,box-shadow .12s,background .12s}
+body:has(.hr-hero) .button:hover{transform:translateY(-1px)}
+body:has(.hr-hero) .button.primary{background:#1766b7!important;border-color:#1766b7!important;color:#fff!important;box-shadow:0 4px 10px #1766b728}
+body:has(.hr-hero) .button.secondary{background:#f1f6fc!important;color:#245680!important;border:1px solid #d6e4f2!important}
+body:has(.hr-hero) .button svg,.hr-editor .button svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+body:has(.hr-hero) .hr-tabs{padding:5px;background:#eaf2fb;border-color:#dae6f3;gap:5px;border-radius:12px}
+body:has(.hr-hero) .hr-tab-button{font-size:13px;min-height:43px}
+body:has(.hr-hero) .hr-tab-button.selected{color:#14539a!important;border-color:#cbdef3!important}
+body:has(.hr-hero) .hr-table-wrap,body:has(.hr-hero) section.panel>div[style*="overflow:auto"]{overflow:auto!important;border:1px solid #e0e9f4;border-radius:12px;max-width:100%}
+body:has(.hr-hero) table{width:100%;border-collapse:collapse!important;min-width:650px;table-layout:auto}
+body:has(.hr-hero) table th{text-align:left!important;vertical-align:middle;background:#edf4fc!important;color:#415d7a!important;font-size:11px!important;letter-spacing:.55px;font-weight:800!important;padding:14px 15px!important;white-space:nowrap}
+body:has(.hr-hero) table td{vertical-align:middle!important;padding:13px 15px!important;font-size:13px;color:#28445d;line-height:1.5;border-bottom:1px solid #eaf0f6!important}
+body:has(.hr-hero) table tbody tr:nth-child(even){background:#f9fbfe}
+body:has(.hr-hero) table tbody tr:hover{background:#edf6ff!important}
+body:has(.hr-hero) table td:last-child,body:has(.hr-hero) table th:last-child{text-align:right!important;white-space:nowrap}
+body:has(.hr-hero) table td .button{margin:2px 1px!important;padding:8px 11px!important;min-height:34px;font-size:12px!important}
+body:has(.hr-hero) .hr-data-table td:first-child{font-weight:750}
+body:has(.hr-hero) #hrImportMessage{font-size:12px;color:#52718f}
+.hr-empty-state{text-align:center;padding:48px 20px;color:#3d5a79;border-top:1px solid #edf1f6}
+.hr-empty-state strong{font-size:17px;color:#234c72}
+.hr-empty-state p{color:#7c91a7;font-size:13px;margin:7px 0 0}
+body:has(.hr-hero) .hr-editor{border-radius:18px!important}
+.hr-editor form{margin:0}.hr-editor-footer{display:flex;flex-wrap:wrap;align-items:center}
+.hr-profile-row small{display:block;color:#65829c;font-size:11px;font-weight:750;margin-bottom:4px}
+@media(max-width:1020px){body:has(.hr-hero) .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){body:has(.hr-hero) .hr-hero{min-height:115px;padding:23px 19px!important}body:has(.hr-hero) .hr-panel,body:has(.hr-hero) section.panel{padding:17px 14px!important;border-radius:13px!important}body:has(.hr-hero) .form-grid{grid-template-columns:1fr;gap:12px!important}body:has(.hr-hero) .panel-head{flex-wrap:wrap;align-items:flex-start}body:has(.hr-hero) .panel-head>.button{width:100%}body:has(.hr-hero) table{min-width:630px}body:has(.hr-hero) .hr-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}body:has(.hr-hero) .hr-tab-button{font-size:12px}}
