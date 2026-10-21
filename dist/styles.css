@@ -426,3 +426,6 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 /* Ordenação do estoque Nextar */
 .nextar-sort-field{display:flex;gap:8px;align-items:center;color:#355a7b;font-size:12px;font-weight:750;white-space:nowrap}
 .nextar-sort-field select{min-height:38px;padding:7px 11px;border:1px solid #c9dbea;border-radius:9px;background:#fff;color:#173e61;font:inherit}
+
+/* RH férias: filtros e ordenação */
+.hr-vac-filters{display:grid;grid-template-columns:minmax(210px,1.4fr) repeat(2,minmax(170px,1fr)) auto;align-items:end;gap:13px;margin:6px 0 16px}.hr-vac-filters label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:750;color:#355875}.hr-vac-filters input,.hr-vac-filters select{height:40px;width:100%;min-width:0;padding:8px 11px;border:1px solid #cbddec;border-radius:9px;background:#f9fbfe;color:#214767}.hr-vac-filters>.button{height:40px;margin:0!important;white-space:nowrap}@media(max-width:1100px){.hr-vac-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.hr-vac-filters{grid-template-columns:1fr}}
