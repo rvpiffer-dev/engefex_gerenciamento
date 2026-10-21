@@ -375,3 +375,8 @@ body:has(.hr-hero) .hr-actions-cell{display:flex;align-items:center;justify-cont
 body:has(.hr-hero) .hr-actions-cell>.button{display:inline-flex!important;align-items:center!important;justify-content:center!important;height:37px;min-height:37px!important;line-height:1!important;padding:0 12px!important;margin:0!important;vertical-align:middle}
 body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 @media(max-width:720px){body:has(.hr-hero) .hr-toolbar{overflow-x:auto;max-width:100%}}
+
+/* RH: ação destrutiva separada das ações comuns */
+.hr-editor-footer .hr-delete-button{margin-right:auto!important;background:#fff1f2!important;color:#a31b36!important;border:1px solid #fecdd3!important}
+.hr-editor-footer .hr-delete-button:hover{background:#ffe4e6!important}
+@media(max-width:600px){.hr-editor-footer .hr-delete-button{flex:1 1 100%;margin-right:0!important}}
