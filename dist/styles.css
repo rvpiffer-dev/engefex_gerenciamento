@@ -263,3 +263,25 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 
 
 .access-user-tools{margin:16px 0}.access-create-user{margin:16px 0;padding:20px}.access-user-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.access-user-fields label{display:grid;gap:7px}.access-user-fields input{width:100%;min-width:0}.access-create-user [role=status]{overflow-wrap:anywhere}@media(max-width:600px){.access-user-fields{grid-template-columns:1fr}.access-create-user{padding:14px}}
+
+
+/* RH Engefex — edição visual */
+.hr-editor{width:min(640px,calc(100vw - 28px));max-width:640px;max-height:min(88vh,900px);padding:0;border:1px solid #d9e4ef;border-radius:20px;background:#fff;color:#233950;box-shadow:0 30px 100px #0c244b50;overflow:auto}
+.hr-editor::backdrop{background:rgba(12,29,53,.62);backdrop-filter:blur(3px)}
+.hr-editor-header{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:28px 30px 23px;background:linear-gradient(125deg,#f2f7ff,#fff);border-bottom:1px solid #e8eef6}
+.hr-editor-header small{font-size:10px;letter-spacing:1.1px;font-weight:800;color:#52749d}
+.hr-editor-header h2{font-size:23px;letter-spacing:-.45px;color:#173c61;margin:7px 0 5px}
+.hr-editor-header p{font-size:13px;color:#718396;margin:0}
+.hr-editor-close{border:0;background:#e8eff7;color:#3c5772;border-radius:10px;width:36px;height:36px;font-size:23px;cursor:pointer}
+.hr-editor-close:hover{background:#d9e7f7}
+.hr-editor-fields{padding:26px 30px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:19px}
+.hr-edit-field{display:flex;flex-direction:column;gap:8px;min-width:0;color:#324a63;font-size:12px;font-weight:750}
+.hr-edit-field:first-child{grid-column:1/-1}
+.hr-edit-field input,.hr-edit-field select{width:100%;min-width:0;padding:12px 13px;min-height:44px;border:1px solid #d9e4ef;border-radius:10px;background:#fff;color:#243c54;font-size:14px;font-weight:500}
+.hr-edit-field input:focus,.hr-edit-field select:focus{border-color:#3779d5;outline:3px solid #c7ddfa}
+.hr-edit-field small{font-size:11px;line-height:1.5;color:#75879b;font-weight:400}
+.hr-editor-footer{padding:18px 30px 24px;border-top:1px solid #e8eef6;display:flex;justify-content:flex-end;gap:12px;background:#fbfcfe}
+.hr-editor-footer .button{min-width:124px}
+.hr-new-document{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px 20px;background:#f1f7fe;border:1px solid #dbeafa;border-radius:12px}
+.hr-new-document p{margin:0;color:#476481;font-size:13px}
+@media(max-width:600px){.hr-editor{width:calc(100vw - 16px);max-height:92vh;border-radius:15px}.hr-editor-header{padding:22px 19px}.hr-editor-fields{grid-template-columns:1fr;padding:20px 19px;gap:15px}.hr-editor-footer{padding:15px 19px}.hr-editor-footer .button{min-width:0;flex:1}.hr-new-document{flex-direction:column;align-items:stretch}}
