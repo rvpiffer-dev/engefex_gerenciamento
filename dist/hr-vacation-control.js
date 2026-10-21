@@ -45,10 +45,10 @@ async function extract(file){
    const found=[],bad=[];
    for(const group of groups){
     const secondary=axis==='x'?'y':'x';
-    const line=group.tokens.sort((a,b)=>ascending?a[secondary]-b[secondary]:b[secondary]-a[secondary]).map(t=>t.text).join(' ').replace(/\\s+/g,' ').trim();
+    const line=group.tokens.sort((a,b)=>ascending?a[secondary]-b[secondary]:b[secondary]-a[secondary]).map(t=>t.text).join(' ').replace(/\s+/g,' ').trim();
     const parsed=parseLine(line,p);
     if(parsed)found.push(parsed);
-    else if(/^\\d{1,6}\\s+[A-Za-zÀ-ÿ]/.test(line)&&/\\d{2}\\/\\d{2}\\/\\d{4}/.test(line))bad.push(line.slice(0,170));
+    else if(/^\d{1,6}\s+[A-Za-zÀ-ÿ]/.test(line)&&/\d{2}\/\d{2}\/\d{4}/.test(line))bad.push(line.slice(0,170));
    }
    return {found,bad};
   };
