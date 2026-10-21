@@ -2,7 +2,7 @@
 (function(root){'use strict';
 const VERSION=1,KEY=root.EngefexEnvironment?.storageKey('engefex-nextar-snapshot-v1')||'engefex-nextar-snapshot-v1',decoder=new TextDecoder('utf-16le');
 const units=new Set(['Lata','Metro','Peça','Kg','Unidade','Un','M','m','KG','Pacote','Caixa','Rolo','Barra','Pç','Litro','Par','Jogo','Saco','Tubo','Chapa','Galão']);
-let snapshot=null,loaded=false,busy=false,find='',onlyStock=false,showDuplicates=false,fetching=false,error='',lastFetch=0,progressValue=0,progressLabel='';
+let snapshot=null,loaded=false,busy=false,find='',sortOrder='name-asc',onlyStock=false,showDuplicates=false,fetching=false,error='',lastFetch=0,progressValue=0,progressLabel='';
 function escape(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function strings(bytes){let out=[];for(let i=0;i<bytes.length-3;){if(bytes[i]>=32&&bytes[i+1]===0){let p=i;do{i+=2}while(i+1<bytes.length&&bytes[i]>=32&&bytes[i+1]===0);if(i-p>=4)out.push({pos:p,end:i,value:decoder.decode(bytes.subarray(p,i))});}else i++;}return out;}
 function rawAt(view,p){return p>=0&&p+8<=view.byteLength?view.getFloat64(p,true):NaN;}
@@ -165,7 +165,10 @@ async function refresh(force=false){
  }
 }
 function cleanText(x){return String(x??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
-function filterRows(){let s=retrieve();if(!s)return [];const q=cleanText(find),dup=new Set((s.duplicates||[]).map(x=>x.code));return s.rows.filter(r=>(!onlyStock||r.stock!==null&&r.stock>0)&&(!showDuplicates||dup.has(r.code))&&(!q||cleanText(r.code+' '+r.description).includes(q)));}
+function filterRows(){let s=retrieve();if(!s)return [];const q=cleanText(find),dup=new Set((s.duplicates||[]).map(x=>x.code));const rows=s.rows.filter(r=>(!onlyStock||r.stock!==null&&r.stock>0)&&(!showDuplicates||dup.has(r.code))&&(!q||cleanText(r.code+' '+r.description).includes(q)));
+ const compare=(a,b)=>String(a.description||'').localeCompare(String(b.description||''),'pt-BR',{sensitivity:'base'})||String(a.code||'').localeCompare(String(b.code||''),'pt-BR');
+ const recordDate=r=>{const value=r.createdAt||r.updatedAt||r.registrationDate||r.date||r.data||r.dataCadastro||r.dataAtualizacao;const time=value?new Date(value).getTime():NaN;return Number.isFinite(time)?time:null};
+ rows.sort((a,b)=>sortOrder==='name-desc'?-compare(a,b):sortOrder==='date-new'||sortOrder==='date-old'?(()=>{const da=recordDate(a),db=recordDate(b);if(da===null&&db===null)return compare(a,b);if(da===null)return 1;if(db===null)return -1;return (sortOrder==='date-new'?db-da:da-db)||compare(a,b)})():compare(a,b));return rows;}
 function number(v){return v===null?'<span class="tag amber">Não identificado</span>':new Intl.NumberFormat('pt-BR',{maximumFractionDigits:2}).format(v);}
 
 function summary(){
@@ -214,6 +217,7 @@ function render(){
    ${canUpload?'<p class="nextar-permission-note">Usuários com permissão <strong>Editar</strong> podem publicar um novo backup semanal. A importação substitui o retrato anterior apenas após confirmação do Supabase.</p>':''}
    ${s?.rows?.length&&s.rows.every(r=>r.unit===undefined)?'<p class="nextar-permission-note">A base atual foi importada antes da inclusão das unidades. Importe novamente o ZIP para preencher essa coluna.</p>':''}
    ${s?.rows?.length&&s.rows.every(r=>r.observationStatus===undefined)?'<p class="nextar-permission-note">Esta base foi importada antes da leitura das observações. Envie novamente o ZIP para preencher o campo OBS.</p>':''}
+   ${s?.rows?.length&&!s.rows.some(r=>r.createdAt||r.updatedAt||r.registrationDate||r.date||r.data||r.dataCadastro||r.dataAtualizacao)?'<p class="nextar-permission-note">O backup atual não traz datas individuais dos produtos. A ordenação por data ficará equivalente à ordem alfabética até que o Nextar forneça esse campo; a data da última importação é comum a todos.</p>':''}
    <div id="nextarProgressPanel" class="nextar-progress-panel" ${busy?'':'hidden'} role="status" aria-live="polite">
     <div class="nextar-progress-copy"><strong id="nextarProgressLabel">${escape(progressLabel||'Preparando importação…')}</strong><span id="nextarProgressPercent">${progressValue}%</span></div>
     <progress id="nextarProgress" max="100" value="${progressValue}"></progress>
@@ -222,6 +226,7 @@ function render(){
    <div id="nextarMessage" class="nextar-feedback" role="status" ${error?'data-error="true"':''}>${error?escape(error):busy?'Lendo arquivo e preparando envio…':fetching?'Consultando dados compartilhados…':s?'Consulta atualizada pelo Supabase.':'Nenhum backup disponível. Solicite a importação a um usuário com permissão Editar.'}</div>
    ${s?`<div class="nextar-searchbar">
       <label class="nextar-search-field" for="nextarSearch"><span aria-hidden="true">⌕</span><input id="nextarSearch" type="search" placeholder="Buscar código ou descrição do produto" autocomplete="off" value="${escape(find)}"></label>
+      <label class="nextar-sort-field" for="nextarSort">Ordenar por <select id="nextarSort"><option value="name-asc" ${sortOrder==='name-asc'?'selected':''}>Nome A–Z</option><option value="name-desc" ${sortOrder==='name-desc'?'selected':''}>Nome Z–A</option><option value="date-new" ${sortOrder==='date-new'?'selected':''}>Data mais recente</option><option value="date-old" ${sortOrder==='date-old'?'selected':''}>Data mais antiga</option></select></label>
       <label class="nextar-check"><input id="nextarOnlyStock" type="checkbox" ${onlyStock?'checked':''}> Somente com saldo</label>
       <label class="nextar-check"><input id="nextarDuplicates" type="checkbox" ${showDuplicates?'checked':''}> Códigos repetidos</label>
       <button type="button" class="button secondary nextar-filter-download" id="nextarCsv">Exportar resultados CSV</button>
@@ -334,6 +339,7 @@ function bind(){
  const filtered=document.getElementById('nextarCsv');if(filtered)filtered.onclick=exportCsv;
  const search=document.getElementById('nextarSearch');
  if(search)search.oninput=e=>{find=e.target.value;updateTable();};
+ const sort=document.getElementById('nextarSort');if(sort)sort.onchange=e=>{sortOrder=e.target.value;updateTable()};
  const only=document.getElementById('nextarOnlyStock');
  if(only)only.onchange=e=>{onlyStock=e.target.checked;updateTable();};
  const duplicates=document.getElementById('nextarDuplicates');
