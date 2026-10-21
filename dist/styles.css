@@ -401,3 +401,16 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .hr-pdf-choice legend{font-weight:800;font-size:13px;color:#23527c;padding:0 6px}
 .hr-pdf-choice label{display:flex;align-items:center;gap:8px;color:#254664;font-size:13px}
 @media(max-width:650px){.hr-attachment-body{padding:15px}.hr-profile-summary{grid-template-columns:1fr}.hr-attachment-header{align-items:stretch;flex-direction:column}.hr-attachment-item{align-items:flex-start;flex-direction:column}}
+
+
+/* Férias — v4.13.39 */
+.hr-vac-indicators{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 18px}
+.hr-vac-indicator{padding:17px 20px;border:1px solid #d9e7f5;border-radius:13px;background:#edf5ff;display:flex;justify-content:space-between;align-items:center;gap:12px;color:#1e558b}
+.hr-vac-indicator strong{font-size:29px}.hr-vac-indicator span{font-size:12px;font-weight:750}
+.hr-vac-indicator.danger{background:#fff0f0;color:#a52336;border-color:#f6c7ce}.hr-vac-indicator.warning{background:#fff8e7;color:#956500;border-color:#f3dfa2}
+.hr-vac-calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid #dfe8f2;border-radius:11px;overflow:hidden}
+.hr-vac-calendar-head{background:#eaf1f9;text-align:center;font-weight:750;color:#385f87;padding:10px 3px;font-size:12px}
+.hr-vac-calendar-day{min-height:74px;padding:8px;border-right:1px solid #e5edf6;border-top:1px solid #e5edf6;background:white;color:#284964}
+.hr-vac-calendar-day.muted{background:#f6f8fa;color:#a0b0bd}.hr-vac-calendar-day span{display:block;padding:4px 5px;background:#cce4fd;border-radius:5px;font-size:10px;margin-top:7px;color:#155a9d}
+.hr-vac-table-wrap{max-width:100%;overflow-x:auto}.hr-vac-table-wrap input{min-width:110px;max-width:300px;width:100%}.hr-vac-dialog{width:min(940px,calc(100vw - 25px));max-width:940px}.hr-vac-dialog-body{padding:24px;display:grid;gap:15px}.hr-vac-dialog .hr-editor-footer{flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:700px){.hr-vac-indicators{grid-template-columns:1fr}.hr-vac-calendar-day{min-height:52px;padding:4px;font-size:11px}.hr-vac-calendar-day span{font-size:9px}.hr-vac-dialog-body{padding:13px}}
