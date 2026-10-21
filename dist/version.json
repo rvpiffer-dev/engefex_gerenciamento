@@ -1,6 +1,6 @@
 {
-  "version": "4.13.40",
+  "version": "4.13.41",
   "date": "2026-10-21",
-  "name": "Corrige PDF.js worker na importação de férias",
-  "previous_version": "4.13.39"
+  "name": "Leitura de linhas no PDF de programação de férias",
+  "previous_version": "4.13.40"
 }
