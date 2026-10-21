@@ -1,6 +1,6 @@
 {
-  "version": "4.13.18",
+  "version": "4.13.19",
   "date": "2026-10-21",
-  "name": "Subtarefas em formato de planilha com colagem do Excel",
-  "previous_version": "4.13.17"
+  "name": "Correção de edição e layout das subtarefas",
+  "previous_version": "4.13.18"
 }
