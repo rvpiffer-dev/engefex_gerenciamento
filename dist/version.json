@@ -1,6 +1,6 @@
 {
-  "version": "4.13.33",
+  "version": "4.13.34",
   "date": "2026-10-21",
-  "name": "Alinhamento e barra horizontal de ações do RH",
-  "previous_version": "4.13.32"
+  "name": "Exclusão controlada de funcionários",
+  "previous_version": "4.13.33"
 }
