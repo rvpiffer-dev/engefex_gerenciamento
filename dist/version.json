@@ -1,7 +1,7 @@
 {
-  "version": "4.13.9",
+  "version": "4.13.10",
   "date": "2026-10-21",
-  "name": "Cadastro de usuários e redefinição de senha pelo administrador",
-  "previous_version": "4.13.8",
+  "name": "Senha mínima de seis caracteres no cadastro e redefinição",
+  "previous_version": "4.13.9",
   "backup_branch": "backup/producao-v4.12.3-2026-10-20"
 }

@@ -16,7 +16,7 @@ export function makeHandler({url,serviceKey,fetcher=fetch,newId=()=>crypto.rando
   if(!body||typeof body!=='object'||Array.isArray(body))return reply(400,'Cadastro inválido.');
   const {workspace,name,email,password,userId}=body;const reset=body.action==='reset_password';
   if(body.action&&body.action!=='create'&&!reset)return reply(400,'Operação inválida.');
-  if(!UUID.test(workspace||'')||typeof password!=='string'||password.length<12||password.length>128)return reply(400,'Informe uma senha de 12 a 128 caracteres.');
+  if(!UUID.test(workspace||'')||typeof password!=='string'||password.length<6||password.length>128)return reply(400,'Informe uma senha de 6 a 128 caracteres.');
   if(reset){if(!UUID.test(userId||''))return reply(400,'Usuário inválido.')}else if(typeof name!=='string'||!name.trim()||name.trim().length>120||typeof email!=='string'||email.length>254||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))return reply(400,'Informe nome e e-mail válido.');
   const adminHeaders={apikey:serviceKey,Authorization:'Bearer '+serviceKey,'Content-Type':'application/json'};
   const call=async(path,options={})=>{const response=await fetcher(url+path,{...options,headers:options.headers||adminHeaders,signal:AbortSignal.timeout(12000)});let data;try{data=await response.json()}catch{data=null}return{ok:response.ok,status:response.status,data}};

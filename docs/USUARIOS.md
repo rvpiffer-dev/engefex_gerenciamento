@@ -2,7 +2,7 @@
 
 Entre com a conta administradora e abra **Usuários e acessos**.
 
-- **Novo usuário:** informe nome, e-mail, senha inicial (12 a 128 caracteres) e confirmação. A conta é criada no Supabase Auth, vinculada ao workspace e começa sem acesso aos módulos. Selecione os níveis de acesso e clique em **Salvar permissões**.
+- **Novo usuário:** informe nome, e-mail, senha inicial (6 a 128 caracteres) e confirmação. A conta é criada no Supabase Auth, vinculada ao workspace e começa sem acesso aos módulos. Selecione os níveis de acesso e clique em **Salvar permissões**.
 - **Redefinir senha:** selecione uma conta comum, clique no botão, informe e confirme a nova senha. O e-mail, os registros e as permissões permanecem iguais. A conta administradora é protegida contra redefinição por este fluxo.
 
 O sistema não envia a senha por e-mail. A interface limpa os campos após a operação e não grava senhas no estado da aplicação ou no armazenamento local. O cadastro confirma o e-mail administrativamente. Uma tentativa de cadastrar e-mail existente não altera essa conta.
