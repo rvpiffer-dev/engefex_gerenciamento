@@ -16,7 +16,8 @@ async function formatPhotos(photos){
   return {...photo,width:900,height:1600,dataURL:canvas.toDataURL('image/jpeg',0.9)};
  }));
 }
-function createDocument(lib,{project,record,photos=[],logo}){const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ImageRun,AlignmentType,BorderStyle,HeadingLevel,TableLayoutType}=lib;let children=[],text=x=>String(x??'').trim()||'—';
+function orderPhotosForReport(photos){const portraits=[],landscapes=[];for(const photo of photos)(photo.height>photo.width?portraits:landscapes).push(photo);return [...portraits,...landscapes];}
+function createDocument(lib,{project,record,photos=[],logo}){photos=orderPhotosForReport(photos);const {Document,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ImageRun,AlignmentType,BorderStyle,HeadingLevel,TableLayoutType}=lib;let children=[],text=x=>String(x??'').trim()||'—';
 const p=(v,opt={})=>new Paragraph({children:String(v).split('\n').flatMap((s,i)=>[...(i?[new TextRun({break:1})]:[]),new TextRun({text:s})]),spacing:{after:130,line:260},...opt});
 const heading=(s,pageBreakBefore=false)=>new Paragraph({text:s,heading:HeadingLevel.HEADING_1,pageBreakBefore,keepNext:true,spacing:{before:240,after:160}});
 const border={style:BorderStyle.SINGLE,size:4,color:'333333'},borders={top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border};
@@ -59,5 +60,6 @@ for(let i=0;i<photos.length;){
 children.push(heading('7. Assinaturas',true),table([['Execução do Diário de Obra','Eng. Responsável de Obras','Fiscal/Cliente'],['\n\n________________________\n'+text(record.author),'\n\n________________________\n'+text(record.engineer),'\n\n________________________\n'+text(record.inspector)]],[3200,3200,3200],true));
 return new Document({creator:'Engefex Engenharia e Estruturas Metálicas',title:'Diário de Obra '+text(record.number),styles:{default:{document:{run:{font:'Arial',size:22,color:'000000'},paragraph:{spacing:{after:130,line:260}}}},paragraphStyles:[{id:'Title',name:'Title',basedOn:'Normal',next:'Normal',run:{font:'Arial',size:30,bold:true,color:'365F91'}},{id:'Heading1',name:'heading 1',basedOn:'Normal',next:'Normal',quickFormat:true,run:{font:'Arial',size:24,bold:true,color:'4F81BD'},paragraph:{keepNext:true}}]},sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:284,bottom:284,left:284,right:284}}},children}]});}
 function filename(project,record){return ('Diario_'+(record.number||'sem_numero')+'_'+project.name+'_'+(record.date||'sem_data')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9_-]/g,'_')+'.docx'}
-let api={createDocument,dimensions,formatPhotos,filename};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
+let api={createDocument,dimensions,formatPhotos,filename,orderPhotosForReport};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.ObrasDiaryDocx=api;
 })(typeof window==='undefined'?globalThis:window);
+
