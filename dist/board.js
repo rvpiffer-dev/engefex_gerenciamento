@@ -79,9 +79,18 @@ function edit(old,initialStatus='A fazer',again=false){
  '<div class="at-dialog-actions"><button id="atCancel" type="button">Cancelar</button>'+(old?'<button id="atDelete" type="button" style="background:#ffe0e0;color:#b42340;margin-right:auto">Excluir atividade</button>':'<button id="atSaveAnother" type="button">Salvar e criar outra</button>')+'<button class="primary" type="submit" id="atSave">Salvar atividade</button></div></form></div>';
  document.body.appendChild(modal);
  const form=modal.querySelector('#atTaskForm'),list=modal.querySelector('#atCheckList');
- function addCheck(t='',done=false){let row=document.createElement('div');row.className='at-check-row';row.innerHTML='<input aria-label="Concluída" type="checkbox" '+(done?'checked':'')+'><input type="text" placeholder="Descreva a subtarefa" value="'+esc(t)+'"><button aria-label="Remover subtarefa" type="button">✕</button>';row.querySelector('button').onclick=()=>row.remove();list.appendChild(row)}
+ function addCheck(t='',done=false){
+  const row=document.createElement('div');row.className='at-check-row';
+  const checked=document.createElement('input');checked.type='checkbox';checked.checked=done;checked.setAttribute('aria-label','Subtarefa concluída');
+  const entry=document.createElement('input');entry.type='text';entry.placeholder='Digite a subtarefa aqui';entry.value=t;entry.setAttribute('aria-label','Descrição da subtarefa');
+  const remove=document.createElement('button');remove.type='button';remove.textContent='✕';remove.setAttribute('aria-label','Remover subtarefa');remove.addEventListener('click',()=>row.remove());
+  row.append(checked,entry,remove);list.appendChild(row);entry.focus();return row;
+ }
  check.forEach(x=>addCheck(x.text||'',!!x.done));
- modal.querySelector('#atCheckAdd').onclick=()=>addCheck();
+ if(!check.length)addCheck();
+ const addButton=modal.querySelector('#atCheckAdd');
+ addButton.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();addCheck()});
+ list.addEventListener('keydown',event=>{if(event.key==='Enter'&&event.target.matches('input[type="text"]')){event.preventDefault();addCheck()}});
  const close=()=>modal.remove();
  modal.querySelector('#atClose').onclick=close;modal.querySelector('#atCancel').onclick=close;
  modal.addEventListener('click',e=>{if(e.target===modal)close()});
