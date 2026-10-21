@@ -5,13 +5,52 @@ const norm=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').repl
 const iso=x=>/^\d\d\/\d\d\/\d{4}$/.test(x||'')?x.slice(6)+'-'+x.slice(3,5)+'-'+x.slice(0,2):'';
 const num=x=>/^\d+$/.test(x||'')?Number(x):0;
 const label=s=>root.EngefexNameCase?root.EngefexNameCase(s):s;
-async function extract(file){const pdf=await import('./vendor/pdf-4.10.38.min.mjs');pdf.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdf.worker-4.10.38.min.mjs',document.baseURI).href;const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;const rows=[];
-for(let p=1;p<=doc.numPages;p++){const page=await doc.getPage(p),items=(await page.getTextContent()).items;const grouped=new Map();
-for(const t of items){const tx=String(t.str||'').trim(),x=t.transform?.[4],y=t.transform?.[5];if(!tx||!Number.isFinite(x)||!Number.isFinite(y))continue;const rowY=Math.round(y*2)/2;const key=[...grouped.keys()].find(k=>Math.abs(k-rowY)<=2)||rowY;grouped.set(key,[...(grouped.get(key)||[]),{x,text:tx}])}
-for(const parts of grouped.values()){const at=(a,b)=>parts.filter(q=>q.x>=a&&q.x<b).sort((x,y)=>x.x-y.x).map(x=>x.text).join(' ').trim();const code=at(18,38),name=at(38,205),admission=at(205,255),periodStart=at(358,420),periodEnd=at(420,478),deadline=at(681,732);if(!/^\d+$/.test(code)||!name||!iso(admission)||!iso(periodStart)||!iso(periodEnd))continue;
-rows.push({code,name:label(name),admissionDate:iso(admission),periodStart:iso(periodStart),periodEnd:iso(periodEnd),deadline:iso(deadline),entitlement:num(at(605,637))||30,taken:num(at(637,659)),reportedRemaining:num(at(660,680)),absenceDays:num(at(730,756)),absenceCount:num(at(756,790)),sourcePage:p});}}
-if(!rows.length)throw Error('Não identifiquei as linhas do relatório. Use o PDF de Programação de Férias da contabilidade, com texto selecionável.');
-return rows;}
+const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const records=s=>s.hrVacations||[];
+const employee=(s,id)=>(s.hrEmployees||[]).find(e=>e.id===id);
+function parseLine(line,page){
+ const dates=[...line.matchAll(/\b\d{2}\/\d{2}\/\d{4}\b/g)];
+ if(dates.length<5)return null;
+ const prefix=line.slice(0,dates[0].index).trim();
+ const identity=prefix.match(/^(\d{1,6})\s+(.+?)\s*$/);
+ if(!identity||!/[A-Za-zÀ-ÿ]/.test(identity[2]))return null;
+ const [admission,vesting,periodStart,periodEnd]=dates.slice(0,4).map(x=>iso(x[0]));
+ const deadline=iso(dates[dates.length-1][0]);
+ if(!admission||!periodStart||!periodEnd||periodStart>periodEnd)return null;
+ const between=line.slice(dates[3].index+dates[3][0].length,dates[dates.length-1].index);
+ const numeric=between.match(/(?:^|\s)(\d{1,3})(?=\s|$)/g)?.map(x=>Number(x.trim()))||[];
+ // Colunas após gozo: Dias / Abono / 13º / Direito / Gozados / Restantes.
+ // O trio final de números representa direito, gozados e restantes.
+ const entitlement=numeric.length>=3?numeric[numeric.length-3]:30;
+ const taken=numeric.length>=2?numeric[numeric.length-2]:0;
+ const remaining=numeric.length>=1?numeric[numeric.length-1]:entitlement-taken;
+ if(entitlement<0||entitlement>45||taken>entitlement||remaining>45)return null;
+ return {code:identity[1],name:label(identity[2]),admissionDate:admission,vestingDate:vesting,periodStart,periodEnd,deadline,entitlement,taken,reportedRemaining:remaining,sourcePage:page};
+}
+async function extract(file){
+ const pdf=await import('./vendor/pdf-4.10.38.min.mjs');
+ pdf.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdf.worker-4.10.38.min.mjs',document.baseURI).href;
+ const doc=await pdf.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+ const rows=[],rejected=[];
+ for(let p=1;p<=doc.numPages;p++){
+  const page=await doc.getPage(p),items=(await page.getTextContent()).items,groups=[];
+  for(const item of items){
+   const txt=String(item.str||'').trim(),y=item.transform?.[5],x=item.transform?.[4];
+   if(!txt||!Number.isFinite(y))continue;
+   let g=groups.find(g=>Math.abs(g.y-y)<=3);
+   if(!g){g={y,parts:[]};groups.push(g)}
+   g.parts.push({x:x||0,text:txt});
+  }
+  for(const group of groups){
+   const line=group.parts.sort((a,b)=>a.x-b.x).map(v=>v.text).join(' ').replace(/\s+/g,' ').trim();
+   const parsed=parseLine(line,p);
+   if(parsed)rows.push(parsed);
+   else if(/^\d+\s+[A-Za-zÀ-ÿ]/.test(line)&&/\d{2}\/\d{2}\/\d{4}/.test(line))rejected.push(line.slice(0,180));
+  }
+ }
+ if(!rows.length)throw Error('Não foi possível reconhecer as linhas do relatório. '+(rejected.length?'Linhas encontradas, mas fora do padrão: '+rejected.slice(0,2).join(' | '):'Nenhuma linha de funcionário reconhecida no texto do PDF.'));
+ return rows;
+}
 function calendar(s){const now=today().slice(0,7),selectedMonth=(window.engefexVacationMonth||now),first=new Date(selectedMonth+'-01T12:00:00'),start=new Date(first);start.setDate(1-first.getDay());const ds=[];for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const day=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');const count=records(s).filter(r=>r.start&&r.end&&day>=r.start&&day<=r.end&&r.status!=='Cancelado').length;ds.push('<div class="hr-vac-calendar-day '+(day.slice(0,7)===selectedMonth?'':'muted')+'"><strong>'+d.getDate()+'</strong>'+(count?'<span>'+count+' férias</span>':'')+'</div>')}return '<section class="panel hr-panel"><div class="panel-head"><h2>Calendário de férias</h2><label>Mês <input id="vacCalendarMonth" type="month" value="'+selectedMonth+'"></label></div><div class="hr-vac-calendar">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>'<div class="hr-vac-calendar-head">'+x+'</div>').join('')+ds.join('')+'</div></section>';}
 function ui(s){const list=s.hrVacations||[],people=s.hrEmployees||[];return '<section class="page-head hr-hero"><div><p class="hr-eyebrow">ENGEFEX · RECURSOS HUMANOS</p><h1>Férias</h1><p>Programação, vencimentos e controle de dias compensados.</p></div></section><section class="panel hr-panel"><div class="panel-head"><div><h2>Importar programação de férias</h2><p class="hr-panel-subtitle">Atualize sempre com o PDF padrão da contabilidade. Funcionários ausentes serão cadastrados automaticamente.</p></div><label class="button primary">Importar PDF<input id="vacPdf" type="file" accept=".pdf,application/pdf" hidden></label></div><div id="vacImportStatus" role="status"></div></section><section class="panel hr-panel"><div class="panel-head"><h2>Fichas e saldo de férias</h2></div><div class="hr-vac-table-wrap"><table><thead><tr><th>Funcionário</th><th>Período aquisitivo</th><th>Limite para gozo</th><th>Direito</th><th>Gozados</th><th>Compensados*</th><th>Saldo interno</th><th>Ação</th></tr></thead><tbody>'+list.map(r=>{const p=people.find(x=>x.id===r.employeeId),used=(r.discounts||[]).reduce((a,x)=>a+Number(x.days||0),0),balance=Number(r.entitlement??30)-Number(r.taken||0)-used;return '<tr><td><strong>'+h(p?.name||'Funcionário não encontrado')+'</strong></td><td>'+h(r.periodStart)+' a '+h(r.periodEnd)+'</td><td>'+h(r.deadline||'—')+'</td><td>'+Number(r.entitlement??30)+'</td><td>'+Number(r.taken||0)+'</td><td>'+used+'</td><td><strong>'+balance+'</strong></td><td><button class="button secondary" data-vac-edit="'+h(r.id)+'">Abrir ficha</button></td></tr>'}).join('')+'</tbody></table></div><p class="hr-panel-subtitle">*Compensações internas de folgas: não alteram automaticamente o direito legal de férias nem substituem a folha da contabilidade.</p></section><dialog class="hr-editor hr-vac-dialog" id="vacDialog"><div class="hr-editor-header"><div><small>ENGEFEX · CONTROLE INDIVIDUAL</small><h2 id="vacDialogTitle">Ficha de férias</h2></div><button type="button" class="hr-editor-close" data-vac-close>×</button></div><div class="hr-vac-dialog-body"><div id="vacSummary"></div><h3>Dias descontados / compensações internas</h3><p class="hr-panel-subtitle">Preencha uma linha para cada compensação. É um controle administrativo separado das férias legais.</p><div class="hr-vac-table-wrap"><table><thead><tr><th>Data</th><th>Dias descontados</th><th>OBS</th><th></th></tr></thead><tbody id="vacDiscountRows"></tbody></table></div><button class="button secondary" id="vacAddRow" type="button">+ Linha</button><p id="vacBalance"></p></div><footer class="hr-editor-footer"><button type="button" class="button secondary" id="vacWord">Aviso Word</button><button type="button" class="button secondary" id="vacPdfNotice">Aviso PDF</button><button type="button" class="button secondary" id="vacReceiptWord">Recibo Word</button><button type="button" class="button secondary" id="vacReceiptPdf">Recibo PDF</button><button type="button" class="button secondary" data-vac-close>Fechar</button><button type="button" class="button primary" id="vacSave">Salvar</button></footer></dialog>';}
 function bind(s,persist,render,notify){const input=document.getElementById('vacPdf');if(!input)return;const monthEl=document.getElementById('vacCalendarMonth');if(monthEl)monthEl.onchange=()=>{window.engefexVacationMonth=monthEl.value;render()};input.onchange=async()=>{try{const file=input.files?.[0];if(!file)return;const out=document.getElementById('vacImportStatus');out.textContent='Lendo o relatório…';const rows=await extract(file);const staff=s.hrEmployees||[],vac=s.hrVacations||[];let missing=0,dups=[];const groups=[];for(const row of rows){const existing=staff.filter(e=>String(e.employeeCode||'')===row.code||norm(e.name)===norm(row.name));if(existing.length>1){dups.push(row.name);continue}if(!existing.length)missing++;groups.push({row,existing:existing[0]})}if(dups.length)throw Error('Correspondências ambíguas: '+dups.join(', '));const permission=root.EngefexAccess;if(!permission?.canWrite('hr-vacations')||(missing&&!permission.canWrite('hr-employees')))throw Error('Para importar, é necessário editar Férias e, quando houver pessoas novas, Funcionários.');
