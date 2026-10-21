@@ -1,6 +1,6 @@
 {
-  "version": "4.13.12",
+  "version": "4.13.13",
   "date": "2026-10-21",
-  "name": "Correção de acesso para contas restritas",
-  "previous_version": "4.13.11"
+  "name": "Correção do gerenciamento de permissões do administrador",
+  "previous_version": "4.13.12"
 }
