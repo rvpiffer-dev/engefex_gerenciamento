@@ -1,6 +1,6 @@
 {
-  "version": "4.13.42",
+  "version": "4.13.43",
   "date": "2026-10-21",
-  "name": "Importação PDF férias com detecção automática de orientação",
-  "previous_version": "4.13.41"
+  "name": "Vencimentos coloridos e alertas 30/7 dias de férias",
+  "previous_version": "4.13.42"
 }
