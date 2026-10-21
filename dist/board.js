@@ -47,6 +47,7 @@ body.activity-focus .shell{padding:0!important}
 .at-subtasks{border-top:1px solid #e5eaf2;margin-top:10px;padding-top:9px}.at-subtask{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:#334155;cursor:pointer}.at-subtask input{flex-shrink:0}.at-subtask:has(input:checked) span{text-decoration:line-through;color:#94a3b8}.at-new-column{width:100%;border:1px dashed #95a9c6;border-radius:10px;padding:9px;background:#ffffff9c;color:#2e5792;cursor:pointer}
 @media(max-width:650px){.at-fields{grid-template-columns:1fr}.at-dialog{max-height:100vh;border-radius:12px}.at-dialog form{padding:14px}}
 @media(max-width:900px){.at-board{grid-template-columns:1fr}.at-stats{grid-template-columns:repeat(2,1fr)}.at-wrap{padding:12px}}
+.at-dialog #atCheckList .at-check-row{display:table-row!important;grid-template-columns:none!important;width:auto!important}.at-dialog #atCheckList .at-check-row .at-sheet-entry{width:100%!important;min-width:0!important;height:40px!important}.at-dialog #atCheckList .at-check-row td{display:table-cell!important}.at-dialog .at-sheet{table-layout:fixed!important}
 `;document.head.appendChild(e)}
 const model=s=>Array.isArray(s.boardTasks)?s.boardTasks:[];
 const projectName=(s,id)=>id==='Geral'?'Administrativo / Geral':s.projects?.find(p=>p.id===id)?.name||'Obra sem cadastro';
