@@ -1,6 +1,6 @@
 {
-  "version": "4.13.15",
+  "version": "4.13.16",
   "date": "2026-10-21",
-  "name": "Checklist funcional na lousa sem responsáveis ou notificações",
-  "previous_version": "4.13.14"
+  "name": "Correção do cadastro de subtarefas na Lousa",
+  "previous_version": "4.13.15"
 }
