@@ -365,3 +365,13 @@ body:has(.hr-hero) .hr-editor{border-radius:18px!important}
 .hr-profile-row small{display:block;color:#65829c;font-size:11px;font-weight:750;margin-bottom:4px}
 @media(max-width:1020px){body:has(.hr-hero) .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){body:has(.hr-hero) .hr-hero{min-height:115px;padding:23px 19px!important}body:has(.hr-hero) .hr-panel,body:has(.hr-hero) section.panel{padding:17px 14px!important;border-radius:13px!important}body:has(.hr-hero) .form-grid{grid-template-columns:1fr;gap:12px!important}body:has(.hr-hero) .panel-head{flex-wrap:wrap;align-items:flex-start}body:has(.hr-hero) .panel-head>.button{width:100%}body:has(.hr-hero) table{min-width:630px}body:has(.hr-hero) .hr-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}body:has(.hr-hero) .hr-tab-button{font-size:12px}}
+
+/* RH v4.13.33 — barras e ações alinhadas */
+body:has(.hr-hero) .hr-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:nowrap;overflow-x:auto;padding:12px 2px 7px;margin:12px 0 0;scrollbar-width:thin}
+body:has(.hr-hero) .hr-toolbar>.button,body:has(.hr-hero) .hr-toolbar>label.button{flex:0 0 auto;min-height:39px;margin:0!important;white-space:nowrap}
+body:has(.hr-hero) .hr-toolbar .hr-export-actions{display:flex;flex:0 0 auto;align-items:center;gap:12px;margin:0!important;padding:0}
+body:has(.hr-hero) .hr-toolbar .hr-toolbar-info{margin-left:auto;flex:0 0 auto;color:#59758f;font-size:12px;font-weight:700;white-space:nowrap;padding:0 9px}
+body:has(.hr-hero) .hr-actions-cell{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:nowrap;white-space:nowrap}
+body:has(.hr-hero) .hr-actions-cell>.button{display:inline-flex!important;align-items:center!important;justify-content:center!important;height:37px;min-height:37px!important;line-height:1!important;padding:0 12px!important;margin:0!important;vertical-align:middle}
+body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
+@media(max-width:720px){body:has(.hr-hero) .hr-toolbar{overflow-x:auto;max-width:100%}}
