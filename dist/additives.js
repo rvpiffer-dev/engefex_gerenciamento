@@ -73,7 +73,7 @@ function commit(s,record,status){
  next.history.unshift({id:makeId('H'),time:new Date().toISOString(),kind:'budgetStages',record:stage.id,
   action:approved?'Aditivo aprovado':status==='Recusado'?'Aditivo recusado':prior?'Aditivo atualizado':'Aditivo cadastrado',
   before:prior||null,after:clone(stage)});
- D().backupValid(next);
+ D().onlineValid(next);
  return next;
 }
 function statusClass(status){return status==='Aprovado'?'approved':status==='Recusado'?'rejected':status==='Em aprovação'?'pending':'draft'}
