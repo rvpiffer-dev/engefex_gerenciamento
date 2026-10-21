@@ -29,8 +29,6 @@ async function parseXlsx(file){
 function decorate(s){let page=RH.page(s,'employees');
  const extra='<section class="panel hr-panel"><div class="panel-head"><h2>Importar planilha de funcionários</h2></div><p>Atualize os cadastros a qualquer momento com o mesmo arquivo XLSX. O sistema identifica pelo CPF (ou nome quando não houver CPF), preserva documentos e permite revisar antes de salvar.</p><label class="button secondary">Selecionar planilha XLSX<input id="hrSpreadsheet" type="file" accept=".xlsx" hidden></label><p id="hrImportMessage" role="status"></p></section>';
  page=page.replace('<section class="panel hr-panel"><div class="panel-head"><h2>Equipe e cadastros</h2>',extra+'<section class="panel hr-panel"><div class="panel-head"><h2>Equipe e cadastros</h2>');
- page=page.replace(/(<button type="button" class="button secondary" data-hr-person="[^"]+">Editar<\/button>)/g,'<button type="button" class="button secondary" data-hr-profile="$&">Ficha</button> $1'.replace('data-hr-profile="$&"','data-hr-profile="__FIX__"')); 
- page=page.replace(/data-hr-profile="__FIX__"/g,(m,offset)=>{const rest=page.slice(offset);return 'data-hr-profile="'+(rest.match(/data-hr-person="([^"]+)"/)||[])[1]+'"';});
  // Ficha e impressão funcionam inclusive para os funcionários importados anteriormente.
  page=page.replace('</tbody></table></div></section></div>','</tbody></table></div></section></div>',1);
  return page;
