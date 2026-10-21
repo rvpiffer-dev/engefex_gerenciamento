@@ -1,6 +1,6 @@
 {
-  "version": "4.13.35",
+  "version": "4.13.36",
   "date": "2026-10-21",
-  "name": "Anexos por funcionário e ficha PDF opcional",
-  "previous_version": "4.13.34"
+  "name": "Reimportação XLSX de validades de documentos do RH",
+  "previous_version": "4.13.35"
 }
