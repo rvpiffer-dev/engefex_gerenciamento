@@ -1,6 +1,6 @@
 {
-  "version": "4.13.39",
+  "version": "4.13.40",
   "date": "2026-10-21",
-  "name": "Férias: importar PDF, compensações, calendário e documentos",
-  "previous_version": "4.13.38"
+  "name": "Corrige PDF.js worker na importação de férias",
+  "previous_version": "4.13.39"
 }
