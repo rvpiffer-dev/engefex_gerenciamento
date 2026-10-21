@@ -285,3 +285,35 @@ input[data-money]{text-align:right;font-variant-numeric:tabular-nums;min-width:1
 .hr-new-document{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px 20px;background:#f1f7fe;border:1px solid #dbeafa;border-radius:12px}
 .hr-new-document p{margin:0;color:#476481;font-size:13px}
 @media(max-width:600px){.hr-editor{width:calc(100vw - 16px);max-height:92vh;border-radius:15px}.hr-editor-header{padding:22px 19px}.hr-editor-fields{grid-template-columns:1fr;padding:20px 19px;gap:15px}.hr-editor-footer{padding:15px 19px}.hr-editor-footer .button{min-width:0;flex:1}.hr-new-document{flex-direction:column;align-items:stretch}}
+
+
+/* Recursos Humanos — identidade visual Engefex */
+.hr-hero{padding:28px 30px!important;margin-bottom:18px!important;border:1px solid #dbe6f4;border-radius:20px;background:linear-gradient(117deg,#15355b,#285c99 68%,#3776b9);color:#fff!important;box-shadow:0 13px 30px #173b631c}
+.hr-hero h1{color:#fff!important;font-size:29px!important;letter-spacing:-.6px;margin:5px 0!important}
+.hr-hero p:not(.hr-eyebrow){color:#dbe9fa!important;margin:6px 0 0;font-size:13px}
+.hr-eyebrow{font-size:10px!important;letter-spacing:1.6px;color:#bad9ff!important;font-weight:800;margin:0}
+.hr-tabs{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 19px;padding:7px;border:1px solid #e0e9f3;background:#edf3fa;border-radius:15px}
+.hr-tab-button{appearance:none;cursor:pointer;border:1px solid transparent;background:transparent;padding:13px 17px;border-radius:11px;color:#55718e;font-size:13px;font-weight:750;transition:background .15s,border-color .15s}
+.hr-tab-button:hover{background:#fff;color:#164b88}
+.hr-tab-button.selected{background:#fff;border-color:#d8e5f4;color:#16539b;box-shadow:0 3px 11px #1e4b7c16}
+.hr-panel{border:1px solid #dfe8f3!important;border-radius:16px!important;background:#fff!important;box-shadow:0 5px 20px #1b41650c;overflow:hidden;margin-bottom:16px}
+.hr-panel .panel-head{padding-bottom:14px;border-bottom:1px solid #e9eff7;margin-bottom:17px}
+.hr-panel .panel-head h2{font-size:17px!important;letter-spacing:-.3px;color:#1e4266!important}
+.hr-panel .form-grid{gap:13px}
+.hr-panel label{font-size:12px;font-weight:700;color:#415b75}
+.hr-panel select,.hr-panel input:not([type=checkbox]){border-radius:10px!important;border:1px solid #d6e2ef!important;min-height:41px}
+.hr-panel table{border-collapse:separate;border-spacing:0;width:100%}
+.hr-panel table thead{background:#f0f5fb}
+.hr-panel table th{color:#56718f;font-size:11px;text-transform:uppercase;letter-spacing:.55px;font-weight:800}
+.hr-panel table td,.hr-panel table th{padding:13px 14px!important;border-bottom:1px solid #ebf0f6}
+.hr-panel table tbody tr:hover{background:#f6faff}
+.hr-panel table .button{padding:8px 11px;font-size:12px}
+.hr-editor{border:1px solid #d5e2f0!important;border-radius:22px!important}
+.hr-editor-header{background:linear-gradient(110deg,#193f72,#3575b7)!important}
+.hr-editor-header h2,.hr-editor-header small{color:#fff!important}
+.hr-editor-header p{color:#dceaff!important}
+.hr-editor-close{background:#ffffff25!important;color:#fff!important}
+.hr-editor-fields{background:#f9fbff}
+.hr-edit-field input,.hr-edit-field select{box-shadow:0 2px 4px #20446908}
+.hr-editor-footer{background:#fff}
+@media(max-width:620px){.hr-hero{padding:22px 18px!important}.hr-hero h1{font-size:24px!important}.hr-tabs{gap:4px}.hr-tab-button{flex:1 1 auto;padding:11px 10px;font-size:11px}.hr-panel table td,.hr-panel table th{padding:10px 9px!important}}
