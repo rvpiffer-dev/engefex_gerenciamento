@@ -1,6 +1,6 @@
 {
-  "version": "4.13.45",
+  "version": "4.13.46",
   "date": "2026-10-21",
-  "name": "Correção de inicialização do módulo de férias",
-  "previous_version": "4.13.44"
+  "name": "Filtros e ordenação por nomes e datas nas férias",
+  "previous_version": "4.13.45"
 }
