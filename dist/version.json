@@ -1,6 +1,6 @@
 {
-  "version": "4.13.43",
+  "version": "4.13.44",
   "date": "2026-10-21",
-  "name": "Vencimentos coloridos e alertas 30/7 dias de férias",
-  "previous_version": "4.13.42"
+  "name": "Ordenação por nome e data no estoque Nextar",
+  "previous_version": "4.13.43"
 }
