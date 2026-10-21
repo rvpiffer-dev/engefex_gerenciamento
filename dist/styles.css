@@ -380,3 +380,24 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .hr-editor-footer .hr-delete-button{margin-right:auto!important;background:#fff1f2!important;color:#a31b36!important;border:1px solid #fecdd3!important}
 .hr-editor-footer .hr-delete-button:hover{background:#ffe4e6!important}
 @media(max-width:600px){.hr-editor-footer .hr-delete-button{flex:1 1 100%;margin-right:0!important}}
+
+/* RH v4.13.35 — ficha com anexos */
+.hr-attachment-dialog{width:min(820px,calc(100vw - 28px));max-width:820px}
+.hr-attachment-body{padding:20px 26px;display:grid;gap:20px}
+.hr-profile-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.hr-profile-summary>div{padding:12px;border:1px solid #e1e9f3;background:#f7fafe;border-radius:11px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px}
+.hr-profile-summary small{grid-column:1/-1;color:#547493;font-size:11px;font-weight:750}
+.hr-profile-summary strong{font-size:13px;color:#203a56;overflow-wrap:anywhere}
+.hr-profile-summary .button{min-width:70px;font-size:11px;padding:7px}
+.hr-attachment-header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-top:1px solid #e8edf5;padding-top:17px}
+.hr-attachment-header h3{margin:0;font-size:17px;color:#183f67}
+.hr-attachment-header p{margin:5px 0 0;font-size:12px;color:#72879b}
+.hr-attachment-list{display:grid;gap:7px}
+.hr-attachment-item{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 12px;border:1px solid #e1e9f3;border-radius:10px}
+.hr-attachment-item>span:first-child{overflow-wrap:anywhere;min-width:0;color:#315270}
+.hr-attachment-item>span:last-child{display:flex;flex:0 0 auto;gap:7px}
+.hr-attachment-empty{margin:0;padding:16px;background:#f5f8fc;border-radius:10px;color:#6b8198;font-size:13px}
+.hr-pdf-choice{border:1px solid #d8e7f5;border-radius:12px;background:#f1f7ff;display:flex;gap:17px;flex-wrap:wrap;padding:15px}
+.hr-pdf-choice legend{font-weight:800;font-size:13px;color:#23527c;padding:0 6px}
+.hr-pdf-choice label{display:flex;align-items:center;gap:8px;color:#254664;font-size:13px}
+@media(max-width:650px){.hr-attachment-body{padding:15px}.hr-profile-summary{grid-template-columns:1fr}.hr-attachment-header{align-items:stretch;flex-direction:column}.hr-attachment-item{align-items:flex-start;flex-direction:column}}
