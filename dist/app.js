@@ -26,34 +26,42 @@
  async function refreshBirthdays(){if(!cloud?.ready||birthdayLoading)return;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());if(today===birthdayDate)return;birthdayLoading=true;try{birthdayNames=await cloud.birthdaysToday();birthdayDate=today;updateBell();}catch(err){console.warn('Aniversários indisponíveis',err)}finally{birthdayLoading=false}}
  function birthdayAlerts(){return birthdayNames.map((name,i)=>({id:'birthday-'+birthdayDate+'-'+i,title:'🎉 Aniversário: '+name,detail:'Hoje é aniversário de '+name+'! 🎂',project:'Geral',priority:'Celebração',createdAt:new Date().toISOString(),birthday:true}));}
  function alerts(){
-  const items=[
+  // Inclui notificações lidas: elas permanecem no histórico visual do sininho.
+  return [
    ...(window.EngefexVacationControl?.alerts(state)||[]).map(n=>({...n,project:'Geral'})),
    ...birthdayAlerts(),
-   ...(E?.unread(state,identity())||[]),
+   ...(E?.inbox(state,identity())||[]),
    ...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>({...n,project:'Geral',priority:'Atenção',createdAt:new Date().toISOString()}))
   ];
-  return items.filter(n=>!cloud?.hasNotificationBeenRead?.(n.id));
  }
+ function alertIsRead(n){
+  // Compatibilidade com leituras antigas gravadas em notifications.readBy.
+  const email=String(identity()?.email||'').toLowerCase();
+  return !!cloud?.hasNotificationBeenRead?.(n.id)||
+   (!!email&&Array.isArray(n.readBy)&&n.readBy.some(x=>String(x||'').toLowerCase()===email));
+ }
+ function unreadAlerts(){return alerts().filter(n=>!alertIsRead(n))}
  function updateBell(){
   if(!E)return;
-  const pending=alerts(),count=$('#alertsCount');if(!count)return;
-  const unseen=pending.length;count.hidden=unseen===0;count.textContent=unseen>99?'99+':String(unseen);
+  const unseen=unreadAlerts().length,count=$('#alertsCount');if(!count)return;
+  count.hidden=unseen===0;count.textContent=unseen>99?'99+':String(unseen);
   $('#alertsBell').setAttribute('aria-label',unseen?unseen+' notificações não lidas':'Abrir minhas notificações');
   if(!$('#alertsPanel').hidden)drawAlerts();
  }
  function drawAlerts(){
-  const list=alerts();
+  const list=alerts(),remaining=list.filter(n=>!alertIsRead(n)).length;
   $('#alertsList').innerHTML=list.length?list.map(n=>{
    const action=n.vacation?'Abrir férias':n.id.startsWith('rh-')?'Abrir RH':n.issueId?'Abrir pendência':'';
-   return `<article class="alerts-item unread" role="button" tabindex="0" data-alert-open="${h(n.id)}" aria-label="${h('Marcar como lida: '+n.title)}">
+   const read=alertIsRead(n),interactive=!read||!!action;
+   return `<article class="alerts-item ${read?'read':'unread'}" ${interactive?`role="button" tabindex="0" data-alert-open="${h(n.id)}" aria-label="${h((read?'Abrir aviso: ':'Marcar como lida: ')+n.title)}"`:''}>
      <div><strong>${h(n.title)}</strong><div>${h(n.detail||'')}</div><small>${h(projectLabel(n.project))} · ${h(n.priority||'Normal')} · ${fmt(n.due)}</small></div>
      <div class="alerts-item-actions">
-       <button type="button" class="text-btn" data-alert-read="${h(n.id)}">✓ Marcar como lida</button>
+       ${read?'<span class="alerts-read">✓ Lida</span>':`<button type="button" class="text-btn" data-alert-read="${h(n.id)}">✓ Marcar como lida</button>`}
        ${action?`<button type="button" class="text-btn" data-alert-open="${h(n.id)}">${h(action)}</button>`:''}
      </div>
    </article>`;
-  }).join(''):'<div class="empty">Nenhuma notificação pendente. Tudo em dia!</div>';
-  $('#alertsReadAll').disabled=!list.length;
+  }).join(''):'<div class="empty">Nenhuma notificação para esta conta.</div>';
+  $('#alertsReadAll').disabled=!remaining;
  }
  function toggleBell(show){const panel=$('#alertsPanel');panel.hidden=!show;$('#alertsBell').setAttribute('aria-expanded',String(show));if(show)drawAlerts()}
 
@@ -196,7 +204,7 @@
  $('#alertsBell')?.addEventListener('click',()=>toggleBell($('#alertsPanel').hidden));
  $('#alertsReadAll')?.addEventListener('click',async e=>{
   if(!cloud?.ready||!identity())return toast('Conecte-se ao Supabase para confirmar a leitura.');
-  const button=e.currentTarget,items=alerts();if(!items.length)return;
+  const button=e.currentTarget,items=unreadAlerts();if(!items.length)return;
   button.disabled=true;
   try{await cloud.markNotificationsRead(items.map(n=>n.id));updateBell();}
   catch(err){toast('Não foi possível marcar como lidas: '+err.message);button.disabled=false;}
