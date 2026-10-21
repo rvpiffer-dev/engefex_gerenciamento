@@ -50,9 +50,6 @@ const originalAttach=RH.attach;RH.attach=function(s,persist,render,notify){
    notify('Importados '+rows.length+' registros.');render();
   }catch(error){document.getElementById('hrImportMessage').textContent=error.message||'Falha ao importar';notify(error.message||'Falha ao importar');}
  };
- document.querySelectorAll('[data-hr-person]').forEach(button=>{const id=button.dataset.hrPerson;const e=(s.hrEmployees||[]).find(x=>x.id===id);if(!e)return;
- const b=document.createElement('button');b.type='button';b.className='button secondary';b.textContent='Ficha';b.onclick=()=>profile(e);button.parentNode.insertBefore(b,button);
- });
  function profile(e){
   document.getElementById('hrProfileDialog')?.remove();const dialog=document.createElement('dialog');dialog.className='hr-editor';dialog.id='hrProfileDialog';
   dialog.innerHTML='<header class="hr-editor-header"><div><small>ENGEFEX · FICHA DO FUNCIONÁRIO</small><h2>'+escape(e.name)+'</h2><p>'+escape(statusLabel(e))+'</p></div><button type="button" class="hr-editor-close" id="hrProfileClose">×</button></header><div style="padding:18px;max-height:65vh;overflow:auto">'+fields.map(([key,label])=>'<div class="hr-profile-row" style="display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding:10px 0"><div><small>'+label+'</small><div style="font-weight:700">'+escape(key==='birthDate'||key==='admissionDate'?fmt(e[key]):key==='companyStatus'?statusLabel(e):e[key]||'—')+'</div></div><button class="button secondary" type="button" data-copy-field="'+key+'">Copiar</button></div>').join('')+'</div><footer class="hr-editor-footer"><button type="button" class="button secondary" id="hrProfilePdf">Gerar PDF</button><button type="button" class="button primary" id="hrProfileDone">Fechar</button></footer>';
