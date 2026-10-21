@@ -26,7 +26,7 @@ async function parseXlsx(file){
  if(!list.length)throw Error('Nenhum funcionário reconhecido. Confira as colunas D a M.');
  return list;
 }
-function decorate(s){let page=RH.page(s,'employees');
+function decorate(s){let page=originalPage(s,'employees');
  const extra='<section class="panel hr-panel"><div class="panel-head"><h2>Importar planilha de funcionários</h2></div><p>Atualize os cadastros a qualquer momento com o mesmo arquivo XLSX. O sistema identifica pelo CPF (ou nome quando não houver CPF), preserva documentos e permite revisar antes de salvar.</p><label class="button secondary">Selecionar planilha XLSX<input id="hrSpreadsheet" type="file" accept=".xlsx" hidden></label><p id="hrImportMessage" role="status"></p></section>';
  page=page.replace('<section class="panel hr-panel"><div class="panel-head"><h2>Equipe e cadastros</h2>',extra+'<section class="panel hr-panel"><div class="panel-head"><h2>Equipe e cadastros</h2>');
  // Ficha e impressão funcionam inclusive para os funcionários importados anteriormente.
