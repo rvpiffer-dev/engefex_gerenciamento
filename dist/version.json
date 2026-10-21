@@ -1,6 +1,6 @@
 {
-  "version": "4.13.30",
+  "version": "4.13.31",
   "date": "2026-10-21",
-  "name": "Ficha completa editável e exportações CSV/Excel",
-  "previous_version": "4.13.29"
+  "name": "Padronização dos nomes dos funcionários",
+  "previous_version": "4.13.30"
 }
