@@ -2,7 +2,7 @@
 /* Execute com: node tests/additives.test.cjs */
 const assert=require('node:assert/strict');
 global.window=global;
-require('../dist/domain.js');
+global.Obras=require('../dist/domain.js');
 require('../dist/manager.js');
 const A=require('../dist/additives.js');
 const P=require('../dist/project-profit.js');
