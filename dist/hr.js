@@ -38,5 +38,6 @@ function attach(s,persist,render,notify){
  const imp=document.getElementById('hrImport');if(imp)imp.onchange=async()=>{if(!root.EngefexAccess?.canWrite('hr'))return notify('Sem permissão.');try{const v=JSON.parse(await imp.files[0].text());if(!Array.isArray(v.employees)||!Array.isArray(v.docs))throw Error('Arquivo incompatível');const n=structuredClone(s);n.hrEmployees=[...(n.hrEmployees||[]),...v.employees.filter(e=>!n.hrEmployees?.some(x=>x.id===e.id))];n.hrDocuments=[...(n.hrDocuments||[]),...v.docs.filter(d=>!n.hrDocuments?.some(x=>x.id===d.id))];await persist(n,'Dados de RH importados.');render()}catch(e){notify(e.message)}};
 }
 function myAlerts(s,email){let m=model(s);if(!(m.settings.recipients||[]).includes(String(email||'').toLowerCase()))return [];if(!root.EngefexAccess?.canRead('hr'))return [];return issues(s).filter(x=>days.includes(x.remaining)).map(x=>({id:'rh-'+x.doc.id+'-'+x.doc.due+'-'+x.remaining,title:'RH: '+x.employee.name+' — '+x.doc.type,detail:x.remaining===0?'Vence hoje':'Vence em '+x.remaining+' dias',href:'#hr'}))}
-root.EngefexRH={page,attach,issues,myAlerts};
+function myPending(s,email){let m=model(s);if(!(m.settings.recipients||[]).includes(String(email||'').toLowerCase())||!root.EngefexAccess?.canRead('hr'))return [];return issues(s).map(x=>({id:'rh-'+x.doc.id,title:'RH: '+x.employee.name+' — '+x.doc.type,detail:x.remaining<0?'Vencido há '+(-x.remaining)+' dias':x.remaining===0?'Vence hoje':'Vence em '+x.remaining+' dias'}))}
+root.EngefexRH={page,attach,issues,myAlerts,myPending};
 })(window);
