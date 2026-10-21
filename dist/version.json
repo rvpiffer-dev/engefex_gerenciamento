@@ -1,6 +1,6 @@
 {
-  "version": "4.13.11",
+  "version": "4.13.12",
   "date": "2026-10-21",
-  "name": "Dashboard visual de Atividades e módulo RH",
-  "previous_version": "4.13.10"
+  "name": "Correção de acesso para contas restritas",
+  "previous_version": "4.13.11"
 }
