@@ -44,7 +44,7 @@ body.activity-focus .shell{padding:0!important}
 .at-field textarea{min-height:85px;resize:vertical}.at-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:10px;border-top:1px solid #dce5f2;padding-top:16px;margin-top:18px}
 .at-dialog-actions button,.at-check-add{border:0;border-radius:9px;padding:11px 15px;cursor:pointer;background:#dce9fb;color:#16487f;font-weight:700}
 .at-dialog-actions button.primary{background:#2162d0;color:white}.at-check-row{display:flex;gap:9px;align-items:center;padding:6px 0}.at-check-row input[type=text]{flex:1;padding:9px;border:1px solid #d0dff0;border-radius:9px}.at-check-row button{border:0;color:#aa2540;background:#fee2e2;border-radius:7px;padding:8px;cursor:pointer}
-.at-new-column{width:100%;border:1px dashed #95a9c6;border-radius:10px;padding:9px;background:#ffffff9c;color:#2e5792;cursor:pointer}
+.at-subtasks{border-top:1px solid #e5eaf2;margin-top:10px;padding-top:9px}.at-subtask{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;color:#334155;cursor:pointer}.at-subtask input{flex-shrink:0}.at-subtask:has(input:checked) span{text-decoration:line-through;color:#94a3b8}.at-new-column{width:100%;border:1px dashed #95a9c6;border-radius:10px;padding:9px;background:#ffffff9c;color:#2e5792;cursor:pointer}
 @media(max-width:650px){.at-fields{grid-template-columns:1fr}.at-dialog{max-height:100vh;border-radius:12px}.at-dialog form{padding:14px}}
 @media(max-width:900px){.at-board{grid-template-columns:1fr}.at-stats{grid-template-columns:repeat(2,1fr)}.at-wrap{padding:12px}}
 `;document.head.appendChild(e)}
@@ -61,7 +61,7 @@ function edit(old,initialStatus='A fazer',again=false){
  if(!canEdit())return toast('Sem permissão para editar atividades.');
  document.getElementById('atModal')?.remove();
  const modal=document.createElement('div');modal.className='at-modal';modal.id='atModal';
- const people=[...new Set([...(s.responsibles||[]).map(x=>x.name),...model(s).map(x=>x.assignee)].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+ const people=[];
  const choices=(items,current)=>items.map(v=>'<option value="'+esc(v)+'" '+(v===current?'selected':'')+'>'+esc(v)+'</option>').join('');
  const selectProject='<option value="Geral">Administrativo / Geral</option>'+(s.projects||[]).map(p=>'<option value="'+esc(p.id)+'" '+(p.id===(old?.project||(project==='all'?'Geral':project))?'selected':'')+'>'+esc(p.name)+'</option>').join('');
  const check=(old?.checklist||[]).map(x=>typeof x==='string'?{text:x,done:false}:x);
@@ -69,7 +69,7 @@ function edit(old,initialStatus='A fazer',again=false){
  '<label class="at-field wide">Título da atividade *<input name="title" required maxlength="200" placeholder="Ex.: Conferir projeto de fabricação" value="'+esc(old?.title||'')+'"></label>'+
  '<label class="at-field wide">Descrição<textarea name="description" placeholder="Detalhes do que precisa ser feito">'+esc(old?.description||'')+'</textarea></label>'+
  '<label class="at-field">Obra *<select name="project" required>'+selectProject+'</select></label>'+
- '<label class="at-field">Responsável<select name="assignee"><option value="">Sem responsável</option>'+choices(people,old?.assignee||'')+'</select></label>'+
+ 
  '<label class="at-field">Prazo<input type="date" name="due" value="'+esc(old?.due||'')+'"></label>'+
  '<label class="at-field">Prioridade<select name="priority">'+choices(['Baixa','Normal','Alta','Urgente'],old?.priority||'Normal')+'</select></label>'+
  '<label class="at-field">Situação<select name="status">'+choices(statuses,old?.status||initialStatus)+'</select></label>'+
@@ -85,7 +85,7 @@ function edit(old,initialStatus='A fazer',again=false){
  const close=()=>modal.remove();
  modal.querySelector('#atClose').onclick=close;modal.querySelector('#atCancel').onclick=close;
  modal.addEventListener('click',e=>{if(e.target===modal)close()});
- async function commit(repeat=false){if(!form.reportValidity())return;const fd=new FormData(form),newStatus=fd.get('status');const task={...old,id:old?.id||crypto.randomUUID(),title:String(fd.get('title')).trim(),description:String(fd.get('description')||''),project:fd.get('project'),assignee:fd.get('assignee'),due:fd.get('due'),priority:fd.get('priority'),status:newStatus,tag:fd.get('tag'),notes:fd.get('notes'),checklist:[...list.querySelectorAll('.at-check-row')].map(r=>({text:r.querySelector('input[type=text]').value.trim(),done:r.querySelector('input[type=checkbox]').checked})).filter(x=>x.text),createdAt:old?.createdAt||new Date().toISOString(),completedAt:newStatus==='Concluída'?(old?.completedAt||new Date().toISOString()):null};if(!task.title)return;form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await save(task);close();if(repeat){const fresh=(window.EngefexBoardState?.state)||null;setTimeout(()=>document.getElementById('atAdd')?.click(),0)}}catch(e){toast(e.message);form.querySelectorAll('button').forEach(b=>b.disabled=false)}}
+ async function commit(repeat=false){if(!form.reportValidity())return;const fd=new FormData(form),newStatus=fd.get('status');const task={...old,id:old?.id||crypto.randomUUID(),title:String(fd.get('title')).trim(),description:String(fd.get('description')||''),project:fd.get('project'),assignee:'',due:fd.get('due'),priority:fd.get('priority'),status:newStatus,tag:fd.get('tag'),notes:fd.get('notes'),checklist:[...list.querySelectorAll('.at-check-row')].map(r=>({text:r.querySelector('input[type=text]').value.trim(),done:r.querySelector('input[type=checkbox]').checked})).filter(x=>x.text),createdAt:old?.createdAt||new Date().toISOString(),completedAt:newStatus==='Concluída'?(old?.completedAt||new Date().toISOString()):null};if(!task.title)return;form.querySelectorAll('button').forEach(b=>b.disabled=true);try{await save(task);close();if(repeat){const fresh=(window.EngefexBoardState?.state)||null;setTimeout(()=>document.getElementById('atAdd')?.click(),0)}}catch(e){toast(e.message);form.querySelectorAll('button').forEach(b=>b.disabled=false)}}
  form.onsubmit=e=>{e.preventDefault();commit(false)};const another=modal.querySelector('#atSaveAnother');if(another)another.onclick=()=>commit(true);
  const del=modal.querySelector('#atDelete');if(del)del.onclick=async()=>{if(!confirm('Excluir esta atividade definitivamente?'))return;let next=structuredClone(s);next.boardTasks=model(next).filter(t=>t.id!==old.id);try{await persist(next,'Atividade excluída.');close();render()}catch(e){toast(e.message)}};
  form.elements.title.focus()
@@ -93,6 +93,6 @@ function edit(old,initialStatus='A fazer',again=false){
 document.getElementById('atAdd')?.addEventListener('click',()=>edit(null));
 document.querySelectorAll('[data-board-new-status]').forEach(el=>el.onclick=()=>edit(null,el.dataset.boardNewStatus));
 document.querySelectorAll('[data-board-edit]').forEach(el=>el.onclick=()=>edit(model(s).find(t=>t.id===el.dataset.boardEdit)));
-document.querySelectorAll('[data-board-check],[data-board-status]').forEach(el=>el.onchange=()=>{let id=el.dataset.boardCheck||el.dataset.boardStatus,t=model(s).find(x=>x.id===id);if(!t)return;save({...t,status:el.dataset.boardCheck?(el.checked?'Concluída':'A fazer'):el.value,completedAt:el.dataset.boardCheck&&el.checked?new Date().toISOString():null})})}
+document.querySelectorAll('[data-board-sub]').forEach(el=>el.onchange=()=>{const t=model(s).find(x=>x.id===el.dataset.boardSub),index=Number(el.dataset.subIndex);if(!t||!Array.isArray(t.checklist)||!t.checklist[index])return;const checklist=t.checklist.map((x,i)=>i===index?{...x,done:el.checked}:x);save({...t,checklist})});document.querySelectorAll('[data-board-check],[data-board-status]').forEach(el=>el.onchange=()=>{let id=el.dataset.boardCheck||el.dataset.boardStatus,t=model(s).find(x=>x.id===id);if(!t)return;save({...t,status:el.dataset.boardCheck?(el.checked?'Concluída':'A fazer'):el.value,completedAt:el.dataset.boardCheck&&el.checked?new Date().toISOString():null})})}
 root.EngefexBoard={page,attach};
 })(window);
