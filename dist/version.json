@@ -1,6 +1,6 @@
 {
-  "version": "4.13.34",
+  "version": "4.13.35",
   "date": "2026-10-21",
-  "name": "Exclusão controlada de funcionários",
-  "previous_version": "4.13.33"
+  "name": "Anexos por funcionário e ficha PDF opcional",
+  "previous_version": "4.13.34"
 }
