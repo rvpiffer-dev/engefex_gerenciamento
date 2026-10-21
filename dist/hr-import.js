@@ -10,10 +10,10 @@ const iso=x=>{if(!x)return '';if(/^\d{4}-\d\d-\d\d$/.test(clean(x)))return clean
 const fmt=x=>/^\d{4}-\d\d-\d\d$/.test(clean(x))?clean(x).split('-').reverse().join('/'):clean(x);
 const statusLabel=e=>e.companyStatus==='afastado'?'Afastado':e.companyStatus==='outro_cnpj'?'Outro CNPJ':'Engefex';
 async function parseXlsx(file){
- const zip=await root.JSZip.loadAsync(file);const xml=async p=>new DOMParser().parseFromString(await zip.file(p).async('string'),'application/xml');
+ if(!root.JSZip)throw Error('Leitor de Excel indisponível. Atualize o sistema e tente novamente.');const zip=await root.JSZip.loadAsync(file);const xml=async p=>{const entry=zip.file(p);if(!entry)throw Error('O arquivo Excel está incompleto: falta '+p+'. Salve novamente como .xlsx.');return new DOMParser().parseFromString(await entry.async('string'),'application/xml')};
  const sst=zip.file('xl/sharedStrings.xml')?Array.from((await xml('xl/sharedStrings.xml')).getElementsByTagName('si')).map(si=>Array.from(si.getElementsByTagName('t')).map(t=>t.textContent).join('')):[];
- const style=await xml('xl/styles.xml'), xfs=Array.from(style.getElementsByTagName('cellXfs')[0]?.children||[]),fills=Array.from(style.getElementsByTagName('fills')[0]?.children||[]);
- const sheets=Object.keys(zip.files).filter(x=>/^xl\/worksheets\/sheet\d+\.xml$/.test(x));if(!sheets.length)throw Error('Planilha sem abas.');
+ const style=zip.file('xl/styles.xml')?await xml('xl/styles.xml'):null, xfs=Array.from(style?.getElementsByTagName('cellXfs')[0]?.children||[]),fills=Array.from(style?.getElementsByTagName('fills')[0]?.children||[]);
+ const sheets=Object.keys(zip.files).filter(x=>/^xl\/worksheets\/sheet\d+\.xml$/.test(x));if(!sheets.length)throw Error('Não encontrei uma aba de dados no arquivo XLSX. Salve novamente como Pasta de Trabalho do Excel (.xlsx).');
  const doc=await xml(sheets[0]);const list=[];
  for(const row of Array.from(doc.getElementsByTagName('sheetData')[0]?.getElementsByTagName('row')||[])){
   const r={};for(const c of Array.from(row.getElementsByTagName('c'))){const key=(c.getAttribute('r')||'').replace(/\d/g,'');const v=c.getElementsByTagName('v')[0]?.textContent||'';r[key]=c.getAttribute('t')==='s'?sst[Number(v)]||'':c.getAttribute('t')==='inlineStr'?(c.getElementsByTagName('t')[0]?.textContent||''):v;
