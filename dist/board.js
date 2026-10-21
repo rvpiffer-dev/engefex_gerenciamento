@@ -46,6 +46,16 @@ body.activity-focus .shell{padding:0!important}
 .at-dialog .at-sheet th:nth-child(4),.at-dialog .at-sheet td:nth-child(4){width:54px!important;text-align:center}
 .at-dialog .at-sheet th:nth-child(2),.at-dialog .at-sheet td:nth-child(2){width:auto!important}
 .at-dialog .at-sheet td:nth-child(2) .at-sheet-entry{display:block!important;width:100%!important;min-width:0!important;box-sizing:border-box!important}
+
+/* Grade estável: impede que estilos globais movam a célula de texto. */
+.at-dialog .at-sheet{display:block!important;width:100%!important;min-width:0!important;table-layout:auto!important}
+.at-dialog .at-sheet thead,.at-dialog .at-sheet tbody{display:block!important;width:100%!important}
+.at-dialog .at-sheet thead tr,.at-dialog .at-sheet tbody tr.at-check-row{display:grid!important;grid-template-columns:40px minmax(0,1fr) 75px 52px!important;width:100%!important;min-width:0!important;align-items:stretch!important}
+.at-dialog .at-sheet thead th,.at-dialog .at-sheet tbody td{display:flex!important;align-items:center!important;min-width:0!important;width:auto!important;max-width:none!important;padding:5px 8px!important;position:static!important;float:none!important;overflow:visible!important;box-sizing:border-box!important}
+.at-dialog .at-sheet thead th:nth-child(2),.at-dialog .at-sheet tbody td:nth-child(2){min-width:0!important;width:auto!important;flex:1 1 auto!important}
+.at-dialog .at-sheet tbody td:nth-child(2) input.at-sheet-entry{display:block!important;position:relative!important;width:100%!important;min-width:0!important;height:40px!important;padding:9px 12px!important;box-sizing:border-box!important;flex:1 1 auto!important;text-align:left!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;z-index:1!important;background:#fff!important;border:1px solid #d8e5f4!important;border-radius:8px!important;color:#1c3658!important}
+.at-dialog .at-sheet tbody td:nth-child(2) input.at-sheet-entry:focus{border-color:#3479e8!important;outline:2px solid #bcd4ff!important}
+.at-dialog .at-sheet tbody td:nth-child(3),.at-dialog .at-sheet tbody td:nth-child(4){justify-content:center!important}
 .at-modal{position:fixed;inset:0;background:#0c1d39a9;z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px}
 .at-dialog{background:#f8fbff;color:#1c304e;width:min(780px,100%);max-height:94vh;overflow:auto;border-radius:20px;box-shadow:0 25px 80px #081d3d66}
 .at-dialog-head{background:linear-gradient(120deg,#173d77,#366dd4);color:white;padding:20px 24px;display:flex;justify-content:space-between;align-items:center}
