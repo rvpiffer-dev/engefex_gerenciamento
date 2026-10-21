@@ -25,9 +25,36 @@
  let birthdayNames=[],birthdayDate='',birthdayLoading=false;
  async function refreshBirthdays(){if(!cloud?.ready||birthdayLoading)return;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());if(today===birthdayDate)return;birthdayLoading=true;try{birthdayNames=await cloud.birthdaysToday();birthdayDate=today;updateBell();}catch(err){console.warn('Aniversários indisponíveis',err)}finally{birthdayLoading=false}}
  function birthdayAlerts(){return birthdayNames.map((name,i)=>({id:'birthday-'+birthdayDate+'-'+i,title:'🎉 Aniversário: '+name,detail:'Hoje é aniversário de '+name+'! 🎂',project:'Geral',priority:'Celebração',createdAt:new Date().toISOString(),birthday:true}));}
- function alerts(){return [...(window.EngefexVacationControl?.alerts(state)||[]).map(x=>({...x,project:'Geral'})),...birthdayAlerts(),...(E?.inbox(state,identity())||[]),...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(x=>({...x,project:'Geral',priority:'Atenção',createdAt:new Date().toISOString()}))]}
- function updateBell(){if(!E)return;const unseen=E.unread(state,identity()).length+(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).length+birthdayNames.length+(window.EngefexVacationControl?.alerts(state)||[]).length,count=$('#alertsCount');if(!count)return;count.hidden=unseen===0;count.textContent=unseen>99?'99+':String(unseen);$('#alertsBell').setAttribute('aria-label',unseen?unseen+' notificações não lidas':'Abrir minhas notificações');if(!$('#alertsPanel').hidden)drawAlerts()}
- function drawAlerts(){const list=alerts(),unseen=new Set([...(window.EngefexVacationControl?.alerts(state)||[]).map(n=>n.id),...birthdayAlerts().map(n=>n.id),...E.unread(state,identity()).map(n=>n.id),...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>n.id)]);$('#alertsList').innerHTML=list.length?list.map(n=>`<article class="alerts-item ${unseen.has(n.id)?'unread':''}"><div><strong>${h(n.title)}</strong><div>${h(n.detail||'')}</div><small>${h(projectLabel(n.project))} · ${h(n.priority||'Normal')} · ${fmt(n.due)}</small><small>${h(new Date(n.createdAt).toLocaleString('pt-BR'))}</small></div><div class="alerts-item-actions">${n.birthday?"🎂 Parabéns!":n.vacation?`<a class="text-btn" href="#hr-vacations">Abrir férias</a>`:`<button type="button" class="text-btn" data-alert-open="${h(n.id)}">Abrir pendência</button>`}${(n.birthday||n.id.startsWith('rh-'))?'<span class="alerts-read">'+(n.birthday?'Aniversário':'Alerta automático')+'</span>':unseen.has(n.id)?`<button type="button" class="text-btn" data-alert-read="${h(n.id)}">Marcar lida</button>`:'<span class="alerts-read">Lida</span>'}</div></article>`).join(''):'<div class="empty">Nenhuma notificação para esta conta.</div>';$('#alertsReadAll').disabled=!unseen.size}
+ function alerts(){
+  const items=[
+   ...(window.EngefexVacationControl?.alerts(state)||[]).map(n=>({...n,project:'Geral'})),
+   ...birthdayAlerts(),
+   ...(E?.unread(state,identity())||[]),
+   ...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>({...n,project:'Geral',priority:'Atenção',createdAt:new Date().toISOString()}))
+  ];
+  return items.filter(n=>!cloud?.hasNotificationBeenRead?.(n.id));
+ }
+ function updateBell(){
+  if(!E)return;
+  const pending=alerts(),count=$('#alertsCount');if(!count)return;
+  const unseen=pending.length;count.hidden=unseen===0;count.textContent=unseen>99?'99+':String(unseen);
+  $('#alertsBell').setAttribute('aria-label',unseen?unseen+' notificações não lidas':'Abrir minhas notificações');
+  if(!$('#alertsPanel').hidden)drawAlerts();
+ }
+ function drawAlerts(){
+  const list=alerts();
+  $('#alertsList').innerHTML=list.length?list.map(n=>{
+   const action=n.vacation?'Abrir férias':n.id.startsWith('rh-')?'Abrir RH':n.issueId?'Abrir pendência':'';
+   return `<article class="alerts-item unread" role="button" tabindex="0" data-alert-open="${h(n.id)}" aria-label="${h('Marcar como lida: '+n.title)}">
+     <div><strong>${h(n.title)}</strong><div>${h(n.detail||'')}</div><small>${h(projectLabel(n.project))} · ${h(n.priority||'Normal')} · ${fmt(n.due)}</small></div>
+     <div class="alerts-item-actions">
+       <button type="button" class="text-btn" data-alert-read="${h(n.id)}">✓ Marcar como lida</button>
+       ${action?`<button type="button" class="text-btn" data-alert-open="${h(n.id)}">${h(action)}</button>`:''}
+     </div>
+   </article>`;
+  }).join(''):'<div class="empty">Nenhuma notificação pendente. Tudo em dia!</div>';
+  $('#alertsReadAll').disabled=!list.length;
+ }
  function toggleBell(show){const panel=$('#alertsPanel');panel.hidden=!show;$('#alertsBell').setAttribute('aria-expanded',String(show));if(show)drawAlerts()}
 
  const titles={users:'Usuários e acessos',sharedcalendar:'Agenda compartilhada',projects:'Obras',dashboard:'Visão geral',agenda:'Agenda do engenheiro',activities:'Etapas e atividades',timeline:'Cronograma',budget:'Orçamento',supplies:'Compras e notas',measurements:'Medições e recebimentos',checklist:'Checklist de execução',issues:'Pendências e riscos',responsibles:'Responsáveis',diary:'Diário de obra',documents:'Documentos e diagnóstico',teams:'Equipes e produtividade',fixedexpenses:'Despesas gerais',payables:'Contas a pagar',receivables:'Contas a receber',fabrication:'Fabricação',nextarstock:'Estoque Nextar','hr-employees':'Funcionários','hr-documents':'Validade Documentos','hr-vacations':'Férias','hr-payroll':'Folha de pagamento',board:'Atividades — Lousa'};
@@ -167,8 +194,42 @@
  async function viewPhotos(id){let record=state.diary.find(x=>x.id===id);if(!record)return;$('#readerTitle').textContent='Fotos do diário · '+projectLabel(record.project)+' · '+fmt(record.date);$('#readerContent').innerHTML='<div class="empty">Carregando fotos…</div>';$('#reader').showModal();try{let photos=window.ObrasPhotos?await window.ObrasPhotos.load(record.photos||[]):[];$('#readerContent').innerHTML=photos.length?'<div class="saved-photo-gallery">'+photos.map((p,i)=>'<figure><img src="'+p.dataURL+'" alt="'+h(p.caption||p.name)+'"><figcaption><strong>Foto '+(i+1)+'</strong> '+h(p.caption||p.name)+'</figcaption><button type="button" class="button secondary" data-download-photo="'+h(p.id)+'">Baixar foto</button></figure>').join('')+'</div>':'<div class="empty">Este registro ainda não tem fotos. Use Editar → Adicionar fotos.</div>';for(let el of $$('#readerContent [data-download-photo]'))el.onclick=()=>downloadFile(el.dataset.downloadPhoto,photos.find(p=>p.id===el.dataset.downloadPhoto))}catch(err){$('#readerContent').innerHTML='<div class="empty red-text">'+h(err.message)+'</div>'}}
  async function exportBackup(){try{if(A&&cloud&&!A.isAdmin)throw Error('Somente o administrador pode exportar o backup completo.');toast('Preparando backup com fotos…');let snapshot=cloud?await cloud.fullSnapshot():D.clone(state),bundle=window.ObrasPhotos?await window.ObrasPhotos.backup(snapshot):snapshot;bundle.fileFiles=await window.LocalFiles.load(window.LocalFiles.refs(snapshot));download('backup-engefex-'+D.today()+'.json',JSON.stringify(bundle,null,2));toast('Backup exportado com os registros e as fotos do diário.')}catch(err){toast(err.message)}}
  $('#alertsBell')?.addEventListener('click',()=>toggleBell($('#alertsPanel').hidden));
- $('#alertsReadAll')?.addEventListener('click',async()=>{try{if(!identity())return;const pending=E.unread(state,identity());if(!pending.length)return;const next=E.readAll(state,identity());if(await persist(next)===false)throw Error('Leitura não confirmada pelo Supabase.');updateBell()}catch(e){toast(e.message)}});
- $('#alertsPanel')?.addEventListener('click',async e=>{const btn=e.target.closest('[data-alert-read],[data-alert-open]');if(!btn)return;const id=btn.dataset.alertRead||btn.dataset.alertOpen,n=alerts().find(item=>item.id===id);if(!n)return;try{if(E.unread(state,identity()).some(x=>x.id===id)){if(await persist(E.read(state,id,identity()))===false)throw Error('Leitura não confirmada pelo Supabase.')}updateBell();if(btn.dataset.alertOpen){if(id.startsWith('rh-')){toggleBell(false);location.hash='#hr';render();return}toggleBell(false);tab.issues='mine';search='';filter='';location.hash='#issues';render();viewRecord('issues',n.issueId)}}catch(e){toast(e.message)}});
+ $('#alertsReadAll')?.addEventListener('click',async e=>{
+  if(!cloud?.ready||!identity())return toast('Conecte-se ao Supabase para confirmar a leitura.');
+  const button=e.currentTarget,items=alerts();if(!items.length)return;
+  button.disabled=true;
+  try{await cloud.markNotificationsRead(items.map(n=>n.id));updateBell();}
+  catch(err){toast('Não foi possível marcar como lidas: '+err.message);button.disabled=false;}
+ });
+ $('#alertsPanel')?.addEventListener('click',async e=>{
+  const btn=e.target.closest('[data-alert-read],[data-alert-open]');if(!btn)return;
+  e.preventDefault();e.stopPropagation();
+  const id=btn.dataset.alertRead||btn.dataset.alertOpen,n=alerts().find(item=>item.id===id);
+  if(!n)return;
+  if(!cloud?.ready)return toast('Conecte-se ao Supabase para confirmar a leitura.');
+  if($('#alertsPanel').dataset.reading==='true')return;
+  $('#alertsPanel').dataset.reading='true';
+  try{
+   await cloud.markNotificationsRead([id]);
+   updateBell();
+   if(btn.dataset.alertOpen){
+    const destination=n.href||(id.startsWith('rh-')?'#hr-documents':n.issueId?'#issues':'');
+    if(destination){
+     toggleBell(false);
+     if(n.issueId){tab.issues='mine';search='';filter='';}
+     location.hash=destination;
+     render();
+     if(n.issueId)try{viewRecord('issues',n.issueId)}catch{}
+    }
+   }
+  }catch(err){toast('Não foi possível marcar como lida: '+err.message)}
+  finally{delete $('#alertsPanel').dataset.reading}
+ });
+ $('#alertsPanel')?.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches('.alerts-item[data-alert-open]')){
+   e.preventDefault();e.target.click();
+  }
+ });
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#alertsPanel').hidden)toggleBell(false)});
  $('#removeRecord').onclick=()=>{if(submitting)return toast('Aguarde o salvamento.');try{if(!editContext||!confirm('Remover este lançamento do controle? O registro anterior ficará preservado no histórico.'))return;let next=D.removeRecord(state,editContext.kind,editContext.id);persist(next);$('#editor').close();render()}catch(e){$('#formError').textContent=e.message}};$('#backup').onclick=exportBackup;$('#settings').onclick=settings;$('#closeDialog').onclick=$('#cancelDialog').onclick=()=>{if(submitting)return toast('Aguarde o salvamento.');$('#editor').close()};$('#editor').addEventListener('cancel',e=>{if(submitting)e.preventDefault()});$('#reader').addEventListener('cancel',e=>{if(window.EngefexSharedCalendar?.busy()||budgetImportBusy||window.EngefexFactory?.busy()||window.EngefexSuppliers?.busy()||window.EngefexLaborContracts?.busy()||window.EngefexRetentions?.busy()||window.EngefexFixedExpenses?.busy()||window.EngefexReceivableInstallments?.busy()||window.EngefexMeasurementSheet?.busy()||window.EngefexPayables?.busy()||window.EngefexPurchases?.busy()||window.EngefexMeasurementForecast?.busy())e.preventDefault()});$('#closeReader').onclick=()=>{if(window.EngefexSharedCalendar?.busy()||budgetImportBusy||window.EngefexFactory?.busy()||window.EngefexSuppliers?.busy()||window.EngefexLaborContracts?.busy()||window.EngefexRetentions?.busy()||window.EngefexFixedExpenses?.busy()||window.EngefexReceivableInstallments?.busy()||window.EngefexMeasurementSheet?.busy()||window.EngefexPayables?.busy()||window.EngefexPurchases?.busy()||window.EngefexMeasurementForecast?.busy())return toast('Aguarde a confirmação do salvamento.');if(window.EngefexFactory?.isModalDirty()&&!confirm('Descartar as alterações de fabricação ainda não salvas?'))return;$('#reader').close()};$('.sidebar').onclick=e=>{if(e.target.closest('a'))setMobileMenu(false)};$('#menuToggle').onclick=()=>setMobileMenu(!$('.sidebar').classList.contains('open'));if($('#menuBackdrop'))$('#menuBackdrop').onclick=()=>setMobileMenu(false);if($('#menuClose'))$('#menuClose').onclick=()=>setMobileMenu(false);
  $('#project').onchange=e=>{if(window.EngefexFactory?.busy()){e.target.value=project;toast('Aguarde a confirmação do salvamento da fabricação.');return}if(window.EngefexFactory?.isDirty()&&!confirm('Descartar as alterações de fabricação antes de trocar de obra?')){e.target.value=project;return}if(diaryDirty&&!confirm('Trocar de obra sem salvar o diário?')){e.target.value=project;return}diaryDirty=false;project=e.target.value;window.EngefexPayables?.resetProjectFilter();search='';filter='';try{saveProjectPreference()}catch{}render()};
@@ -219,7 +280,7 @@
  window.EngefexMeasurementSheet?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},getProject:()=>project,save:next=>persist(next),render,toast});
  window.EngefexRetentions?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},getProject:()=>project,save:next=>persist(next),render,toast});
  window.EngefexSuppliers?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},save:next=>persist(next),render,toast});
- if(cloud)cloud.boot({getState:()=>D.clone(state),acceptState:next=>{D.onlineValid(next);fullHistory=null;state=window.EngefexManager.ensureProjectCodes(window.EngefexManager.separate(next));writeCache(serializeSaved(state));if(view==='nextarstock'){updateBell()}else{search='';filter='';render()}},isDirty:()=>A?.isDirty()||window.EngefexReceivableToggle?.busy()||diaryDirty||submitting||budgetImportDirty()||!!$('#editor')?.open||window.EngefexGrid?.isDirty()||window.EngefexRecordsGrid?.isDirty()||window.EngefexFactory?.isDirty()||window.EngefexSuppliers?.isDirty()||window.EngefexLaborContracts?.isDirty()||window.EngefexRetentions?.isDirty()||window.EngefexFixedExpenses?.isDirty()||window.EngefexReceivableInstallments?.isDirty()||window.EngefexMeasurementSheet?.isDirty()||window.EngefexPayables?.isDirty()||window.EngefexPurchases?.isDirty()||window.EngefexMeasurementForecast?.isDirty(),clearState:()=>{fullHistory=null;volatileCache=null;localStorage.removeItem(KEY);state=window.EngefexManager.separate(D.clone(window.OBRAS_SEED));render();updateBell()},identityChanged:()=>{render();updateBell()},accessChanged:()=>{for(let el of document.querySelectorAll('dialog[open]'))el.close();diaryDirty=false;volatileCache=null;localStorage.removeItem(KEY);$('#main').innerHTML='<p>Atualizando permissões…</p>';},exportBackup,saved:()=>toast('Alteração confirmada no Supabase.'),saveError:msg=>toast('Falha ao salvar online: '+msg)});
+ if(cloud)cloud.boot({getState:()=>D.clone(state),acceptState:next=>{D.onlineValid(next);fullHistory=null;state=window.EngefexManager.ensureProjectCodes(window.EngefexManager.separate(next));writeCache(serializeSaved(state));if(view==='nextarstock'){updateBell()}else{search='';filter='';render()}},isDirty:()=>A?.isDirty()||window.EngefexReceivableToggle?.busy()||diaryDirty||submitting||budgetImportDirty()||!!$('#editor')?.open||window.EngefexGrid?.isDirty()||window.EngefexRecordsGrid?.isDirty()||window.EngefexFactory?.isDirty()||window.EngefexSuppliers?.isDirty()||window.EngefexLaborContracts?.isDirty()||window.EngefexRetentions?.isDirty()||window.EngefexFixedExpenses?.isDirty()||window.EngefexReceivableInstallments?.isDirty()||window.EngefexMeasurementSheet?.isDirty()||window.EngefexPayables?.isDirty()||window.EngefexPurchases?.isDirty()||window.EngefexMeasurementForecast?.isDirty(),clearState:()=>{fullHistory=null;volatileCache=null;localStorage.removeItem(KEY);state=window.EngefexManager.separate(D.clone(window.OBRAS_SEED));render();updateBell()},identityChanged:()=>{render();updateBell()},notificationReadsChanged:()=>updateBell(),accessChanged:()=>{for(let el of document.querySelectorAll('dialog[open]'))el.close();diaryDirty=false;volatileCache=null;localStorage.removeItem(KEY);$('#main').innerHTML='<p>Atualizando permissões…</p>';},exportBackup,saved:()=>toast('Alteração confirmada no Supabase.'),saveError:msg=>toast('Falha ao salvar online: '+msg)});
 })();
 
 
