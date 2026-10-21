@@ -9,7 +9,8 @@ const h=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const today=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});
 const makeId=p=>p+'-'+(root.crypto?.randomUUID?.()||Date.now().toString(36)+Math.random().toString(36).slice(2));
 const cents=x=>{const n=Number(x);if(!Number.isFinite(n))throw Error('Informe um valor numérico válido.');return Math.round(n*100)};
-const value=lines=>lines.reduce((acc,l)=>acc+Math.round(cents(l.quantity)*cents(l.unitPrice)/100),0)/100;
+const lineCents=l=>Math.round(Number(l.quantity)*Number(l.unitPrice)*100);
+const value=lines=>lines.reduce((acc,l)=>acc+lineCents(l),0)/100;
 const statuses=['Rascunho','Em aprovação','Aprovado','Recusado'];
 function listing(s,project='all'){return (s.budgetStages||[]).filter(st=>st.amendment?.kind==='contract_addendum'&&(project==='all'||st.project===project)).sort((a,b)=>String(b.amendment.requestedAt||'').localeCompare(String(a.amendment.requestedAt||'')));}
 function totals(s,project='all'){
@@ -63,7 +64,7 @@ function commit(s,record,status){
    const item={...M().defaults('budgetItems',record.project),
     id:stage.id+'-item-'+l.id,project:record.project,stage:stage.id,
     code:code+'.'+String(i+1).padStart(2,'0'),name:l.name,unit:l.unit,
-    quantity:l.quantity,unitPrice:l.unitPrice,sale:Math.round(cents(l.quantity)*cents(l.unitPrice)/100)/100,
+    quantity:l.quantity,unitPrice:l.unitPrice,sale:lineCents(l)/100,
     executed:0,amendmentStageId:stage.id,source:'Aditivo contratual aprovado'};
    D().validateBudgetItem(next,item);
    next.budgetItems.push(item);
@@ -113,7 +114,7 @@ function draw(){
  '</div><label class="additive-notes">Justificativa / escopo<textarea data-ad-field="justification" '+disabled+'>'+h(a.justification||'')+'</textarea></label>'+
  '<div class="additive-line-heading"><div><strong>Serviços adicionais</strong><small>Valores unitários, quantidades e totais</small></div>'+(!readOnly?'<button type="button" class="button secondary" data-action="additive-add-line">+ Linha</button>':'')+'</div>'+
  '<div class="additive-grid"><table><thead><tr><th>Descrição</th><th>Un.</th><th>Qtd.</th><th>Preço unitário (R$)</th><th>Total (R$)</th><th></th></tr></thead><tbody>'+a.lines.map((l,i)=>'<tr data-additive-line="'+h(l.id)+'"><td><input aria-label="Descrição linha '+(i+1)+'" data-field="name" value="'+h(l.name)+'" '+disabled+'></td><td><input aria-label="Unidade linha '+(i+1)+'" data-field="unit" value="'+h(l.unit)+'" '+disabled+'></td><td><input aria-label="Quantidade linha '+(i+1)+'" type="number" min="0.0001" step="any" data-field="quantity" value="'+h(l.quantity)+'" '+disabled+'></td><td><input aria-label="Preço unitário linha '+(i+1)+'" type="number" min="0" step="0.01" data-field="unitPrice" value="'+h(l.unitPrice)+'" '+disabled+'></td><td class="additive-line-total">'+money(Number(l.quantity||0)*Number(l.unitPrice||0))+'</td><td>'+(!readOnly?'<button type="button" class="text-btn red-text" data-action="additive-remove-line:'+i+'">Remover</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'+
- '<div class="additive-bottom"><div><small>VALOR TOTAL DO ADITIVO</small><strong id="additiveTotal">'+money(a.amount)+'</strong></div><div class="actions">'+(readOnly?'<span class="notice neutral">Aditivo finalizado. Os dados ficam preservados para consulta.</span>':'<button type="button" class="button secondary" data-action="additive-save">Salvar rascunho</button><button type="button" class="button secondary" data-action="additive-submit">Em aprovação</button><button type="button" class="button primary" data-action="additive-approve">Aprovar aditivo</button>')+'</div></div>'+
+ '<div class="additive-bottom"><div><small>VALOR TOTAL DO ADITIVO</small><strong id="additiveTotal">'+money(a.amount)+'</strong></div><div class="actions">'+(readOnly?'<span class="notice neutral">Aditivo finalizado. Os dados ficam preservados para consulta.</span>':'<button type="button" class="button secondary" data-action="additive-save">Salvar rascunho</button><button type="button" class="button secondary" data-action="additive-submit">Em aprovação</button><button type="button" class="button primary" data-action="additive-approve">Aprovar aditivo</button><button type="button" class="button secondary" data-action="additive-reject">Recusar</button>')+'</div></div>'+
  '<div id="additiveError" class="form-error" role="alert"></div></div>';
  for(const el of $$('[data-additive-line] input'))el.addEventListener('input',()=>{
   const rows=$$('[data-additive-line]');let total=0;for(const row of rows){const n=Number(row.querySelector('[data-field="quantity"]').value||0)*Number(row.querySelector('[data-field="unitPrice"]').value||0);row.querySelector('.additive-line-total').textContent=money(n);total+=n}$('#additiveTotal').textContent=money(total);
@@ -130,6 +131,7 @@ function open(id){
 async function save(status){
  if(pending||readOnly)return;
  const data=getRecord();if(!data)return;
+ if(status==='Recusado'&&!root.confirm('Recusar este aditivo? Ele ficará bloqueado para edição.'))return;
  if(status==='Aprovado'&&!root.confirm('Aprovar este aditivo? O contrato atualizado aumentará e os serviços serão incorporados ao orçamento para medição. A aprovação será definitiva.'))return;
  pending=true;for(const el of $$('.additive-editor button'))el.disabled=true;
  try{const next=commit(bridge.getState(),data,status);const saved=await bridge.save(next,'Aditivo '+(status==='Aprovado'?'aprovado':status==='Em aprovação'?'enviado para aprovação':'salvo')+'.');if(saved===false)throw Error('Alteração não confirmada pelo Supabase.');$('#reader').close();form=null;bridge.render();}
@@ -143,10 +145,11 @@ function handle(action){
   if(action==='additive-new')open();
   else if(action.startsWith('additive-open:'))open(action.slice(14));
   else if(action==='additive-add-line'){getRecord();form.amendment.lines.push({id:makeId('L'),name:'',unit:'un',quantity:1,unitPrice:0});draw();}
-  else if(action.startsWith('additive-remove-line:')){getRecord();form.amendment.lines.splice(Number(action.slice(21)),1);draw();}
+  else if(action.startsWith('additive-remove-line:')){getRecord();form.amendment.lines.splice(Number(action.slice('additive-remove-line:'.length)),1);draw();}
   else if(action==='additive-save')save('Rascunho');
   else if(action==='additive-submit')save('Em aprovação');
   else if(action==='additive-approve')save('Aprovado');
+  else if(action==='additive-reject')save('Recusado');
  }catch(e){bridge.toast(e.message)}
  return true;
 }
