@@ -21,7 +21,7 @@ async function parseXlsx(file){
   }
   const name=clean(r.D);if(!name||norm(name)==='NOME'||!r.C||!(/^\d+$/.test(clean(r.C))))continue;
   const note=norm(r.B);const color=r._color;const companyStatus=note.includes('AFAST')||color==='FF0000'?'afastado':note.includes('OUTRO CNPJ')||color==='FFFF00'?'outro_cnpj':'engefex';
-  list.push({name,address:clean(r.E),phone:clean(r.F),birthDate:iso(r.G),age:clean(r.H),role:clean(r.I),cpf:clean(r.J),rg:clean(r.L),admissionDate:iso(r.M),companyStatus,spreadsheetNote:clean(r.B)});
+  list.push({name:root.EngefexNameCase(name),address:clean(r.E),phone:clean(r.F),birthDate:iso(r.G),age:clean(r.H),role:clean(r.I),cpf:clean(r.J),rg:clean(r.L),admissionDate:iso(r.M),companyStatus,spreadsheetNote:clean(r.B)});
  }
  if(!list.length)throw Error('Nenhum funcionário reconhecido. Confira as colunas D a M.');
  return list;
@@ -45,7 +45,7 @@ const originalAttach=RH.attach;RH.attach=function(s,persist,render,notify){
    if(ambiguous)throw Error(ambiguous+' funcionários têm correspondência ambígua. Ajuste CPF ou nome antes de importar.');
    if(!confirm('Planilha lida: '+rows.length+' funcionários. Atualizar '+updates+' e incluir '+news+'? Os demais cadastros permanecerão intactos.'))return;
    const next=structuredClone(s);next.hrEmployees=next.hrEmployees||[];
-   for(const {row,existing} of matches){if(existing){const target=next.hrEmployees.find(x=>x.id===existing.id);for(const [k,v] of Object.entries(row))if(v!==''&&v!==null)target[k]=v;}else next.hrEmployees.push({id:crypto.randomUUID(),active:true,employmentStatus:'ativo',category:'outros',...row});}
+   for(const {row,existing} of matches){if(existing){const target=next.hrEmployees.find(x=>x.id===existing.id);for(const [k,v] of Object.entries(row))if(v!==''&&v!==null)target[k]=k==='name'?root.EngefexNameCase(v):v;}else next.hrEmployees.push({id:crypto.randomUUID(),active:true,employmentStatus:'ativo',category:'outros',...row});}
    const ok=await persist(next,'Planilha de funcionários salva no Supabase.');if(ok===false)throw Error('O servidor não confirmou a importação.');
    notify('Importados '+rows.length+' registros.');render();
   }catch(error){document.getElementById('hrImportMessage').textContent=error.message||'Falha ao importar';notify(error.message||'Falha ao importar');}
