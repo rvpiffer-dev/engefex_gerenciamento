@@ -210,7 +210,17 @@
  }
  async function writeState(payload){
   const changes=confirmedState?buildPatch(confirmedState,payload):null,full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
-  const fullText=JSON.stringify(full),compact=compactReadSupported===true&&!root.EngefexAccess?.context?.restricted,canPatch=!root.EngefexAccess?.context?.restricted&&patchSupported!==false&&changes&&changes.length<=1000,patchText=canPatch?JSON.stringify(patch):'',usePatch=canPatch&&(compact||patchText.length<fullText.length*.9);
+  const compact=compactReadSupported===true&&!root.EngefexAccess?.context?.restricted;
+  if(compact){
+   // Histórico compacto é apenas uma janela da sequência real. Nunca substituí-la.
+   // Permitimos somente inserções no início; exclusões ou alterações antigas falham sem salvar.
+   const oldHistory=confirmedState?.history||[],newHistory=payload.history||[],added=newHistory.length-oldHistory.length;
+   if(!Array.isArray(newHistory)||added<0||JSON.stringify(newHistory.slice(added))!==JSON.stringify(oldHistory))
+    throw Error('Alteração incompatível no histórico. Atualize os dados antes de salvar.');
+   for(let i=changes.length-1;i>=0;i--)if(changes[i].key==='history')changes.splice(i,1);
+   if(added)changes.unshift({key:'history',start:0,deleteCount:0,items:newHistory.slice(0,added)});
+  }
+  const fullText=JSON.stringify(full),canPatch=!root.EngefexAccess?.context?.restricted&&patchSupported!==false&&changes&&changes.length<=1000,patchText=canPatch?JSON.stringify(patch):'',usePatch=canPatch&&(compact||patchText.length<fullText.length*.9);
   if(compact&&!usePatch)throw Error('Leitura compacta exige salvamento por alterações. Nenhum histórico foi substituído.');
   let result,mode='full',bytes=fullText.length;
   if(usePatch){try{result=await raw('/rest/v1/rpc/engefex_patch_state',{method:'POST',json:true,body:patch});patchSupported=true;mode='patch';bytes=patchText.length}catch(e){if(e.status===404&&e.code==='PGRST202'){patchSupported=false;if(compact)throw Error('Servidor sem suporte a patches: salvamento compacto bloqueado para preservar o histórico.')}else throw e}}
