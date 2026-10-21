@@ -10,7 +10,7 @@
  const SESSION_KEY=root.EngefexEnvironment?.storageKey('engefex-cloud-auth-v1')||'engefex-cloud-auth-v1';
  let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let accessVersion='',sessionFiles=new Set();
- let confirmedState=null,patchSupported=null,refreshing=false,tokenRefresh=null,lastSync=null;
+ let confirmedState=null,patchSupported=null,compactReadSupported=null,refreshing=false,tokenRefresh=null,lastSync=null,lastAccessCheck=0;
  let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
@@ -150,19 +150,39 @@
    (root.Obras.onlineValid||root.Obras.backupValid)(snapshot);
    client.acceptState(snapshot);
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
-   remoteSnapshot=null;confirmedState=JSON.parse(JSON.stringify(snapshot));
+   remoteSnapshot=null;confirmedState=structuredClone(snapshot);
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
   }catch(e){setPhase('error',e.message)}
  }
- async function loadAccess(){if(!root.EngefexAccess)return false;let next=await raw('/rest/v1/rpc/engefex_access_context',{method:'POST',json:true,body:{p_workspace:workspace}}),fingerprint=JSON.stringify(next),changed=!!accessVersion&&fingerprint!==accessVersion;accessVersion=fingerprint;root.EngefexAccess.setContext(next);return changed}
- async function readState(head=false){return raw('/rest/v1/rpc/engefex_read_state',{method:'POST',json:true,body:{p_workspace:workspace,p_head:head}})}
+ async function loadAccess(){if(!root.EngefexAccess)return false;let next=await raw('/rest/v1/rpc/engefex_access_context',{method:'POST',json:true,body:{p_workspace:workspace}}),fingerprint=JSON.stringify(next),changed=!!accessVersion&&fingerprint!==accessVersion;accessVersion=fingerprint;lastAccessCheck=Date.now();root.EngefexAccess.setContext(next);return changed}
+ async function readState(head=false){
+  // Leitura resumida: mantém todo o histórico no banco, transferindo só os 50 mais recentes.
+  if(!head&&!root.EngefexAccess?.context?.restricted&&compactReadSupported!==false){
+   try{
+    const rows=await raw('/rest/v1/rpc/engefex_read_state_compact',{method:'POST',json:true,body:{p_workspace:workspace}});
+    compactReadSupported=true;
+    return rows;
+   }catch(e){
+    if(e.status===404&&e.code==='PGRST202')compactReadSupported=false;
+    else throw e;
+   }
+  }
+  return raw('/rest/v1/rpc/engefex_read_state',{method:'POST',json:true,body:{p_workspace:workspace,p_head:head}});
+ }
+ async function fullSnapshot(){
+  if(phase!=='ready'||pending||ownDirty())throw Error('Conclua ou descarte edições antes de consultar o histórico ou exportar o backup.');
+  const rows=await raw('/rest/v1/rpc/engefex_read_state',{method:'POST',json:true,body:{p_workspace:workspace,p_head:false}});
+  const row=rows?.[0];
+  if(!row?.payload||Number(row.revision)!==revision)throw Error('A base mudou durante a consulta. Atualize a página antes de exportar.');
+  return row.payload;
+ }
  async function connect(){
   const generation=authGeneration;
   setPhase('loading');
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
   if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
-  workspace=memberships[0].workspace_id;patchSupported=null;await loadAccess();
+  workspace=memberships[0].workspace_id;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;await loadAccess();
   const rows=await readState();
   if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
@@ -190,14 +210,15 @@
  }
  async function writeState(payload){
   const changes=confirmedState?buildPatch(confirmedState,payload):null,full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
-  const fullText=JSON.stringify(full),usePatch=!root.EngefexAccess?.context?.restricted&&patchSupported!==false&&changes&&changes.length<=1000&&JSON.stringify(patch).length<fullText.length*.9;
+  const fullText=JSON.stringify(full),compact=compactReadSupported===true&&!root.EngefexAccess?.context?.restricted,canPatch=!root.EngefexAccess?.context?.restricted&&patchSupported!==false&&changes&&changes.length<=1000,patchText=canPatch?JSON.stringify(patch):'',usePatch=canPatch&&(compact||patchText.length<fullText.length*.9);
+  if(compact&&!usePatch)throw Error('Leitura compacta exige salvamento por alterações. Nenhum histórico foi substituído.');
   let result,mode='full',bytes=fullText.length;
-  if(usePatch){try{result=await raw('/rest/v1/rpc/engefex_patch_state',{method:'POST',json:true,body:patch});patchSupported=true;mode='patch';bytes=JSON.stringify(patch).length}catch(e){if(e.status===404&&e.code==='PGRST202')patchSupported=false;else throw e}}
-  if(!result)result=await raw('/rest/v1/rpc/engefex_save_state',{method:'POST',json:true,body:full});
+  if(usePatch){try{result=await raw('/rest/v1/rpc/engefex_patch_state',{method:'POST',json:true,body:patch});patchSupported=true;mode='patch';bytes=patchText.length}catch(e){if(e.status===404&&e.code==='PGRST202'){patchSupported=false;if(compact)throw Error('Servidor sem suporte a patches: salvamento compacto bloqueado para preservar o histórico.')}else throw e}}
+  if(!result){if(compact)throw Error('Salvamento compacto sem patch confirmado; histórico preservado.');result=await raw('/rest/v1/rpc/engefex_save_state',{method:'POST',json:true,body:full});}
   const row=Array.isArray(result)?result[0]:result;
   if(!row||!Number.isFinite(Number(row.revision))||Number(row.revision)<=revision)throw Error('Supabase não confirmou a revisão salva.');
   lastSync={mode,characters:bytes,fullCharacters:fullText.length};
-  confirmedState=JSON.parse(JSON.stringify(payload));return row;
+  confirmedState=structuredClone(payload);return row;
  }
 
  function requireWrite(next){
@@ -230,7 +251,7 @@
   refreshing=true;const generation=authGeneration,startRevision=revision,startWorkspace=workspace;
   const stillCurrent=()=>generation===authGeneration&&phase==='ready'&&!pending&&!ownDirty()&&revision===startRevision&&workspace===startWorkspace;
   try{
-   if(root.EngefexAccess&&await loadAccess()){sessionFiles.clear();knownFiles.clear();client.accessChanged?.();setPhase('loading');try{const rows=await readState();revision=Number(rows?.[0]?.revision);if(!rows?.[0]?.payload)throw Error('A base autorizada não foi encontrada.');acceptRemote(rows[0].payload)}catch(e){setPhase('error',e.message)}return}if(ownDirty())return;
+   if(root.EngefexAccess&&(force||Date.now()-lastAccessCheck>=60000)&&await loadAccess()){sessionFiles.clear();knownFiles.clear();client.accessChanged?.();setPhase('loading');try{const rows=await readState();revision=Number(rows?.[0]?.revision);if(!rows?.[0]?.payload)throw Error('A base autorizada não foi encontrada.');acceptRemote(rows[0].payload)}catch(e){setPhase('error',e.message)}return}if(ownDirty())return;
    const heads=await readState(true);
    if(!stillCurrent())return;
    if(!heads?.[0])throw Error('Área de trabalho não encontrada.');
@@ -239,7 +260,7 @@
    if(!stillCurrent())return;const row=rows?.[0];
    if(!row||!Number.isFinite(Number(row.revision))||Number(row.revision)<=revision)throw Error('Não foi possível confirmar a revisão atual da área de trabalho.');
    (root.Obras.onlineValid||root.Obras.backupValid)(row.payload);client.acceptState(row.payload);
-   confirmedState=JSON.parse(JSON.stringify(row.payload));for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
+   confirmedState=structuredClone(row.payload);for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
   }finally{refreshing=false}
  }
@@ -289,7 +310,7 @@
   const token=session?.access_token;
   const wasConnected=phase==='ready';
   authGeneration++;
-  saveSession(null);accessVersion='';sessionFiles.clear();root.EngefexAccess?.setContext({is_admin:false,permissions:{modules:{},views:{}},restricted:true});workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;lastSync=null;knownFiles.clear();failed='';
+  saveSession(null);accessVersion='';sessionFiles.clear();root.EngefexAccess?.setContext({is_admin:false,permissions:{modules:{},views:{}},restricted:true});workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;lastSync=null;knownFiles.clear();failed='';
   setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
@@ -301,7 +322,7 @@
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending}};
+ root.EngefexCloud={fullSnapshot,loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending}};
 })(window);
 
 
