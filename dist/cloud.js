@@ -155,7 +155,7 @@
   }catch(e){setPhase('error',e.message)}
  }
  async function loadAccess(){if(!root.EngefexAccess)return false;let next=await raw('/rest/v1/rpc/engefex_access_context',{method:'POST',json:true,body:{p_workspace:workspace}}),fingerprint=JSON.stringify(next),changed=!!accessVersion&&fingerprint!==accessVersion;accessVersion=fingerprint;root.EngefexAccess.setContext(next);return changed}
- async function readState(head=false){if(root.EngefexAccess?.context?.restricted)return raw('/rest/v1/rpc/engefex_read_state',{method:'POST',json:true,body:{p_workspace:workspace,p_head:head}});return raw('/rest/v1/engefex_state?select='+(head?'revision':'payload,revision,updated_at')+'&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1')}
+ async function readState(head=false){return raw('/rest/v1/rpc/engefex_read_state',{method:'POST',json:true,body:{p_workspace:workspace,p_head:head}})}
  async function connect(){
   const generation=authGeneration;
   setPhase('loading');
