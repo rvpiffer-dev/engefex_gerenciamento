@@ -1,6 +1,6 @@
 {
-  "version": "4.13.31",
+  "version": "4.13.32",
   "date": "2026-10-21",
-  "name": "Padronização dos nomes dos funcionários",
-  "previous_version": "4.13.30"
+  "name": "Remove ações duplicadas nas fichas do RH",
+  "previous_version": "4.13.31"
 }
