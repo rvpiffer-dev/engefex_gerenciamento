@@ -1,6 +1,6 @@
 {
-  "version": "4.13.17",
+  "version": "4.13.18",
   "date": "2026-10-21",
-  "name": "Correção visual de digitação das subtarefas",
-  "previous_version": "4.13.16"
+  "name": "Subtarefas em formato de planilha com colagem do Excel",
+  "previous_version": "4.13.17"
 }
