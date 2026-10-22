@@ -44,7 +44,7 @@ async function generate(state,recordId,options={}){
  }if(current.length)lines.push(current.join(' '));return lines.length?lines:[''];};
  const logo=options.logoBytes?await pdf.embedPng(options.logoBytes).catch(()=>null):null;
  function begin(){
-  page=pdf.addPage([W,H]);y=H-41;
+  page=pdf.addPage();page.setSize(W,H);y=H-41;
   if(logo){const image=logo.scale(.15);let factor=Math.min(125/image.width,47/image.height);page.drawImage(logo,{x:L,y:H-88,width:image.width*factor,height:image.height*factor})}
   text('ENGEFEX ENGENHARIA',logo?168:L,H-50,14,true,blue);
   text('MEDICAO DE SERVICOS - '+data.number,logo?168:L,H-68,11,true,ink);
