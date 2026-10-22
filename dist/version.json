@@ -1,6 +1,6 @@
 {
-  "version": "4.16.1",
+  "version": "4.16.2",
   "date": "2026-10-22",
-  "name": "Correção de abertura de aditivos e importação Excel",
-  "previous_version": "4.16.0"
+  "name": "Importação de aditivo com orçamento original na mesma planilha",
+  "previous_version": "4.16.1"
 }
