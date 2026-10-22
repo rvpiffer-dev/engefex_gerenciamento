@@ -140,7 +140,7 @@ function draw(){
  '<div class="additive-bottom"><div><small>VALOR TOTAL DO ADITIVO</small><strong id="additiveTotal">'+money(a.amount)+'</strong></div><div class="actions">'+(readOnly?'<span class="notice neutral">Aditivo finalizado. Os dados ficam preservados para consulta.</span>':'<button type="button" class="button secondary" data-action="additive-save">Salvar rascunho</button><button type="button" class="button secondary" data-action="additive-submit">Em aprovação</button><button type="button" class="button primary" data-action="additive-approve">Aprovar aditivo</button><button type="button" class="button secondary" data-action="additive-reject">Recusar</button>')+'</div></div>'+
  '<div id="additiveError" class="form-error" role="alert"></div></div>';
  const fileInput=$('#additiveFile');if(fileInput)fileInput.addEventListener('change',e=>importFile(e.target.files?.[0]));
- for(const el of $('[data-additive-line] input'))el.addEventListener('input',()=>{
+ for(const el of $$('[data-additive-line] input'))el.addEventListener('input',()=>{
   const rows=$$('[data-additive-line]');let total=0;for(const row of rows){const n=Number(row.querySelector('[data-field="quantity"]').value||0)*Number(row.querySelector('[data-field="unitPrice"]').value||0);row.querySelector('.additive-line-total').textContent=money(n);total+=n}$('#additiveTotal').textContent=money(total);
  });
 }
