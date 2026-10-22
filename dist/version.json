@@ -1,6 +1,6 @@
 {
-  "version": "4.18.3",
+  "version": "4.18.5",
   "date": "2026-10-22",
-  "name": "Estoque de Tintas, planilha XLSX e obras múltiplas",
-  "previous_version": "4.18.2"
+  "name": "Editar e excluir entrada contratual em Medições",
+  "previous_version": "4.18.4"
 }
