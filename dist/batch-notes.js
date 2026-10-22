@@ -13,6 +13,54 @@
  const field=(r,k)=>r?.[k]??'';
  const text=(r,k)=>String(field(r,k)).trim();
  function index(col){let n=0;for(const c of col)n=n*26+c.charCodeAt(0)-64;return n;}
+ // Leitor independente para planilhas XLSX com ou sem prefixos XML (x:row, x:sheet etc.).
+ async function readExcel(buffer){
+  if(!root.JSZip||!root.DOMParser)throw Error('Leitor Excel não disponível neste navegador.');
+  const zip=await root.JSZip.loadAsync(buffer);
+  const parser=new root.DOMParser(),read=async path=>{
+   const entry=zip.file(path);if(!entry)throw Error('Planilha incompleta: '+path);
+   const raw=await entry.async('string');if(raw.length>30000000)throw Error('Parte da planilha é muito grande.');
+   const xml=parser.parseFromString(raw,'application/xml');
+   if(xml.getElementsByTagName('parsererror').length)throw Error('XML do Excel inválido em '+path);
+   return xml;
+  };
+  const descendants=(node,tag)=>[...node.getElementsByTagNameNS('*',tag)];
+  const first=(node,tag)=>descendants(node,tag)[0];
+  const strings=[];
+  if(zip.file('xl/sharedStrings.xml')){
+   const table=await read('xl/sharedStrings.xml');
+   for(const si of descendants(table,'si'))strings.push(descendants(si,'t').map(t=>t.textContent||'').join(''));
+  }
+  const rels=await read('xl/_rels/workbook.xml.rels'),targets={};
+  for(const rel of descendants(rels,'Relationship'))targets[rel.getAttribute('Id')]=rel.getAttribute('Target');
+  const book=await read('xl/workbook.xml'),result=[];
+  for(const sh of descendants(book,'sheet')){
+   const id=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+   let target=targets[id];if(!target)continue;
+   let path=target.startsWith('/')?target.slice(1):target.startsWith('xl/')?target:'xl/'+target.replace(/^\.\//,'');
+   if(path.includes('..'))throw Error('Caminho inseguro em aba Excel.');
+   const xml=await read(path),rows=[];
+   for(const r of descendants(xml,'row')){
+    const obj={};
+    for(const cell of descendants(r,'c')){
+     const address=cell.getAttribute('r')||'',col=address.replace(/\d/g,'');
+     if(!col)continue;
+     const type=cell.getAttribute('t')||'';
+     const node=first(cell,'v'),raw=node?node.textContent:null;
+     let value='';
+     if(type==='s')value=strings[Number(raw)]??'';
+     else if(type==='inlineStr')value=descendants(cell,'t').map(n=>n.textContent||'').join('');
+     else if(type==='str'||type==='e')value=raw||'';
+     else if(raw!==null&&raw!==''){const n=Number(raw);value=Number.isFinite(n)?n:raw}
+     obj[col]={value,address};
+    }
+    if(Object.keys(obj).length)rows.push(obj);
+   }
+   result.push({name:sh.getAttribute('name')||'',rows});
+  }
+  if(!result.length)throw Error('Nenhuma aba encontrada no Excel.');
+  return result;
+ }
  function parseSheet(sheet){
   if(!sheet?.rows?.length)return [];
   const keys=Object.entries(sheet.rows[0]).sort((a,b)=>index(a[0])-index(b[0])).map(([col,c])=>[col,String(c?.value??'').trim()]);
@@ -90,7 +138,7 @@
    const file=e.target.files?.[0];if(!file)return;
    if(file.size>25*1024*1024)throw Error('A planilha deve ter até 25 MB.');
    busy=true;const fileLabel=$('#batchNotesFilename');if(fileLabel)fileLabel.textContent='Lendo planilha…';
-   const sheets=await B.readWorkbook(await file.arrayBuffer()),get=name=>parseSheet(sheets.find(s=>s.name.toLowerCase()===name.toLowerCase()));
+   const sheets=await readExcel(await file.arrayBuffer()),get=name=>parseSheet(sheets.find(s=>s.name.toLowerCase()===name.toLowerCase()));
    const list=get('Documentos');if(!list.length||!Object.hasOwn(list[0],'ID da linha'))throw Error('A aba Documentos não segue o modelo Engefex.');
    if(list.length>5000)throw Error('Limite de 5.000 documentos por lote.');
    const items=get('Itens'),due=get('Vencimentos'),texts=get('Textos extraídos');
