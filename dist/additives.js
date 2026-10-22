@@ -76,6 +76,48 @@ function commit(s,record,status){
  D().onlineValid(next);
  return next;
 }
+function changeFinalized(s,id,remove=false){
+ const next=clone(s),stage=(next.budgetStages||[]).find(x=>x.id===id&&x.amendment?.kind==='contract_addendum');
+ if(!stage)throw Error('Aditivo não encontrado.');
+ const associated=(next.budgetItems||[]).filter(x=>x.amendmentStageId===id||x.stage===id);
+ const ids=[id,...associated.map(x=>x.id)];
+ // Antes de retirar serviços, verificar vínculos em todos os módulos operacionais,
+ // sem considerar o próprio orçamento e o histórico de auditoria.
+ const excluded=new Set(['budgetStages','budgetItems','history','projects','notifications']);
+ for(const [key,records] of Object.entries(next)){
+  if(excluded.has(key)||!Array.isArray(records))continue;
+  for(const record of records){
+   const serialized=JSON.stringify(record);
+   if(ids.some(ref=>serialized.includes('"'+ref+'"')))
+    throw Error('Este aditivo tem vínculos em '+key+'. Remova ou regularize essas referências antes de excluir ou reabrir.');
+  }
+ }
+ if(associated.some(x=>Number(x.executed||0)>0))throw Error('O aditivo possui quantidade executada; regularize antes de alterar.');
+ if(remove){
+  next.budgetStages=next.budgetStages.filter(x=>x.id!==id);
+ }else{
+  stage.amendment.status='Em aprovação';stage.amendment.approvedAt='';stage.sale=0;
+ }
+ next.budgetItems=(next.budgetItems||[]).filter(x=>!associated.some(a=>a.id===x.id));
+ next.history.unshift({id:makeId('H'),time:new Date().toISOString(),kind:'budgetStages',record:id,
+  action:remove?'Aditivo excluído':'Aditivo reaberto para aprovação',before:clone(s.budgetStages.find(x=>x.id===id)),after:remove?null:clone(stage)});
+ D().onlineValid(next);
+ return next;
+}
+async function modifyFinalized(id,remove){
+ if(pending)return;
+ const state=bridge.getState(),stage=(state.budgetStages||[]).find(x=>x.id===id);
+ if(!stage)throw Error('Aditivo não encontrado.');
+ if(!root.confirm(remove?'Excluir o aditivo '+stage.amendment.number+'? A operação retira seus serviços não vinculados e preserva o histórico.':'Voltar o aditivo '+stage.amendment.number+' para Em aprovação? Ele sairá temporariamente do contrato e das medições.'))return;
+ pending=true;
+ try{
+  const next=changeFinalized(state,id,remove);
+  if(await bridge.save(next,remove?'Aditivo excluído.':'Aditivo reaberto para aprovação.')===false)throw Error('Salvamento não confirmado pelo Supabase.');
+  if($('#reader')?.open)$('#reader').close();
+  form=null;bridge.render();
+ }catch(e){bridge.toast(e.message);const el=$('#additiveError');if(el)el.textContent=e.message}
+ finally{pending=false}
+}
 function statusClass(status){return status==='Aprovado'?'approved':status==='Recusado'?'rejected':status==='Em aprovação'?'pending':'draft'}
 function render(s,project){
  const rows=listing(s,project),t=totals(s,project),all=project==='all';
@@ -83,7 +125,7 @@ function render(s,project){
  return '<section class="additive-shell"><div class="additive-hero"><div><small>GESTÃO CONTRATUAL · ORÇAMENTO</small><h2>Aditivos da obra</h2><p>Organize solicitações, aprovações e serviços adicionais sem modificar o valor do contrato original.</p></div><button class="button primary" type="button" data-action="additive-new">+ Novo aditivo</button></div>'+
  '<div class="additive-kpis">'+kpi('Contrato original',t.original,'Valor cadastrado da obra')+kpi('Aditivos aprovados',t.approved,'Adicionais ao contrato')+kpi('Contrato atualizado',t.updated,'Original + aprovados')+kpi('Aditivos em análise',t.pending,'Não somam à receita')+'</div>'+
  '<div class="panel"><div class="panel-head"><div><h2>Registro de aditivos</h2><small>'+rows.length+' documento(s) · '+(all?'Todas as obras':'Obra selecionada')+'</small></div></div>'+
- (rows.length?'<div class="additive-list">'+rows.map(st=>{const a=st.amendment;return '<article class="additive-card"><div class="additive-card-head"><div><strong>'+h('AD '+a.number+' · '+a.title)+'</strong><small>'+h(s.projects.find(p=>p.id===st.project)?.name||'')+' · Solicitado em '+h(a.requestedAt)+'</small></div><span class="additive-pill '+statusClass(a.status)+'">'+h(a.status)+'</span></div><div class="additive-card-foot"><strong>'+money(a.amount)+'</strong><span>'+a.lines.length+' serviço(s)</span><button class="button secondary" data-action="additive-open:'+h(st.id)+'">'+(a.status==='Aprovado'||a.status==='Recusado'?'Consultar':'Abrir / editar')+'</button></div></article>'}).join('')+'</div>':'<div class="empty">Nenhum aditivo cadastrado. Use “+ Novo aditivo” para registrar uma solicitação.</div>')+
+ (rows.length?'<div class="additive-list">'+rows.map(st=>{const a=st.amendment;return '<article class="additive-card"><div class="additive-card-head"><div><strong>'+h('AD '+a.number+' · '+a.title)+'</strong><small>'+h(s.projects.find(p=>p.id===st.project)?.name||'')+' · Solicitado em '+h(a.requestedAt)+'</small></div><span class="additive-pill '+statusClass(a.status)+'">'+h(a.status)+'</span></div><div class="additive-card-foot"><strong>'+money(a.amount)+'</strong><span>'+a.lines.length+' serviço(s)</span><button class="button secondary" data-action="additive-open:'+h(st.id)+'">'+(a.status==='Aprovado'||a.status==='Recusado'?'Consultar':'Abrir / editar')+'</button><button class="button secondary" data-action="additive-reopen:'+h(st.id)+'">Voltar para aprovação</button><button class="button secondary" data-action="additive-delete:'+h(st.id)+'">Excluir</button></div></article>'}).join('')+'</div>':'<div class="empty">Nenhum aditivo cadastrado. Use “+ Novo aditivo” para registrar uma solicitação.</div>')+
  '</div><p class="section-note">Somente aditivos aprovados aumentam o valor contratual para o dashboard de resultado. Na aprovação, os serviços são incorporados ao orçamento como grupo separado, disponíveis para medição. Aditivos em análise não geram itens a medir nem atualizam o contrato.</p></section>';
 }
 let bridge=null,form=null,readOnly=false,pending=false;
@@ -179,6 +221,8 @@ function handle(action){
  if(pending)return true;
  try{
   if(action==='additive-new')open();
+  else if(action.startsWith('additive-delete:'))modifyFinalized(action.slice('additive-delete:'.length),true);
+  else if(action.startsWith('additive-reopen:'))modifyFinalized(action.slice('additive-reopen:'.length),false);
   else if(action.startsWith('additive-open:'))open(action.slice(14));
   else if(action==='additive-add-line'){getRecord();form.amendment.lines.push({id:makeId('L'),name:'',unit:'un',quantity:1,unitPrice:0});draw();}
   else if(action.startsWith('additive-remove-line:')){getRecord();form.amendment.lines.splice(Number(action.slice('additive-remove-line:'.length)),1);draw();}
@@ -189,6 +233,6 @@ function handle(action){
  }catch(e){bridge.toast(e.message)}
  return true;
 }
-const api={listing,totals,blank,validate,commit,render,handle,importServices,init:x=>{bridge=x},busy:()=>pending};
+const api={listing,totals,blank,validate,commit,changeFinalized,render,handle,importServices,init:x=>{bridge=x},busy:()=>pending};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EngefexAdditives=api;
 })(typeof window==='undefined'?globalThis:window);
