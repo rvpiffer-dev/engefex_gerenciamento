@@ -20,7 +20,7 @@ function harness(fetch,immediateTimeout=false){
     hidden:false
   };
   const seed={version:1,dataModel:2,projects:[],stages:[],activities:[]};
-  const root={document,navigator:{onLine:true},localStorage:{getItem:key=>local.get(key)||null,setItem:(key,value)=>local.set(key,value),removeItem:key=>local.delete(key)},AbortController,
+  const root={structuredClone,document,navigator:{onLine:true},localStorage:{getItem:key=>local.get(key)||null,setItem:(key,value)=>local.set(key,value),removeItem:key=>local.delete(key)},AbortController,
     setTimeout:immediateTimeout?(fn)=>{queueMicrotask(fn);return 1}:setTimeout,clearTimeout:immediateTimeout?()=>{}:clearTimeout,
     setInterval:()=>1,addEventListener(){},confirm:()=>true,fetch,
     EngefexManager:{separate:x=>x},Obras:{clone:x=>JSON.parse(JSON.stringify(x)),backupValid:()=>{}},OBRAS_SEED:seed,
