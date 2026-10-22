@@ -336,13 +336,83 @@
    api.toast(unique.length+' documento(s) importados. '+ready.length+' lançados no financeiro; '+invalid.length+' aguardando conferência.');
   }catch(err){message(err.message);busy=false}
  }
+
+ function reviewPending(id){
+  const source=api.getState(),archive=(source.fiscalImports||[]).find(r=>r.id===id);
+  if(!archive)return api.toast('Documento importado não encontrado.');
+  if(archive.purchaseId)return api.toast('O documento já possui uma conta vinculada.');
+  active=true;
+  const raw=archive.raw,originalProject=archive.project||'',originalStage=archive.stage||'';
+  $('#readerTitle').textContent='Conferir e lançar documento';
+  $('#readerContent').innerHTML='<div class="reader-page batch-notes"><p class="notice neutral">Este formulário permite completar dados financeiros confirmados por você sem alterar os campos originais da nota. Nada será lançado sem confirmação.</p>'+
+   '<form id="batchReviewForm"><div class="batch-upload">'+
+   '<label>Fornecedor<input required id="reviewSupplier" value="'+h(text(raw,'Emitente / fornecedor / prestador'))+'"></label>'+
+   '<label>Data da emissão<input required type="date" id="reviewDate" value="'+h(date(field(raw,'Data de emissão')))+'"></label>'+
+   '<label>Valor total da nota (R$)<input required inputmode="decimal" id="reviewAmount" value="'+h(field(raw,'Valor total do documento / a pagar'))+'"></label>'+
+   '<label>Obra / destino<select id="reviewProject" required>'+projectOptions(originalProject,source)+'</select></label>'+
+   '<label>Etapa do orçamento<select id="reviewStage">'+stageOptions({project:originalProject,stage:originalStage},source)+'</select></label>'+
+   '<label>Categoria<select id="reviewCategory" required><option value="">Selecionar...</option>'+D.CATEGORIES.map(x=>'<option value="'+h(x)+'">'+h(x)+'</option>').join('')+'</select></label>'+
+   '<label>Vencimento único revisado<input type="date" id="reviewDue"></label>'+
+   '<label class="batch-check-finance"><input type="checkbox" id="reviewOneInstallment"> Substituir as parcelas incompletas por um único vencimento que conferi</label>'+
+   '</div>'+(related(raw)?'<label class="batch-check-finance"><input type="checkbox" id="reviewRelated"> Conferi os documentos relacionados e confirmei que não é uma duplicidade</label>':'')+
+   '<p class="section-note">Se houver parcelas corretamente identificadas na planilha, elas serão preservadas. Valores inexistentes precisam ser informados e confirmados por você.</p>'+
+   '<p id="reviewError" class="red-text" role="alert"></p><button type="submit" class="button primary">Confirmar e gerar conta</button></form></div>';
+  $('#reader').showModal();
+  $('#reviewProject').onchange=()=>{
+   const project=$('#reviewProject').value;
+   $('#reviewStage').innerHTML=stageOptions({project,stage:''},source);
+   $('#reviewStage').disabled=!project||project==='Geral';
+  };
+  $('#reviewStage').disabled=!originalProject||originalProject==='Geral';
+  $('#batchReviewForm').onsubmit=async e=>{
+   e.preventDefault();if(busy)return;
+   const value=id=>$(id).value;
+   if(related(raw)&&!$('#reviewRelated')?.checked){$('#reviewError').textContent='Confirme a revisão de possíveis duplicidades.';return;}
+   const checkedRaw={...raw,
+    'Emitente / fornecedor / prestador':value('#reviewSupplier').trim(),
+    'Data de emissão':value('#reviewDate'),
+    'Valor total do documento / a pagar':number(value('#reviewAmount'))};
+   if($('#reviewRelated')?.checked){checkedRaw['Tipo de duplicidade / conciliação']='';checkedRaw['IDs documentos relacionados']='';}
+   const dueRows=$('#reviewOneInstallment').checked?[{
+    'Data de vencimento':value('#reviewDue'),'Valor da parcela':number(value('#reviewAmount')),'Parcela nº':'1'
+   }]:archive.due;
+   if($('#reviewOneInstallment').checked&&!date(value('#reviewDue'))){$('#reviewError').textContent='Informe o vencimento revisado.';return;}
+   const doc={raw:checkedRaw,items:archive.items||[],due:dueRows||[],repeat:false,
+    signature:archive.signature,project:value('#reviewProject'),stage:value('#reviewStage')};
+   const valid=transactionDoc(source,doc);
+   if(valid.error){$('#reviewError').textContent=valid.error;return;}
+   if(!root.confirm('Lançar esta nota em Contas a Pagar no valor de '+money(number(value('#reviewAmount')))+'?'))return;
+   busy=true;
+   try{
+    root.EngefexCloud?.requireWrite();
+    const purchase={...valid.purchase,attachments:(archive.attachments||[]).slice()};
+    const next=P.save(source,purchase);
+    const original=next.fiscalImports.find(x=>x.id===archive.id);
+    if(!original)throw Error('Registro de origem desapareceu.');
+    Object.assign(original,{
+     status:'Lançado em Contas a Pagar',purchaseId:purchase.id,project:doc.project,stage:doc.stage,
+     financialCorrections:{
+      supplier:checkedRaw['Emitente / fornecedor / prestador'],date:checkedRaw['Data de emissão'],
+      amount:checkedRaw['Valor total do documento / a pagar'],due:$('#reviewOneInstallment').checked?value('#reviewDue'):'',
+      category:value('#reviewCategory'),relatedDocumentsReviewed:!!$('#reviewRelated')?.checked
+     }
+    });
+    for(const c of next.costs.filter(c=>c.purchase===purchase.id)){
+     c.category=value('#reviewCategory');D.validateRecord(next,'costs',c);
+    }
+    D.onlineValid(next);
+    if(await api.save(next)===false)throw Error('O servidor não confirmou o lançamento.');
+    busy=false;active=false;$('#reader').close();api.render();api.toast('Documento conferido e conta lançada.');
+   }catch(err){busy=false;$('#reviewError').textContent=err.message}
+  };
+ }
  function archive(state){
   const rows=state.fiscalImports||[];
   if(!rows.length)return '';
   const q=rows.filter(r=>r.status==='Lançado em Contas a Pagar').length;
   return '<details class="panel batch-archive"><summary>📁 Documentos fiscais importados: '+rows.length+' · '+q+' lançados · '+(rows.length-q)+' pendentes</summary>'+
    '<div class="table-wrap"><table><thead><tr><th>Documento</th><th>Fornecedor</th><th>Valor</th><th>Vínculo</th><th>Situação</th><th></th></tr></thead><tbody>'+
-   rows.slice().reverse().slice(0,350).map(r=>'<tr><td>'+h(text(r.raw,'Tipo de documento'))+' '+h(text(r.raw,'Número NF / fatura / nota')||r.sourceId)+'</td><td>'+h(text(r.raw,'Emitente / fornecedor / prestador'))+'</td><td>'+h(field(r.raw,'Valor total do documento / a pagar'))+'</td><td>'+h(state.projects.find(p=>p.id===r.project)?.name||r.project||'Não vinculado')+'</td><td>'+h(r.status)+'</td><td><button class="text-btn" data-action="batch-view:'+h(r.id)+'">Ver todos os campos</button></td></tr>').join('')+
+   rows.slice().reverse().slice(0,350).map(r=>'<tr><td>'+h(text(r.raw,'Tipo de documento'))+' '+h(text(r.raw,'Número NF / fatura / nota')||r.sourceId)+'</td><td>'+h(text(r.raw,'Emitente / fornecedor / prestador'))+'</td><td>'+h(field(r.raw,'Valor total do documento / a pagar'))+'</td><td>'+h(state.projects.find(p=>p.id===r.project)?.name||r.project||'Não vinculado')+'</td><td>'+h(r.status)+'</td><td><button class="text-btn" data-action="batch-view:'+h(r.id)+'">Ver todos os campos</button>'+(r.purchaseId?'':' <button class="text-btn" data-action="batch-pending:'+h(r.id)+'">Conferir / lançar</button>')+'</td></tr>').join('')+
    '</tbody></table></div></details>';
  }
  function detail(id){
@@ -361,6 +431,6 @@
   });
  }
  root.EngefexBatchNotes={open:show,renderArchive:archive,isDirty:()=>active&&!!$('#reader')?.open,busy:()=>busy,
-  handle(action){if(action==='batch-notes'){show();return true}if(action?.startsWith('batch-view:')){detail(action.slice(11));return true}return false},
+  handle(action){if(action==='batch-notes'){show();return true}if(action?.startsWith('batch-view:')){detail(action.slice(11));return true}if(action?.startsWith('batch-pending:')){reviewPending(action.slice(14));return true}return false},
   init(bridge){api=bridge}};
 })(typeof window==='undefined'?globalThis:window);
