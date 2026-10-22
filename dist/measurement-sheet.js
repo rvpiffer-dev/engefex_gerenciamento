@@ -167,7 +167,7 @@ function viewBatch(recordId){
  const services=group.map(m=>{const item=state.budgetItems.find(it=>it.id===m.activity);
  return '<tr><td>'+h(item?D.planningCode(item):'—')+'</td><td class="wrap">'+h(item?.name||'Item não encontrado no orçamento')+'</td><td>'+qty(m.quantity)+' '+h(item?.unit||'')+'</td><td class="num">'+money(D.measurementValue(state,m))+'</td><td>'+h(m.status)+'</td></tr>'}).join('');
  const invoiceRows=notes.map(n=>'<tr><td>'+h(br(n.date))+'</td><td>'+h(n.supplier||'')+'</td><td>'+h(n.invoice||'')+'</td><td>'+h(n.order||'')+'</td><td class="num">'+money(Number(n.amount||0))+'</td></tr>').join('');
- const overview='<p><strong>Obra:</strong> '+h(project?.name||'—')+' &nbsp; <strong>Cliente:</strong> '+h(project?.client||'—')+'</p>'+
+ const overview='<p><strong>Medição:</strong> '+h(first.number)+'</p><p><strong>Obra:</strong> '+h(project?.name||'—')+' &nbsp; <strong>Cliente:</strong> '+h(project?.client||'—')+'</p>'+
  '<p><strong>Data base:</strong> '+h(br(first.date))+' &nbsp; <strong>Situação:</strong> '+h([...new Set(group.map(m=>m.status))].join(' / '))+
  ' &nbsp; <strong>Itens:</strong> '+group.length+'</p>'+
  (first.submitted||first.approved||first.expected?'<p><strong>Apresentação:</strong> '+h(br(first.submitted))+' &nbsp; <strong>Aprovação:</strong> '+h(br(first.approved))+' &nbsp; <strong>Previsão de recebimento:</strong> '+h(br(first.expected))+'</p>':'');
