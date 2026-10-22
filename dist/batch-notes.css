@@ -1,0 +1,36 @@
+/* Contas a pagar: seleção e conferência de notas fiscais em lote. */
+.batch-notes{max-width:100%;min-width:0}
+.batch-notes .notice{margin-bottom:16px}
+.batch-upload{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:10px 0 14px}
+.batch-upload>label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600;color:#39485a;min-width:0}
+.batch-upload input,.batch-upload select{width:100%;border:1px solid #cbd5df;border-radius:8px;background:#fff;min-height:42px;padding:9px 11px;font:inherit;color:#172331}
+.batch-toolbar{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;margin:12px 0}
+.batch-toolbar input[type=search]{flex:1;min-width:180px;max-width:440px;border:1px solid #cbd5df;padding:11px;border-radius:8px}
+.batch-toolbar .section-note{width:100%;margin:0}
+.batch-scroll{max-height:min(52vh,650px);overflow:auto;overscroll-behavior:contain;border-radius:7px}
+.batch-scroll table{min-width:1300px}
+.batch-scroll th{position:sticky;top:0;background:#eaf0f8;z-index:2}
+.batch-scroll td{vertical-align:middle;max-width:255px;white-space:normal}
+.batch-scroll td:nth-child(1),.batch-scroll th:nth-child(1){position:sticky;left:0;background:#fff;z-index:1;text-align:center}
+.batch-scroll th:nth-child(1){z-index:3;background:#eaf0f8}
+.batch-scroll input[type=checkbox]{width:19px;height:19px;accent-color:#1557ff}
+.batch-scroll select{min-width:150px;max-width:220px;border:1px solid #d0d9e3;border-radius:5px;background:white;padding:7px;font:inherit}
+.batch-sub{display:block;max-width:210px;font-size:10px;color:#697888;overflow-wrap:anywhere}
+.batch-import-footer{display:grid;gap:9px;padding:15px 0 5px;border-top:1px solid #d7e0e9;margin-top:13px}
+.batch-check-finance{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:10px;font-size:12px!important;line-height:1.5;font-weight:500!important;cursor:pointer}
+.batch-check-finance input{width:18px!important;height:18px!important;min-height:18px!important;flex-shrink:0;accent-color:#1557ff}
+.batch-import-footer>.button{justify-self:start}
+.batch-archive{margin:16px 0}
+.batch-archive summary{padding:15px 18px;cursor:pointer;background:#f4f7fc;font-weight:700}
+.batch-archive .table-wrap{max-height:340px}
+.batch-archive td{white-space:normal;min-width:115px}
+.batch-archive .text-btn{margin:2px 4px}
+#reader:has(.batch-notes){width:min(1280px,97vw)}
+#batchNotesError,#reviewError{min-height:16px;margin:10px 0}
+@media(max-width:760px){
+ .batch-upload{grid-template-columns:1fr}
+ .batch-toolbar{align-items:stretch;flex-direction:column}
+ .batch-toolbar input[type=search]{max-width:none}
+ .batch-scroll{max-height:50vh}
+ .batch-import-footer>.button{width:100%}
+}
