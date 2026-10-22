@@ -45,7 +45,7 @@ function readInvoiceGrid(id){
  if(fields.every(x=>!x))return null;
  const [date,supplier,invoice,order,value]=fields;
  if(!date||!supplier||!invoice||!value)throw Error('Nota '+(i+1)+': preencha data, fornecedor, NF e valor.');
- const amount=root.EngefexCurrency.parse(value);
+ const amount=Number(root.EngefexCurrency.parse(value));
  if(!Number.isFinite(amount)||amount<=0)throw Error('Nota '+(i+1)+': valor inválido.');
  return {date,supplier,invoice,order,amount};
  }).filter(Boolean);
