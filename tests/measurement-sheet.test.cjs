@@ -39,13 +39,13 @@ test('modo geral muda todos os itens entre percentual e quantidade preservando a
  const previous=draft.map(row=>F.calculate(row).current);
  const changed=F.applyModeToAll(draft,'quantity');
  assert.equal(changed.length,2);
- assert.deepEqual(draft.map(row=>row.mode),['quantity','quantity']);
+ assert.equal(draft.map(row=>row.mode).join(','),'quantity,quantity');
  assert.equal(Number(draft[0].current),25);
  assert.equal(Number(draft[1].current),75);
- assert.deepEqual(draft.map(row=>row.selected),[true,false]);
+ assert.equal(draft.map(row=>String(row.selected)).join(','),'true,false');
  for(let i=0;i<draft.length;i++)assert.ok(Math.abs(F.calculate(draft[i]).current-previous[i])<1e-10);
  F.applyModeToAll(draft,'percent');
- assert.deepEqual(draft.map(row=>row.mode),['percent','percent']);
+ assert.equal(draft.map(row=>row.mode).join(','),'percent,percent');
  assert.equal(Number(draft[0].current),25);
  assert.equal(Number(draft[1].current),37.5);
  for(let i=0;i<draft.length;i++)assert.ok(Math.abs(F.calculate(draft[i]).current-previous[i])<1e-10);
