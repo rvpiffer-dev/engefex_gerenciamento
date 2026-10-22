@@ -1,6 +1,6 @@
 {
-  "version": "4.16.4",
+  "version": "4.16.5",
   "date": "2026-10-22",
-  "name": "Ajuste de timeout das consultas autenticadas no Supabase",
-  "previous_version": "4.16.3"
+  "name": "Correção da versão exibida e renovação do cache de publicação",
+  "previous_version": "4.16.4"
 }
