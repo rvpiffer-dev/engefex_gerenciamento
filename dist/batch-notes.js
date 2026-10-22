@@ -147,7 +147,7 @@
    documents=list.map((raw,i)=>{
     const id=text(raw,'ID da linha')||'linha-'+(i+2),sig=signature(raw),repeat=seen.has(sig);
     seen.add(sig);
-    return {id:id+'-'+i,signature:sig,repeat,raw,items:im.get(id)||[],due:dm.get(id)||[],sourceText:tm.get(id)||[],project:api.getProject()==='all'?'':api.getProject(),stage:''};
+    return {id:id+'-'+i,signature:sig,repeat,raw,items:im.get(id)||[],due:dm.get(id)||[],sourceText:tm.get(id)||[],project:api.getProject()==='all'?'':api.getProject(),stage:'',category:''};
    });
    filename=file.name;selection.clear();search='';mode='archive';associatedFiles.clear();
    if($('#batchNotesFilename'))$('#batchNotesFilename').textContent=filename+' · '+documents.length+' documentos';
@@ -191,7 +191,7 @@
     '<div class="actions"><button type="button" class="button secondary" id="batchSelectAll">Marcar todas visíveis</button><button type="button" class="button secondary" id="batchClearAll">Desmarcar todas</button><button type="button" class="button secondary" id="batchSelectSafe">Marcar sem duplicidade</button></div>'+
     '<input type="search" id="batchSearch" placeholder="Filtrar fornecedor, nota ou arquivo..." value="'+h(search)+'">'+
     '<p id="batchNotesStats" class="section-note">'+stats()+' · '+dup+' documento(s) com duplicidade potencial.</p></div>'+
-    '<div class="table-wrap batch-scroll"><table><thead><tr><th>Importar?</th><th>Documento</th><th>Fornecedor</th><th>Valor</th><th>Obra / destino</th><th>Etapa</th><th>Conferência</th></tr></thead><tbody>'+
+    '<div class="table-wrap batch-scroll"><table><thead><tr><th>Importar?</th><th>Documento</th><th>Fornecedor</th><th>Valor</th><th>Obra / destino</th><th>Etapa</th><th>Categoria</th><th>Conferência</th></tr></thead><tbody>'+
     visible.map(d=>{
      const r=d.raw,issue=existing(s,d)|| (d.repeat?'Repetida na planilha':related(r)?'Possível documento relacionado':'');
      const val=number(field(r,'Valor total do documento / a pagar'));
@@ -200,7 +200,7 @@
      '<td>'+h(text(r,'Emitente / fornecedor / prestador')||'Não informado')+'</td>'+
      '<td class="num">'+(val===null?'—':money(val))+'</td>'+
      '<td><select data-batch-project="'+h(d.id)+'">'+projectOptions(d.project,s)+'</select></td>'+
-     '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+
+     '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+ '<td><select data-batch-category="'+h(d.id)+'"><option value="">Conferir...</option>'+D.CATEGORIES.map(c=>'<option value="'+h(c)+'" '+(c===d.category?'selected':'')+'>'+h(c)+'</option>').join('')+'</select></td>'+ 
      '<td>'+ (issue?'<span class="tag amber">'+h(issue)+'</span>':(outgoing(r)?'<span class="tag green">Contas a pagar</span>':'<span class="tag">Conferir destino</span>'))+'</td></tr>';
     }).join('')+'</tbody></table></div>'+
     '<div class="batch-import-footer"><label class="batch-check-finance"><input type="checkbox" id="batchGenerateAccounts" '+(mode==='finance'?'checked':'')+'> Gerar Contas a Pagar dos documentos aptos (exige obra/etapa ou Geral, fornecedor, data, valor e vencimento)</label>'+
@@ -216,6 +216,9 @@
   });
   container.querySelectorAll('[data-batch-stage]').forEach(el=>el.onchange=()=>{
    const d=documents.find(d=>d.id===el.dataset.batchStage);if(d)d.stage=el.value;
+  });
+  container.querySelectorAll('[data-batch-category]').forEach(el=>el.onchange=()=>{
+   const d=documents.find(d=>d.id===el.dataset.batchCategory);if(d)d.category=el.value;
   });
   $('#batchSelectAll').onclick=()=>{visible.forEach(d=>selection.add(d.id));paint()};
   $('#batchClearAll').onclick=()=>{selection.clear();paint()};
@@ -244,6 +247,7 @@
   if(related(raw)||doc.repeat)return {error:'Possível duplicidade ou conciliação'};
   if(!supplier||!issued||total===null||total<=0)return {error:'Fornecedor, emissão ou valor ausente'};
   if(!doc.project||doc.project!=='Geral'&&!doc.stage)return {error:'Escolha Geral ou a obra e a etapa'};
+  if(!D.CATEGORIES.includes(doc.category))return {error:'Selecione a categoria financeira'};
   if(doc.project!=='Geral'&&!s.projects.some(p=>p.id===doc.project))return {error:'Obra inexistente'};
   if(doc.stage&&!s.budgetStages.some(st=>st.id===doc.stage&&st.project===doc.project))return {error:'Etapa inválida'};
   const parts=schedule(doc,total);
@@ -290,7 +294,7 @@
   }
   if(!unique.length)return message('Todas as notas escolhidas já estão cadastradas ou são repetidas.');
   let summary='Você selecionou '+chosen.length+' documento(s).\n'+unique.length+' serão guardados no arquivo fiscal; '+dups.length+' repetido(s) serão ignorados.';
-  if(generate)summary+='\n'+ready.length+' gerarão Contas a Pagar; '+invalid.length+' ficarão pendentes, sem lançar despesas.\nAs notas aptas gerarão custos e parcelas. Verifique obra, etapa e vencimentos.';
+  if(generate){summary+='\n'+ready.length+' gerarão Contas a Pagar; '+invalid.length+' ficarão pendentes, sem lançar despesas.\nAs notas aptas gerarão custos e parcelas. Verifique obra, etapa, categoria e vencimentos.';if(invalid.length)summary+='\nPendências (primeiras 5): '+invalid.slice(0,5).map(x=>lineName(x.doc)+': '+x.reason).join(' | ');}
   summary+='\n\nConfirma a importação somente das notas selecionadas?';
   if(!root.confirm(summary))return;
   busy=true;
@@ -315,13 +319,14 @@
     const archived={id:uid(),sourceId:text(d.raw,'ID da linha'),signature:d.signature,sourceExcel:filename,
      originalDocument:text(d.raw,'Arquivo de origem no RAR'),importedAt:new Date().toISOString(),
      project:d.project||'',stage:d.stage||'',raw:d.raw,items:d.items,due:d.due,
-     status:'Pendente de conferência',purchaseId:'',attachments:attachment?[attachment]:[]};
+     status:'Pendente de conferência',purchaseId:'',category:d.category||'',attachments:attachment?[attachment]:[]};
     next.fiscalImports.push(archived);docsMap.set(d.id,archived);
    }
    for(const item of ready){
     const archived=docsMap.get(item.doc.id);if(!archived)continue;
     item.purchase.attachments=archived.attachments.slice();
     const processed=P.save(next,item.purchase);
+    for(const cost of processed.costs.filter(c=>c.purchase===item.purchase.id)){cost.category=item.doc.category;D.validateRecord(processed,'costs',cost)}
     Object.assign(next,processed);archived.purchaseId=item.purchase.id;archived.status='Lançado em Contas a Pagar';
     // P.save clona o estado; atualizar registro no novo snapshot.
     const stored=next.fiscalImports.find(a=>a.id===archived.id);if(stored)Object.assign(stored,archived);
@@ -378,7 +383,7 @@
    }]:archive.due;
    if($('#reviewOneInstallment').checked&&!date(value('#reviewDue'))){$('#reviewError').textContent='Informe o vencimento revisado.';return;}
    const doc={raw:checkedRaw,items:archive.items||[],due:dueRows||[],repeat:false,
-    signature:archive.signature,project:value('#reviewProject'),stage:value('#reviewStage')};
+    signature:archive.signature,project:value('#reviewProject'),stage:value('#reviewStage'),category:value('#reviewCategory')};
    const valid=transactionDoc(source,doc);
    if(valid.error){$('#reviewError').textContent=valid.error;return;}
    if(!root.confirm('Lançar esta nota em Contas a Pagar no valor de '+money(number(value('#reviewAmount')))+'?'))return;
