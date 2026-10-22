@@ -20,7 +20,7 @@ test('PDF de medicao preparada preserva itens, data, notas e descontos sem gerar
  assert.equal(JSON.stringify(next),before);
 });
 test('PDF A4 e gerado como arquivo real e paginas com cabecalho',async()=>{
- const {w,s}=setup();w.PDFLib=require(path.join(root,'vendor/pdf-lib.min.js'));
+ const {w,s}=setup();vm.runInContext(fs.readFileSync(path.join(root,'vendor/pdf-lib.min.js'),'utf8'),w,{filename:'pdf-lib.min.js'});
  const F=w.EngefexMeasurementSheet;
  const next=F.saveBatch(s,'p',{number:'MED-002',date:'2026-10-22',retentionRate:5},[{id:'a',current:'10',mode:'percent',selected:true}]);
  const bytes=await w.EngefexMeasurementPDF.generate(next,next.measurements[0].id);
