@@ -27,14 +27,14 @@
   }
   if(options.json)headers['Content-Type']='application/json';
   const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),20000);
+  const timeout=setTimeout(()=>controller.abort(),120000);
   let res,txt,blob;
   try{
    res=await fetch(URL_BASE+path,{method:options.method||'GET',headers,body:options.json?JSON.stringify(options.body):options.body,cache:'no-store',signal:controller.signal});
    if(options.binary&&res.ok)blob=await res.blob();
    else txt=await res.text();
   }catch(e){
-   if(controller.signal.aborted)throw Error('O Supabase não respondeu em 20 segundos. Confira sua internet e tente novamente.');
+   if(controller.signal.aborted)throw Error('O Supabase não respondeu em 120 segundos. Confira sua internet e tente novamente.');
    throw Error('Não foi possível comunicar com o Supabase. Confira sua conexão.');
   }finally{clearTimeout(timeout)}
   if(blob)return blob;
