@@ -101,6 +101,29 @@ function getRecord(){
   unitPrice:Number(tr.querySelector('[data-field="unitPrice"]')?.value||0)}));
  return form;
 }
+function importServices(result){
+ if(result.errors?.length)throw Error('Planilha inválida: '+result.errors.slice(0,3).join(' | '));
+ const lines=(result.services||[]).map(l=>({id:makeId('L'),name:(l.code?l.code+' · ':'')+l.name,unit:String(l.unit||'un'),quantity:Number(l.quantity),unitPrice:Math.round(Number(l.total)/Number(l.quantity)*1000000)/1000000}));
+ if(!lines.length||lines.length>150)throw Error('O aditivo deve ter entre 1 e 150 serviços.');
+ if(lines.some(l=>!Number.isFinite(l.unitPrice)||l.unitPrice<0||!Number.isFinite(l.quantity)||l.quantity<=0))throw Error('Quantidade ou preço inválido na planilha.');
+ return lines;
+}
+async function importFile(file){
+ if(pending||readOnly||!file)return;
+ try{
+  if(!/\.xlsx$/i.test(file.name))throw Error('Selecione uma planilha .xlsx.');
+  const wb=await root.BudgetImport.readWorkbook(await file.arrayBuffer());
+  const candidates=wb.map(s=>root.BudgetImport.analyze(s));
+  const parsed=candidates.sort((a,b)=>b.services.length-a.services.length)[0];
+  const lines=importServices(parsed);
+  const total=lines.reduce((sum,l)=>sum+l.quantity*l.unitPrice,0);
+  const warning=parsed.warnings.length?'\n\nAtenção: '+parsed.warnings.slice(0,4).join(' | '):'';
+  if(!root.confirm('Importar '+lines.length+' serviços da aba '+parsed.sheet+' ('+money(total)+')? Os serviços atuais deste aditivo serão substituídos. Confira os valores antes de salvar.'+warning))return;
+  getRecord();form.amendment.lines=lines;
+  if(!form.amendment.title)form.amendment.title=parsed.metadata?.OBRA||file.name.replace(/\.xlsx$/i,'');
+  draw();bridge.toast(lines.length+' serviços importados. Confira e salve o rascunho.');
+ }catch(e){const el=$('#additiveError');if(el)el.textContent=e.message;bridge.toast(e.message)}
+}
 function draw(){
  if(!form)return;
  const a=form.amendment,disabled=readOnly?'disabled':'';
@@ -112,11 +135,12 @@ function draw(){
  '<label>Obra<select data-ad-field="project" '+(readOnly||!!bridge.getState().budgetStages.find(x=>x.id===form.id)?'disabled':'')+'>'+choices+'</select></label>'+
  field('number','Número do aditivo')+field('title','Descrição do aditivo')+field('requestedAt','Data de solicitação','date')+
  '</div><label class="additive-notes">Justificativa / escopo<textarea data-ad-field="justification" '+disabled+'>'+h(a.justification||'')+'</textarea></label>'+
- '<div class="additive-line-heading"><div><strong>Serviços adicionais</strong><small>Valores unitários, quantidades e totais</small></div>'+(!readOnly?'<button type="button" class="button secondary" data-action="additive-add-line">+ Linha</button>':'')+'</div>'+
+ '<div class="additive-line-heading"><div><strong>Serviços adicionais</strong><small>Valores unitários, quantidades e totais</small></div>'+(!readOnly?'<div class="actions"><label class="button secondary additive-import-label">Importar Excel<input id="additiveFile" type="file" accept=".xlsx" hidden></label><button type="button" class="button secondary" data-action="additive-add-line">+ Linha</button></div>':'')+'</div>'+
  '<div class="additive-grid"><table><thead><tr><th>Descrição</th><th>Un.</th><th>Qtd.</th><th>Preço unitário (R$)</th><th>Total (R$)</th><th></th></tr></thead><tbody>'+a.lines.map((l,i)=>'<tr data-additive-line="'+h(l.id)+'"><td><input aria-label="Descrição linha '+(i+1)+'" data-field="name" value="'+h(l.name)+'" '+disabled+'></td><td><input aria-label="Unidade linha '+(i+1)+'" data-field="unit" value="'+h(l.unit)+'" '+disabled+'></td><td><input aria-label="Quantidade linha '+(i+1)+'" type="number" min="0.0001" step="any" data-field="quantity" value="'+h(l.quantity)+'" '+disabled+'></td><td><input aria-label="Preço unitário linha '+(i+1)+'" type="number" min="0" step="0.01" data-field="unitPrice" value="'+h(l.unitPrice)+'" '+disabled+'></td><td class="additive-line-total">'+money(Number(l.quantity||0)*Number(l.unitPrice||0))+'</td><td>'+(!readOnly?'<button type="button" class="text-btn red-text" data-action="additive-remove-line:'+i+'">Remover</button>':'')+'</td></tr>').join('')+'</tbody></table></div>'+
  '<div class="additive-bottom"><div><small>VALOR TOTAL DO ADITIVO</small><strong id="additiveTotal">'+money(a.amount)+'</strong></div><div class="actions">'+(readOnly?'<span class="notice neutral">Aditivo finalizado. Os dados ficam preservados para consulta.</span>':'<button type="button" class="button secondary" data-action="additive-save">Salvar rascunho</button><button type="button" class="button secondary" data-action="additive-submit">Em aprovação</button><button type="button" class="button primary" data-action="additive-approve">Aprovar aditivo</button><button type="button" class="button secondary" data-action="additive-reject">Recusar</button>')+'</div></div>'+
  '<div id="additiveError" class="form-error" role="alert"></div></div>';
- for(const el of $$('[data-additive-line] input'))el.addEventListener('input',()=>{
+ const fileInput=$('#additiveFile');if(fileInput)fileInput.addEventListener('change',e=>importFile(e.target.files?.[0]));
+ for(const el of $('[data-additive-line] input'))el.addEventListener('input',()=>{
   const rows=$$('[data-additive-line]');let total=0;for(const row of rows){const n=Number(row.querySelector('[data-field="quantity"]').value||0)*Number(row.querySelector('[data-field="unitPrice"]').value||0);row.querySelector('.additive-line-total').textContent=money(n);total+=n}$('#additiveTotal').textContent=money(total);
  });
 }
@@ -153,6 +177,6 @@ function handle(action){
  }catch(e){bridge.toast(e.message)}
  return true;
 }
-const api={listing,totals,blank,validate,commit,render,handle,init:x=>{bridge=x},busy:()=>pending};
+const api={listing,totals,blank,validate,commit,render,handle,importServices,init:x=>{bridge=x},busy:()=>pending};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EngefexAdditives=api;
 })(typeof window==='undefined'?globalThis:window);
