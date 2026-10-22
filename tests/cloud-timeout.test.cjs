@@ -44,7 +44,7 @@ test('se Supabase não responder, o bloqueio termina com aviso claro e login rec
   await h.login();
   assert.equal(h.root.EngefexCloud.ready,false);
   assert.equal(h.cover.hidden,false);
-  assert.match(h.el('engefex-cloud-message').textContent,/20 segundos/);
+  assert.match(h.el('engefex-cloud-message').textContent,/120 segundos/);
   assert.equal(h.panels.find(p=>p.dataset.cloudPanel==='login').hidden,false);
 });
 test('login libera interface após carregar base online existente, sem inicialização pelo aparelho',async()=>{
