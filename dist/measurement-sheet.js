@@ -137,6 +137,6 @@ $('#measurementSheetFinancialPreview').textContent='Bruto '+money(gross)+' − R
 if(net<-.001)errors++;
 }catch(e){$('#measurementSheetFinancialPreview').textContent=e.message;errors++}
 $('#measurementSheetSave').disabled=pending||!count||!!errors}
-root.EngefexMeasurementSheet={rows,calculate,saveBatch,releaseBatch,saveContractEntry,number,isDirty,busy:()=>pending,handle(action){if(action!=='measurement-sheet'&&action!=='contract-entry'&&!action?.startsWith('measurement-release:'))return false;try{if(action==='contract-entry')openContractEntry();else if(action.startsWith('measurement-release:'))openRelease(action.slice(20));else open()}catch(e){api.toast(e.message)}return true},init(bridge){api=bridge}};
+root.EngefexMeasurementSheet={rows,calculate,saveBatch,releaseBatch,saveContractEntry,readInvoiceGrid,number,isDirty,busy:()=>pending,handle(action){if(action!=='measurement-sheet'&&action!=='contract-entry'&&!action?.startsWith('measurement-release:'))return false;try{if(action==='contract-entry')openContractEntry();else if(action.startsWith('measurement-release:'))openRelease(action.slice(20));else open()}catch(e){api.toast(e.message)}return true},init(bridge){api=bridge}};
 })(typeof window==='undefined'?globalThis:window);
 
