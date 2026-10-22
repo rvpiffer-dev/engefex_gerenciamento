@@ -1,6 +1,6 @@
 {
-  "version": "4.17.6",
+  "version": "4.17.7",
   "date": "2026-10-22",
-  "name": "Correção do erro ao salvar nova medição",
-  "previous_version": "4.17.5"
+  "name": "Editar medição preparada e gerar PDF detalhado",
+  "previous_version": "4.17.6"
 }
