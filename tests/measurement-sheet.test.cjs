@@ -30,3 +30,38 @@ test('notas fiscais: 12250, 2.917,00 e 8.997,00 são aceitos com soma de R$ 30.0
  fixtures[0][4]='invalido';
  assert.throws(()=>F.readInvoiceGrid('measurementSheetInvoiceRows'),/monetário inválido|valor inválido/);
 });
+
+test('modo geral muda todos os itens entre percentual e quantidade preservando acumulados e seleções',()=>{
+ const {s,F}=setup();
+ const draft=F.rows(s,'p');
+ draft[0].current='25';draft[0].selected=true;
+ draft[1].current='37,5';draft[1].selected=false;
+ const previous=draft.map(row=>F.calculate(row).current);
+ const changed=F.applyModeToAll(draft,'quantity');
+ assert.equal(changed.length,2);
+ assert.deepEqual(draft.map(row=>row.mode),['quantity','quantity']);
+ assert.equal(Number(draft[0].current),25);
+ assert.equal(Number(draft[1].current),75);
+ assert.deepEqual(draft.map(row=>row.selected),[true,false]);
+ for(let i=0;i<draft.length;i++)assert.ok(Math.abs(F.calculate(draft[i]).current-previous[i])<1e-10);
+ F.applyModeToAll(draft,'percent');
+ assert.deepEqual(draft.map(row=>row.mode),['percent','percent']);
+ assert.equal(Number(draft[0].current),25);
+ assert.equal(Number(draft[1].current),37.5);
+ for(let i=0;i<draft.length;i++)assert.ok(Math.abs(F.calculate(draft[i]).current-previous[i])<1e-10);
+});
+test('modo geral não modifica itens concluídos nem aplica conversão parcial sobre erro',()=>{
+ const {s,F}=setup();const draft=F.rows(s,'p');
+ draft[0].current='100';draft[0].complete=true;
+ draft[1].current='40';draft[1].selected=true;
+ const changed=F.applyModeToAll(draft,'quantity');
+ assert.equal(changed.length,1);
+ assert.equal(draft[0].mode,'percent');
+ assert.equal(draft[0].current,'100');
+ assert.equal(draft[1].mode,'quantity');
+ assert.equal(Number(draft[1].current),80);
+ draft[1].current='300';
+ assert.throws(()=>F.applyModeToAll(draft,'percent'),/100%|acumulado/i);
+ assert.equal(draft[1].mode,'quantity');
+ assert.equal(draft[1].current,'300');
+});
