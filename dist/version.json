@@ -1,6 +1,6 @@
 {
-  "version": "4.18.0",
+  "version": "4.18.1",
   "date": "2026-10-22",
-  "name": "Categorias financeiras configuráveis em contas a pagar",
-  "previous_version": "4.17.9"
+  "name": "Estoque de Tintas independente com importação XLSX",
+  "previous_version": "4.18.0"
 }
