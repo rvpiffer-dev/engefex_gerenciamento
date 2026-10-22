@@ -1,6 +1,6 @@
 {
-  "version": "4.16.9",
+  "version": "4.17.0",
   "date": "2026-10-22",
-  "name": "Editar e excluir períodos de férias no RH",
-  "previous_version": "4.16.8"
+  "name": "Demonstrativo de descontos e líquido na criação da medição",
+  "previous_version": "4.16.9"
 }
