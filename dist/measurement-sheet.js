@@ -57,7 +57,7 @@ function addInvoiceGridRow(id,data={}){
  tr.innerHTML=vals.map((v,i)=>'<td><input '+(i===0?'type="date" ':'type="text" ')+'class="ms-invoice-field" data-col="'+i+'" style="width:100%;min-width:'+(i===1?'180':'80')+'px" value="'+h(v)+'"></td>').join('')+'<td><button type="button" class="button secondary ms-invoice-delete">Excluir</button></td>';
  tr.querySelector('.ms-invoice-delete').onclick=()=>{tr.remove();invoiceGridUpdate()};
  tr.querySelectorAll('input').forEach((input)=>{
- input.oninput=update;
+ input.oninput=invoiceGridUpdate;
  input.onpaste=e=>{
   const clipboard=e.clipboardData?.getData('text/plain')||'';
   if(!clipboard.includes('\t')&&!clipboard.includes('\n'))return;
