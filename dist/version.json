@@ -1,6 +1,6 @@
 {
-  "version": "4.17.4",
+  "version": "4.17.5",
   "date": "2026-10-22",
-  "name": "Correção da soma e validação de notas de faturamento direto",
-  "previous_version": "4.17.3"
+  "name": "Seleção geral de percentual ou quantidade nas medições",
+  "previous_version": "4.17.4"
 }
