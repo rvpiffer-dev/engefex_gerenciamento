@@ -52,7 +52,9 @@ function readInvoiceGrid(id){
 }
 let invoiceGridUpdate=()=>{};
 function addInvoiceGridRow(id,data={}){
- const body=document.getElementById(id),tr=document.createElement('tr');
+ const body=document.getElementById(id);
+ if(!body||typeof body.append!=='function')return;
+ const tr=document.createElement('tr');
  const vals=[data.date||'',data.supplier||'',data.invoice||'',data.order||'',data.amount?Number(data.amount).toFixed(2).replace('.',','):''];
  tr.innerHTML=vals.map((v,i)=>'<td><input '+(i===0?'type="date" ':'type="text" ')+'class="ms-invoice-field" data-col="'+i+'" style="width:100%;min-width:'+(i===1?'180':'80')+'px" value="'+h(v)+'"></td>').join('')+'<td><button type="button" class="button secondary ms-invoice-delete">Excluir</button></td>';
  tr.querySelector('.ms-invoice-delete').onclick=()=>{tr.remove();invoiceGridUpdate()};
