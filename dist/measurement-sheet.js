@@ -113,40 +113,74 @@ function addInvoiceGridRow(id,data={}){
  });
  body.append(tr);
 }
-function saveContractEntry(state,project,meta){
+function saveContractEntry(state,project,meta,recordId=null){
  const p=state.projects.find(x=>x.id===project);
  if(!p)throw Error('Selecione uma obra específica.');
  if(!String(p.client||'').trim())throw Error('Cadastre o cliente na obra antes de lançar a entrada.');
- if((state.receivableEntries||[]).some(x=>x.project===project&&x.category==='Adiantamento contratual'))throw Error('A obra já possui uma entrada contratual. Edite a entrada existente em Contas a Receber.');
+ const existing=recordId?(state.receivableEntries||[]).find(x=>x.id===recordId&&x.project===project&&x.category==='Adiantamento contratual'):null;
+ if(recordId&&!existing)throw Error('Entrada contratual não encontrada. Atualize a lista.');
+ if((state.receivableEntries||[]).some(x=>x.id!==recordId&&x.project===project&&x.category==='Adiantamento contratual'))throw Error('A obra já possui uma entrada contratual. Use Editar na entrada existente.');
  const amount=Number(meta.amount);
  const validDate=x=>/^\d{4}-\d{2}-\d{2}$/.test(x||'')&&D.date(x)?.toLocaleDateString('sv-SE')===x;
  if(!Number.isFinite(amount)||amount<=0||Math.abs(amount*100-Math.round(amount*100))>0.000001)throw Error('Informe o valor da entrada em reais e centavos.');
  if(!validDate(meta.date)||!validDate(meta.due))throw Error('Informe a data do lançamento e o vencimento da entrada.');
- const used=new Set((state.receivableEntries||[]).filter(x=>x.project===project).map(x=>String(x.document||'').toUpperCase()));
- let doc='';for(let i=1;i<100000;i++){doc='ENT-'+String(i).padStart(3,'0');if(!used.has(doc))break}
- const entry={id:id(),project,client:p.client,document:doc,description:'Entrada contratual — '+p.name,
- category:'Adiantamento contratual',source:'Medições',date:meta.date,due:meta.due,amount,
- note:String(meta.note||'').trim(),receivableInstallmentCount:1,receivableEntryAmount:0};
+ const paid=D.sum((state.receipts||[]).filter(r=>r.receivableId===recordId),r=>Number(r.amount||0));
+ const amortized=D.sum(D.measurementGroups(state,project),g=>Number(g.advanceOffset||0));
+ if(Math.round(amount*100)<Math.round(paid*100))throw Error('A entrada não pode ser menor que o valor já recebido ('+money(paid)+'). Ajuste o recebimento primeiro.');
+ if(Math.round(amount*100)<Math.round(amortized*100))throw Error('A entrada não pode ser menor que a amortização já aplicada nas medições ('+money(amortized)+'). Ajuste as medições primeiro.');
+ let entry;
+ if(existing){
+  entry={...existing,client:p.client,date:meta.date,due:meta.due,amount,note:String(meta.note||'').trim()};
+ }else{
+  const used=new Set((state.receivableEntries||[]).filter(x=>x.project===project).map(x=>String(x.document||'').toUpperCase()));
+  let doc='';for(let i=1;i<100000;i++){doc='ENT-'+String(i).padStart(3,'0');if(!used.has(doc))break}
+  entry={id:id(),project,client:p.client,document:doc,description:'Entrada contratual — '+p.name,
+   category:'Adiantamento contratual',source:'Medições',date:meta.date,due:meta.due,amount,
+   note:String(meta.note||'').trim(),receivableInstallmentCount:1,receivableEntryAmount:0};
+ }
  return D.saveRecord(state,'receivableEntries',entry);
 }
-function openContractEntry(){
- snapshot=clone(api.getState());editingProject=api.getProject();pending=false;
+function deleteContractEntry(state,recordId){
+ const existing=(state.receivableEntries||[]).find(x=>x.id===recordId&&x.category==='Adiantamento contratual');
+ if(!existing)throw Error('Entrada contratual não encontrada. Atualize a lista.');
+ if((state.receipts||[]).some(r=>r.receivableId===recordId))throw Error('Esta entrada já possui recebimentos. Exclua ou corrija os recebimentos vinculados em Contas a Receber antes de excluir a entrada.');
+ const amortized=D.sum(D.measurementGroups(state,existing.project),g=>Number(g.advanceOffset||0));
+ if(Math.round(amortized*100)>0)throw Error('Esta entrada já foi amortizada em medições ('+money(amortized)+'). Ajuste as medições vinculadas antes de excluir a entrada.');
+ return D.removeRecord(state,'receivableEntries',recordId);
+}
+function openContractEntry(recordId=null){
+ snapshot=clone(api.getState());pending=false;
+ const existing=recordId?(snapshot.receivableEntries||[]).find(e=>e.id===recordId&&e.category==='Adiantamento contratual'):null;
+ if(recordId&&!existing)throw Error('Entrada contratual não encontrada. Atualize a lista.');
+ editingProject=existing?.project||api.getProject();
  if(editingProject==='all')throw Error('Selecione uma obra específica antes de cadastrar uma entrada contratual.');
  const p=snapshot.projects.find(x=>x.id===editingProject);
  if(!p)throw Error('Obra não encontrada.');
- const existing=(snapshot.receivableEntries||[]).find(e=>e.project===editingProject&&e.category==='Adiantamento contratual');
- if(existing)throw Error('Entrada já cadastrada: '+money(existing.amount)+'. Confira-a em Medições ou em Contas a Receber.');
- $('#readerTitle').textContent='Entrada contratual — '+p.name;
- $('#readerContent').innerHTML='<form id="contractEntryForm" class="reader-page measurement-release-editor"><div class="notice neutral">Registre a entrada uma única vez. Ela gera uma conta a receber no vencimento escolhido e não consome quantidades dos serviços. Cada medição posterior poderá amortizar parte desse valor sem gerar nova cobrança da entrada.</div><div class="measurement-sheet-meta"><label>Valor da entrada (R$)<input id="contractEntryAmount" inputmode="decimal" required placeholder="Ex.: 62631,43"></label><label>Data do lançamento<input id="contractEntryDate" type="date" required value="'+D.today()+'"></label><label>Vencimento para receber<input id="contractEntryDue" type="date" required></label><label>Observações<input id="contractEntryNote" placeholder="Referência do contrato"></label></div><p class="section-note">Conta a receber única, sem parcelamento. A baixa do pagamento deve ser registrada em Financeiro → Contas a Receber. Não confundir baixa com amortização nas medições.</p><p id="contractEntryError" class="red-text" role="alert"></p><button id="contractEntrySave" type="submit" class="button primary">Cadastrar entrada contratual</button></form>';
+ if(!existing&&(snapshot.receivableEntries||[]).some(e=>e.project===editingProject&&e.category==='Adiantamento contratual'))throw Error('Entrada já cadastrada. Use o botão Editar na tabela de Medições.');
+ $('#readerTitle').textContent=(existing?'Editar entrada contratual':'Entrada contratual')+' — '+p.name;
+ $('#readerContent').innerHTML='<form id="contractEntryForm" class="reader-page measurement-release-editor"><div class="notice neutral">'+(existing?'Edite o valor, datas e observações da entrada já lançada. O documento e os recebimentos permanecem vinculados.':'Registre a entrada uma única vez. Ela gera uma conta a receber e não consome quantidades do orçamento.')+'</div><div class="measurement-sheet-meta"><label>Valor da entrada (R$)<input id="contractEntryAmount" inputmode="decimal" required placeholder="Ex.: 62631,43" value="'+h(existing?Number(existing.amount||0).toFixed(2).replace('.',','):'')+'"></label><label>Data do lançamento<input id="contractEntryDate" type="date" required value="'+h(existing?.date||D.today())+'"></label><label>Vencimento para receber<input id="contractEntryDue" type="date" required value="'+h(existing?.due||'')+'"></label><label>Observações<input id="contractEntryNote" value="'+h(existing?.note||'')+'" placeholder="Referência do contrato"></label></div><p class="section-note">A entrada é única no Contas a Receber. Amortizações nas medições não são novos recebimentos. Não é permitido reduzir o valor abaixo do já recebido ou amortizado.</p><p id="contractEntryError" class="red-text" role="alert"></p><button id="contractEntrySave" type="submit" class="button primary">'+(existing?'Salvar alterações':'Cadastrar entrada contratual')+'</button></form>';
  $('#reader').showModal();
  $('#contractEntryForm').onsubmit=async e=>{e.preventDefault();if(pending)return;try{
- if(JSON.stringify(api.getState())!==JSON.stringify(snapshot))throw Error('Os dados mudaram. Reabra o cadastro antes de salvar.');
- const amount=root.EngefexCurrency.parse($('#contractEntryAmount').value);
- const next=saveContractEntry(snapshot,editingProject,{amount,date:$('#contractEntryDate').value,due:$('#contractEntryDue').value,note:$('#contractEntryNote').value});
- pending=true;$('#contractEntrySave').disabled=true;
- if(await api.save(next)===false)throw Error('O servidor não confirmou o cadastro. Atualize e confira antes de tentar novamente.');
- pending=false;$('#reader').close();api.render();api.toast('Entrada contratual registrada em Contas a Receber.');
- }catch(err){pending=false;$('#contractEntrySave').disabled=false;$('#contractEntryError').textContent=err.message||String(err)}}; 
+  if(JSON.stringify(api.getState())!==JSON.stringify(snapshot))throw Error('Os dados mudaram. Reabra o cadastro antes de salvar.');
+  const amount=root.EngefexCurrency.parse($('#contractEntryAmount').value);
+  const next=saveContractEntry(snapshot,editingProject,{amount,date:$('#contractEntryDate').value,due:$('#contractEntryDue').value,note:$('#contractEntryNote').value},recordId);
+  pending=true;$('#contractEntrySave').disabled=true;
+  if(await api.save(next)===false)throw Error('O servidor não confirmou a alteração. Atualize e confira antes de tentar novamente.');
+  pending=false;$('#reader').close();api.render();api.toast(existing?'Entrada contratual atualizada.':'Entrada contratual registrada em Contas a Receber.');
+ }catch(err){pending=false;$('#contractEntrySave').disabled=false;$('#contractEntryError').textContent=err.message||String(err)}
+ };
+}
+async function removeContractEntry(recordId){
+ if(pending||!confirm('Excluir esta entrada contratual? O lançamento será retirado de Medições e Contas a Receber. A exclusão ficará registrada no histórico.'))return;
+ try{
+  const original=clone(api.getState());
+  const next=deleteContractEntry(original,recordId);
+  if(JSON.stringify(api.getState())!==JSON.stringify(original))throw Error('Os dados mudaram. Atualize a lista antes de excluir.');
+  pending=true;
+  if(await api.save(next)===false)throw Error('O servidor não confirmou a exclusão. Atualize e confira antes de tentar novamente.');
+  api.render();api.toast('Entrada contratual excluída.');
+ }catch(e){api.toast(e.message||String(e))}
+ finally{pending=false}
 }
 function viewBatch(recordId){
  const state=api.getState(),first=state.measurements.find(m=>m.id===recordId);
@@ -202,6 +236,6 @@ $('#measurementSheetFinancialPreview').textContent='Bruto '+money(gross)+' − R
 if(net<-.001)errors++;
 }catch(e){$('#measurementSheetFinancialPreview').textContent=e.message;errors++}
 $('#measurementSheetSave').disabled=pending||!count||!!errors}
-root.EngefexMeasurementSheet={rows,calculate,applyModeToAll,saveBatch,editBatch,releaseBatch,saveContractEntry,readInvoiceGrid,number,isDirty,busy:()=>pending,handle(action){if(action!=='measurement-sheet'&&action!=='contract-entry'&&!action?.startsWith('measurement-release:')&&!action?.startsWith('measurement-edit:')&&!action?.startsWith('measurement-view:')&&!action?.startsWith('measurement-pdf:'))return false;try{if(action==='contract-entry')openContractEntry();else if(action.startsWith('measurement-release:'))openRelease(action.slice('measurement-release:'.length));else if(action.startsWith('measurement-edit:'))open(action.slice('measurement-edit:'.length));else if(action.startsWith('measurement-view:'))viewBatch(action.slice('measurement-view:'.length));else if(action.startsWith('measurement-pdf:')){if(!root.EngefexMeasurementPDF)throw Error('Gerador de PDF indisponível. Atualize a página.');root.EngefexMeasurementPDF.download(api.getState(),action.slice('measurement-pdf:'.length)).catch(e=>api.toast(e.message||String(e)))}else open()}catch(e){api.toast(e.message)}return true},init(bridge){api=bridge}};
+root.EngefexMeasurementSheet={rows,calculate,applyModeToAll,saveBatch,editBatch,releaseBatch,saveContractEntry,deleteContractEntry,readInvoiceGrid,number,isDirty,busy:()=>pending,handle(action){if(action!=='measurement-sheet'&&action!=='contract-entry'&&!action?.startsWith('contract-entry-edit:')&&!action?.startsWith('contract-entry-delete:')&&!action?.startsWith('measurement-release:')&&!action?.startsWith('measurement-edit:')&&!action?.startsWith('measurement-view:')&&!action?.startsWith('measurement-pdf:'))return false;try{if(action==='contract-entry')openContractEntry();else if(action.startsWith('contract-entry-edit:'))openContractEntry(action.slice('contract-entry-edit:'.length));else if(action.startsWith('contract-entry-delete:'))removeContractEntry(action.slice('contract-entry-delete:'.length));else if(action.startsWith('measurement-release:'))openRelease(action.slice('measurement-release:'.length));else if(action.startsWith('measurement-edit:'))open(action.slice('measurement-edit:'.length));else if(action.startsWith('measurement-view:'))viewBatch(action.slice('measurement-view:'.length));else if(action.startsWith('measurement-pdf:')){if(!root.EngefexMeasurementPDF)throw Error('Gerador de PDF indisponível. Atualize a página.');root.EngefexMeasurementPDF.download(api.getState(),action.slice('measurement-pdf:'.length)).catch(e=>api.toast(e.message||String(e)))}else open()}catch(e){api.toast(e.message)}return true},init(bridge){api=bridge}};
 })(typeof window==='undefined'?globalThis:window);
 
