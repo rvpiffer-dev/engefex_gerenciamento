@@ -92,3 +92,51 @@ test('editar medição impede sobrepor valor acima do orçamento e bloqueia grup
  const approved={...first,measurements:first.measurements.map(m=>({...m,status:'Aprovada',submitted:'2026-10-17',approved:'2026-10-17',evidence:'ok'}))};
  assert.throws(()=>F.editBatch(approved,id,meta('MED-001'),[input('a','50')]),/Preparada/);
 });
+
+
+test('entrada contratual pode ser corrigida sem duplicar cobrança, preservando documento e histórico',()=>{
+ let {s,F,D}=setup();s.projects[0].client='Cliente';
+ const date='2026-10-22',due='2026-11-05';
+ s=F.saveContractEntry(s,'p',{amount:1000,date,due,note:'Original'});
+ const original=s.receivableEntries[0];
+ assert.equal(original.category,'Adiantamento contratual');
+ assert.equal(D.receivableRows(s,'p').length,1);
+ let next=F.saveContractEntry(s,'p',{amount:1200,date,due:'2026-11-10',note:'Corrigido'},original.id);
+ assert.equal(next.receivableEntries.length,1);
+ assert.equal(next.receivableEntries[0].id,original.id);
+ assert.equal(next.receivableEntries[0].document,original.document);
+ assert.equal(next.receivableEntries[0].amount,1200);
+ assert.equal(next.receivableEntries[0].due,'2026-11-10');
+ assert.equal(next.receivableEntries[0].note,'Corrigido');
+ assert.equal(D.receivableRows(next,'p')[0].amount,1200);
+ assert.equal(s.receivableEntries[0].amount,1000);
+ assert.throws(()=>F.saveContractEntry(next,'p',{amount:100,date,due}),/já possui/i);
+ const removed=F.deleteContractEntry(next,original.id);
+ assert.equal(removed.receivableEntries.length,0);
+ assert.match(removed.history[0].action,/Removido/);
+});
+test('edição não reduz a entrada abaixo do recebido e exclusão exige quitar vínculos',()=>{
+ let {s,F,D}=setup();s.projects[0].client='Cliente';
+ const date='2026-10-22',due='2026-11-05';
+ s=F.saveContractEntry(s,'p',{amount:1000,date,due,note:''});
+ const entry=s.receivableEntries[0];
+ s=D.saveRecord(s,'receipts',{id:'r-entrada',project:'p',receivableId:entry.id,receiptType:'Avulso',number:'Avulso:'+entry.id,amount:450,date});
+ assert.throws(()=>F.saveContractEntry(s,'p',{amount:400,date,due,note:''},entry.id),/menor que o valor já recebido/);
+ assert.throws(()=>F.deleteContractEntry(s,entry.id),/possui recebimentos/);
+ const changed=F.saveContractEntry(s,'p',{amount:1100,date,due,note:'Complemento'},entry.id);
+ assert.equal(D.receivableRows(changed,'p')[0].received,450);
+ assert.equal(D.receivableRows(changed,'p')[0].balance,650);
+});
+test('entrada com amortização aprovada não pode ser reduzida nem excluída',()=>{
+ let {s,F,D}=setup();s.projects[0].client='Cliente';
+ const date='2026-10-22',due='2026-11-05';
+ s=F.saveContractEntry(s,'p',{amount:1000,date,due,note:''});
+ const entry=s.receivableEntries[0];
+ s=F.saveBatch(s,'p',{...meta('MED-001'),advanceOffset:50},[input('a','10')]);
+ s=F.releaseBatch(s,s.measurements[0].id,{submitted:'2026-10-22',approved:'2026-10-22',expected:'2026-11-10',evidence:'Aceite',advanceOffset:50});
+ assert.equal(D.measurementGroups(s,'p')[0].advanceOffset,50);
+ assert.throws(()=>F.saveContractEntry(s,'p',{amount:49,date,due,note:''},entry.id),/amortização já aplicada/);
+ assert.throws(()=>F.deleteContractEntry(s,entry.id),/já foi amortizada/);
+ const adjusted=F.saveContractEntry(s,'p',{amount:900,date,due,note:''},entry.id);
+ assert.equal(adjusted.receivableEntries[0].amount,900);
+});
