@@ -1,6 +1,6 @@
 {
-  "version": "4.16.6",
+  "version": "4.16.7",
   "date": "2026-10-22",
-  "name": "Excluir e reabrir aditivos com proteção de vínculos",
-  "previous_version": "4.16.5"
+  "name": "Descontos por faturamento direto e amortização de entrada nas medições",
+  "previous_version": "4.16.6"
 }
