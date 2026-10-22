@@ -1,6 +1,6 @@
 {
-  "version": "4.16.5",
+  "version": "4.16.6",
   "date": "2026-10-22",
-  "name": "Correção da versão exibida e renovação do cache de publicação",
-  "previous_version": "4.16.4"
+  "name": "Excluir e reabrir aditivos com proteção de vínculos",
+  "previous_version": "4.16.5"
 }
