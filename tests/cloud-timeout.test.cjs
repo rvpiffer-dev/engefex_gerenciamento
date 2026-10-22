@@ -61,7 +61,7 @@ test('login libera interface após carregar base online existente, sem inicializ
   };
   const h=harness(fetch);
   await h.login();
-  assert.equal(h.root.EngefexCloud.ready,true);
+  assert.equal(h.root.EngefexCloud.ready,true,h.el('engefex-cloud-message').textContent);
   assert.equal(h.cover.hidden,true);
   assert.equal(h.locked,false);
   assert.equal(h.accepted,1);
