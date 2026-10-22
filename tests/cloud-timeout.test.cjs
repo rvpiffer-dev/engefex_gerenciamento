@@ -54,7 +54,7 @@ test('login libera interface após carregar base online existente, sem inicializ
     let data;
     if(url.includes('/auth/v1/token?'))data={access_token:'teste',refresh_token:'teste',expires_in:3600,user:{id:'u1',email:'teste@empresa.com'}};
     else if(url.includes('engefex_members?'))data=[{workspace_id:'e0cc3a76-0f33-4a07-8acf-c52a74e5de39'}];
-    else if(url.includes('engefex_state?'))data=[{revision:1,payload:{version:1,projects:[{id:'online'}]}}];
+    else if(url.includes('engefex_notification_reads?'))data=[];else if(url.includes('/rpc/engefex_read_state_compact'))data=[{revision:1,payload:{version:1,projects:[{id:'online'}]}}];else if(url.includes('engefex_state?'))data=[{revision:1,payload:{version:1,projects:[{id:'online'}]}}];
     else if(url.includes('/rpc/engefex_save_state'))data=[{revision:1}];
     else throw Error('Rota inesperada: '+url);
     return {ok:true,text:async()=>JSON.stringify(data)};
