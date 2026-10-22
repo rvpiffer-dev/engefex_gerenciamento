@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
-function setup(){let w={};w.window=w;vm.createContext(w);for(let f of ['data.js','domain.js','manager.js','measurement-sheet.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../dist',f),'utf8'),w);let D=w.Obras,M=w.EngefexManager,s=M.separate(D.clone(w.OBRAS_SEED));s.projects=[{...M.defaults('projects'),id:'p',name:'Scavone',value:100000}];s.budgetStages=[{...M.defaults('budgetStages','p'),id:'st',name:'Etapa'}];s.budgetItems=[{...M.defaults('budgetItems','p'),id:'a',stage:'st',name:'Serviço',quantity:100,sale:100000}];return {s,D,M,F:w.EngefexMeasurementSheet}}
+function setup(){let w={};w.window=w;vm.createContext(w);for(let f of ['data.js','domain.js','manager.js','measurement-sheet.js','retentions.js'])vm.runInContext(fs.readFileSync(path.join(__dirname,'../dist',f),'utf8'),w);let D=w.Obras,M=w.EngefexManager,s=M.separate(D.clone(w.OBRAS_SEED));s.projects=[{...M.defaults('projects'),id:'p',name:'Scavone',value:100000}];s.budgetStages=[{...M.defaults('budgetStages','p'),id:'st',name:'Etapa'}];s.budgetItems=[{...M.defaults('budgetItems','p'),id:'a',stage:'st',name:'Serviço',quantity:100,sale:100000}];return {s,D,M,F:w.EngefexMeasurementSheet,R:w.EngefexRetentions}}
 function m(id,number,quantity,type='Medição'){return {id,number,quantity,project:'p',activity:'a',measurementType:type,date:'2026-10-17',status:'Aprovada',submitted:'2026-10-17',approved:'2026-10-17',evidence:'Aceite'}}
 function r(id,number,amount,type='Medição'){return {id,number,amount,receiptType:type,project:'p',date:'2026-10-17'}}
 test('entrada 20 mil sem retenção, saldo 80 mil com 5%, liberação final fecha contrato e caixa',()=>{let {s,D}=setup();s=D.saveRecord(s,'measurements',m('e','01',20,'Entrada'));s=D.saveRecord(s,'receipts',r('re','01',20000));s=D.saveRecord(s,'measurements',m('m','02',80));let g=D.measurementGroups(s)[1];assert.equal(g.gross,80000);assert.equal(g.retained,4000);assert.equal(g.net,76000);assert.throws(()=>D.saveRecord(s,'receipts',r('bad','02',80000)),/líquido/);assert.throws(()=>D.saveRecord(s,'receipts',r('held','02',4000,'Retenção')),/liberada/);s=D.saveRecord(s,'receipts',r('net','02',76000));assert.equal(D.stats(s,'p').received,96000);s=D.measurementTerms(s,'p','02',{type:'Medição',rate:5,released:true});s=D.saveRecord(s,'receipts',r('part','02',1500,'Retenção'));assert.equal(D.measurementGroups(s)[1].held,2500);s=D.saveRecord(s,'receipts',r('last','02',2500,'Retenção'));assert.equal(D.stats(s,'p').received,100000);assert.equal(D.measurementGroups(s)[1].held,0);assert.throws(()=>D.saveRecord(s,'receipts',r('over','02',.01,'Retenção')),/liberada/);D.backupValid(s)});
@@ -19,3 +19,37 @@ test('legado preserva bruto e recebimentos, sem aplicar 5% retroativamente',()=>
 
 test('contas a receber deriva só aprovações, recebe parcialmente e separa retenção liberada',()=>{let {s,D}=setup();s=D.saveRecord(s,'measurements',{...m('m','01',100),status:'Preparada'});assert.equal(D.receivableRows(s).length,0);s=D.saveRecord(s,'measurements',{...s.measurements[0],status:'Apresentada'});assert.equal(D.receivableRows(s).length,0);s=D.saveRecord(s,'measurements',{...s.measurements[0],status:'Aprovada',expected:'2026-11-20'});let rows=D.receivableRows(s);assert.equal(rows.length,1);assert.equal(rows[0].amount,95000);assert.equal(rows[0].due,'2026-11-20');s=D.saveRecord(s,'receipts',r('r','01',10000));assert.equal(D.receivableRows(s)[0].balance,85000);s=D.measurementTerms(s,'p','01',{type:'Medição',rate:5,released:true});rows=D.receivableRows(s);assert.equal(rows.length,2);assert.equal(rows[1].type,'Retenção');assert.equal(rows[1].amount,5000);assert.equal(rows[1].due,'');assert.equal(D.receivableRows(s,'outra').length,0);let before=JSON.stringify(s);D.receivableRows(s);D.receivableRows(s);assert.equal(JSON.stringify(s),before)});
 test('aprovação parcial agrupa o número sem incluir itens não aprovados nem misturar obras',()=>{let {s,D}=setup();s=D.saveRecord(s,'measurements',m('a','01',40));s=D.saveRecord(s,'measurements',{...m('b','01',60),status:'Preparada'});let rows=D.receivableRows(s);assert.equal(rows.length,1);assert.equal(rows[0].amount,38000);assert.equal(rows[0].partial,true);s=D.saveRecord(s,'measurements',{...s.measurements[1],status:'Glosada'});assert.equal(D.receivableRows(s)[0].partial,false);s=D.saveRecord(s,'measurements',{...s.measurements[0],status:'Glosada'});assert.equal(D.receivableRows(s).length,0)});
+
+test('liberação geral libera retenções aprovadas da obra em uma só operação, sem registrar recebimentos',()=>{
+ let {s,D,R}=setup();
+ s=D.saveRecord(s,'measurements',m('m1','MED-001',20));
+ s=D.saveRecord(s,'measurements',m('m2','MED-002',30));
+ s=D.saveRecord(s,'measurements',{...m('m3','MED-003',10),status:'Preparada'});
+ const original=JSON.stringify(s),eligible=R.eligible(D.measurementGroups(s,'p'));
+ assert.equal(eligible.length,2);
+ const amount=eligible.reduce((sum,g)=>sum+g.held,0);
+ const next=R.releaseAll(s,'p');
+ assert.equal(JSON.stringify(s),original);
+ assert.equal(next.receipts.length,0);
+ assert.equal(next.measurements.find(x=>x.number==='MED-001').retentionReleased,true);
+ assert.equal(next.measurements.find(x=>x.number==='MED-002').retentionReleased,true);
+ assert.equal(next.measurements.find(x=>x.number==='MED-003').retentionReleased,false);
+ assert.equal(D.receivableTotals(next,'p').filter(r=>r.type==='Retenção').length,2);
+ assert.equal(D.measurementGroups(next,'p').filter(x=>x.released).reduce((sum,g)=>sum+g.held,0),amount);
+ assert.equal(next.history[0].kind,'retentionBatch');
+ assert.equal(next.history[0].after.count,2);
+ assert.throws(()=>R.releaseAll(next,'p'),/Não há retenções aprovadas/);
+ assert.throws(()=>R.releaseAll(s,'all'),/Selecione uma obra/);
+});
+test('liberação geral não altera outras obras ou medições parcialmente preparadas',()=>{
+ let {s,D,R,M}=setup();
+ s.projects.push({...M.defaults('projects'),id:'q',name:'Outra obra'});
+ s.budgetStages.push({...M.defaults('budgetStages','q'),id:'stq',name:'Etapa q'});
+ s.budgetItems.push({...M.defaults('budgetItems','q'),id:'aq',stage:'stq',name:'Serviço q',quantity:100,sale:100000});
+ s=D.saveRecord(s,'measurements',m('m1','MED-001',20));
+ s=D.saveRecord(s,'measurements',{...m('m2','MED-001',10),status:'Preparada'});
+ s=D.saveRecord(s,'measurements',{...m('mq','MED-Q',20),project:'q',activity:'aq'});
+ assert.equal(R.eligible(D.measurementGroups(s,'p')).length,0);
+ assert.throws(()=>R.releaseAll(s,'p'),/Não há retenções aprovadas/);
+ assert.equal(s.measurements.find(x=>x.project==='q').retentionReleased,false);
+});
