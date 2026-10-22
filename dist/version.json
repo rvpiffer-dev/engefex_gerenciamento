@@ -1,6 +1,6 @@
 {
-  "version": "4.17.7",
+  "version": "4.17.8",
   "date": "2026-10-22",
-  "name": "Editar medição preparada e gerar PDF detalhado",
-  "previous_version": "4.17.6"
+  "name": "Liberação geral das retenções aprovadas por obra",
+  "previous_version": "4.17.7"
 }
