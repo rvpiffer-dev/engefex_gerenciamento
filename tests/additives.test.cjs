@@ -30,4 +30,15 @@ second.amendment.lines=[{id:'x',name:'Serviço',unit:'un',quantity:1,unitPrice:5
 const refused=A.commit(s,second,'Recusado');
 assert.equal(D.contractValue(refused,'p'),101585.98);
 assert.match(A.render(s,'p'),/ADITIVO 001|AD 001/);
+const reopen=A.changeFinalized(s,r.id,false);
+assert.equal(reopen.budgetItems.length,0);
+assert.equal(D.contractValue(reopen,'p'),100000);
+assert.equal(reopen.budgetStages.find(x=>x.id===r.id).amendment.status,'Em aprovação');
+const removed=A.changeFinalized(s,r.id,true);
+assert.equal(removed.budgetStages.some(x=>x.id===r.id),false);
+assert.equal(removed.budgetItems.length,0);
+assert.equal(D.contractValue(removed,'p'),100000);
+const linked=JSON.parse(JSON.stringify(s));linked.measurements.push({id:'m-test',project:'p',activity:s.budgetItems[0].id,quantity:1});
+assert.throws(()=>A.changeFinalized(linked,r.id,true),/vínculos/);
+assert.throws(()=>A.changeFinalized(linked,r.id,false),/vínculos/);
 console.log('Aditivos: verificações aprovadas.');
