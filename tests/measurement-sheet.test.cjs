@@ -65,3 +65,30 @@ test('modo geral não modifica itens concluídos nem aplica conversão parcial s
  assert.equal(draft[1].mode,'quantity');
  assert.equal(draft[1].current,'300');
 });
+
+test('abrir e editar medição preparada substitui somente o lote original e mantém o mesmo ID dos itens',()=>{
+ const {s:FBase,F,D}=setup();
+ let s=F.saveBatch(FBase,'p',{...meta('MED-001'),retentionRate:5},[input('a','10'),input('b','20')]);
+ const first=s.measurements.find(x=>x.activity==='a'),oldIds=s.measurements.map(x=>x.id);
+ const next=F.editBatch(s,first.id,{...meta('MED-001'),date:'2026-10-19',note:'Revisado',retentionRate:5,directInvoices:[{date:'2026-10-18',supplier:'Fornecedor',invoice:'14',order:'27',amount:50}]},[input('a','12'),input('b','25')]);
+ assert.equal(next.measurements.length,2);
+ assert.equal(next.measurements.find(x=>x.activity==='a').quantity,12);
+ assert.equal(next.measurements.find(x=>x.activity==='b').quantity,50);
+ assert.equal(next.measurements.find(x=>x.activity==='a').id,first.id);
+ assert.equal(next.measurements.find(x=>x.activity==='b').id,oldIds[1]);
+ assert.equal(next.measurements[0].status,'Preparada');
+ assert.equal(next.measurements[0].date,'2026-10-19');
+ assert.equal(next.measurements[0].note,'Revisado');
+ assert.equal(next.measurements[0].plannedDirectInvoices[0].amount,50);
+ assert.equal(s.measurements.find(x=>x.activity==='a').quantity,10);
+ assert.match(next.history[0].action,/revisada/);
+ assert.equal(F.rows(next,'p')[0].previousPercent,12);
+});
+test('editar medição impede sobrepor valor acima do orçamento e bloqueia grupo aprovado',()=>{
+ const {s,F}=setup();
+ const first=F.saveBatch(s,'p',meta('MED-001'),[input('a','40')]);
+ const id=first.measurements[0].id;
+ assert.throws(()=>F.editBatch(first,id,meta('MED-001'),[input('a','101')]),/100%|superar/);
+ const approved={...first,measurements:first.measurements.map(m=>({...m,status:'Aprovada',submitted:'2026-10-17',approved:'2026-10-17',evidence:'ok'}))};
+ assert.throws(()=>F.editBatch(approved,id,meta('MED-001'),[input('a','50')]),/Preparada/);
+});
