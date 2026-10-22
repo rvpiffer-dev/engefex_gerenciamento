@@ -1,6 +1,6 @@
 {
-  "version": "4.17.0",
+  "version": "4.17.1",
   "date": "2026-10-22",
-  "name": "Demonstrativo de descontos e líquido na criação da medição",
-  "previous_version": "4.16.9"
+  "name": "Faturamento direto em planilha editável",
+  "previous_version": "4.17.0"
 }
