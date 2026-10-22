@@ -101,7 +101,7 @@
     seen.add(sig);
     return {id:id+'-'+i,signature:sig,repeat,raw,items:im.get(id)||[],due:dm.get(id)||[],sourceText:tm.get(id)||[],project:api.getProject()==='all'?'':api.getProject(),stage:''};
    });
-   filename=file.name;selection.clear();search='';associatedFiles.clear();
+   filename=file.name;selection.clear();search='';mode='archive';associatedFiles.clear();
    if($('#batchNotesFilename'))$('#batchNotesFilename').textContent=filename+' · '+documents.length+' documentos';
    paint();
   }catch(err){message(err.message)}finally{busy=false}
@@ -155,7 +155,7 @@
      '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+
      '<td>'+ (issue?'<span class="tag amber">'+h(issue)+'</span>':(outgoing(r)?'<span class="tag green">Contas a pagar</span>':'<span class="tag">Conferir destino</span>'))+'</td></tr>';
     }).join('')+'</tbody></table></div>'+
-    '<div class="batch-import-footer"><label class="batch-check-finance"><input type="checkbox" id="batchGenerateAccounts"> Gerar Contas a Pagar dos documentos aptos (exige obra/etapa ou Geral, fornecedor, data, valor e vencimento)</label>'+
+    '<div class="batch-import-footer"><label class="batch-check-finance"><input type="checkbox" id="batchGenerateAccounts" '+(mode==='finance'?'checked':'')+'> Gerar Contas a Pagar dos documentos aptos (exige obra/etapa ou Geral, fornecedor, data, valor e vencimento)</label>'+
     '<p class="muted small">Sem essa opção, os documentos selecionados serão guardados para conferência, sem gerar despesas. Notas repetidas são ignoradas. Anexos em PDF só serão enviados se você os selecionar acima.</p>'+
     '<button type="button" class="button primary" id="batchSaveSelected" '+(!selection.size?'disabled':'')+'>Importar somente as '+selection.size+' selecionada(s)</button></div>';
   container.querySelectorAll('[data-batch-check]').forEach(el=>el.onchange=()=>{
@@ -173,6 +173,7 @@
   $('#batchClearAll').onclick=()=>{selection.clear();paint()};
   $('#batchSelectSafe').onclick=()=>{selection.clear();documents.filter(d=>!existing(s,d)&&!d.repeat&&!related(d.raw)&&outgoing(d.raw)).forEach(d=>selection.add(d.id));paint()};
   $('#batchSearch').oninput=e=>{search=e.target.value;paint();$('#batchSearch')?.focus()};
+  $('#batchGenerateAccounts').onchange=e=>{mode=e.target.checked?'finance':'archive'};
   $('#batchSaveSelected').onclick=commit;
  }
  function schedule(doc,amount){
@@ -245,7 +246,7 @@
   if(!root.confirm(summary))return;
   busy=true;
   try{
-   root.EngefexAccess&&(!root.EngefexAccess.canWrite('payables'))&&(()=>{throw Error('Sem permissão para editar Contas a Pagar.')})();
+   if(root.EngefexAccess&&!root.EngefexAccess.canWrite('payables'))throw Error('Sem permissão para editar Contas a Pagar.');
    root.EngefexCloud?.requireWrite();
    const next=D.clone(s);next.fiscalImports=next.fiscalImports||[];
    const docsMap=new Map(),pdfMap=new Map();
