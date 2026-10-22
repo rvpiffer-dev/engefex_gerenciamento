@@ -273,6 +273,7 @@
    note:[text(raw,'Observações fiscais / do pedido'),text(raw,'Notas de conferência'),'Importação Engefex: '+doc.signature].filter(Boolean).join('\n')
   });
   if(doc.project!=='Geral')for(const item of p.items)item.allocations=[{destination:'work',project:doc.project,stage:doc.stage,share:100}];
+  try{P.validate(s,p)}catch(error){return {error:'Não passou na validação financeira: '+error.message}}
   return {purchase:p};
  }
  async function commit(){
