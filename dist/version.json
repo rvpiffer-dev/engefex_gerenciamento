@@ -1,6 +1,6 @@
 {
-  "version": "4.17.1",
+  "version": "4.17.2",
   "date": "2026-10-22",
-  "name": "Faturamento direto em planilha editável",
-  "previous_version": "4.17.0"
+  "name": "Entrada única nas Medições com amortização posterior",
+  "previous_version": "4.17.1"
 }
