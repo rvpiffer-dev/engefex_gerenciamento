@@ -113,7 +113,19 @@ async function importFile(file){
  try{
   if(!/\.xlsx$/i.test(file.name))throw Error('Selecione uma planilha .xlsx.');
   const wb=await root.BudgetImport.readWorkbook(await file.arrayBuffer());
-  const candidates=wb.map(s=>root.BudgetImport.analyze(s));
+  const candidates=wb.map(s=>{
+   // Planilhas de aditivo podem conter o orçamento original e uma nova tabela
+   // com códigos reiniciados. O último cabeçalho ITEM identifica a tabela do aditivo.
+   const repeatedHeaders=s.rows.map((row,i)=>({i,label:String(row.B?.value??'').trim().toUpperCase()}))
+    .filter(row=>/^ITEM\\s*\.?$/.test(row.label));
+   if(repeatedHeaders.length>1){
+    const start=repeatedHeaders[repeatedHeaders.length-1].i+1;
+    const section={...s,rows:s.rows.slice(start)};
+    const found=root.BudgetImport.analyze(section);
+    if(found.services.length)return found;
+   }
+   return root.BudgetImport.analyze(s);
+  });
   const parsed=candidates.sort((a,b)=>b.services.length-a.services.length)[0];
   const lines=importServices(parsed);
   const total=lines.reduce((sum,l)=>sum+l.quantity*l.unitPrice,0);
