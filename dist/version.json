@@ -1,6 +1,6 @@
 {
-  "version": "4.16.8",
+  "version": "4.16.9",
   "date": "2026-10-22",
-  "name": "Amortização percentual e notas de faturamento direto por medição",
-  "previous_version": "4.16.7"
+  "name": "Editar e excluir períodos de férias no RH",
+  "previous_version": "4.16.8"
 }
