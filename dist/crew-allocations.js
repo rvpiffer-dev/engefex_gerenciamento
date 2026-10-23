@@ -9,7 +9,7 @@
  let pickedProject='',seenGlobalProject=null,day='',draftKey='',draft=new Map(),busy=false,keyword='';
  function active(e){return e.active!==false&&!/^(inativo|desligado)$/i.test(String(e.employmentStatus||''))}
  function employees(s){
-  const catalog=Array.isArray(s.crewEmployees)?s.crewEmployees:s.hrEmployees||[];
+  const catalog=(s.hrEmployees||[]).filter(e=>(s.hrPayroll||[]).some(r=>String(r.employeeId||'')===String(e.id)||norm(r.employeeName||r.values?.A)===norm(e.name)));
   const list=catalog.filter(active).map(e=>({id:String(e.id),name:String(e.name||''),role:String(e.role||'')}));
   const ids=new Set(list.map(e=>e.id));
   for(const a of s.crewAllocations||[])if(a.project===pickedProject&&a.date===day&&!ids.has(String(a.employeeId))){list.push({id:String(a.employeeId),name:String(a.employeeName||'Funcionário histórico'),role:'Inativo / histórico'});ids.add(String(a.employeeId))}
@@ -46,34 +46,32 @@
   if(globalProject!==seenGlobalProject){seenGlobalProject=globalProject;if(globalProject!=='all'&&options.some(p=>p.id===globalProject))pickedProject=globalProject;}
   if(!day)day=new Date().toLocaleDateString('sv-SE');
   ensureDraft(s);
-  const people=employees(s),selected=selectedRows(s),dailyCost=round(selected.reduce((a,x)=>a+x.total,0));
+  const people=employees(s),selected=selectedRows(s);
   const missing=selected.filter(x=>!x.rate);
   const historical=forDay(s,pickedProject,day);
   const month=day.slice(0,7);
   const monthRows=(s.crewAllocations||[]).filter(x=>x.project===pickedProject&&x.date?.slice(0,7)===month);
-  const monthCost=round(monthRows.reduce((a,x)=>a+num(x.total),0));
+  const monthCost=0;
   const total=summary(s,pickedProject);
   const optionsHtml=options.map(p=>'<option value="'+esc(p.id)+'" '+(p.id===pickedProject?'selected':'')+'>'+esc([p.code,p.name].filter(Boolean).join(' · '))+'</option>').join('');
   const peopleHtml=people.filter(e=>norm(e.name+' '+e.role).includes(norm(keyword))).map(e=>{
    const item=draft.get(e.id)||{},checked=!!item.checked,prior=historical.find(a=>String(a.employeeId)===e.id);
    const info=prior?.hourlyRate>0?{rate:Number(prior.hourlyRate),period:prior.payrollPeriod||'',chargesMissing:false}:rateOf(s,e,day);
    return '<tr class="'+(checked?'crew-marked':'')+'"><td><input type="checkbox" data-crew-select="'+esc(e.id)+'" '+(checked?'checked':'')+' '+(!info&&!checked?'disabled title="Funcionário sem custo/hora disponível na folha"':'')+' aria-label="Incluir '+esc(e.name)+'"></td>'+
-    '<td><strong>'+esc(e.name)+'</strong><small>'+esc(e.role||'Função não informada')+'</small></td>'+
-    '<td>'+(info?'<strong>'+format(info.rate)+'</strong><small>Folha '+esc(info.period||'histórica')+(info.chargesMissing?' · Encargos zerados':'')+'</small>':'<span class="crew-missing">Custo/hora não encontrado</span>')+'</td>'+
+    '<td><strong>'+esc(e.name)+'</strong></td>'+
+    
     '<td><input class="crew-hours" type="number" data-crew-hours="'+esc(e.id)+'" min="0.25" max="24" step="0.25" value="'+esc(item.hours??prior?.hours??8)+'" '+(checked?'':'disabled')+' aria-label="Horas de '+esc(e.name)+'"></td>'+
-    '<td class="num" data-crew-subtotal="'+esc(e.id)+'">'+(checked&&info?format(round(info.rate*num(item.hours??8))):'—')+'</td></tr>';
+    '</tr>';
   }).join('');
   const history=[...new Map((s.crewAllocations||[]).filter(a=>a.project===pickedProject).map(a=>[a.date,a.date])).values()].sort().reverse().slice(0,35)
-   .map(date=>{const rows=forDay(s,pickedProject,date),amount=round(rows.reduce((a,x)=>a+num(x.total),0));return '<tr><td><button type="button" class="text-btn" data-crew-day="'+esc(date)+'">'+esc(dateBR(date))+'</button></td><td>'+rows.length+'</td><td class="num">'+rows.reduce((a,x)=>a+num(x.hours),0).toLocaleString('pt-BR')+' h</td><td class="num"><strong>'+format(amount)+'</strong></td></tr>'}).join('');
-  return '<div class="crew-screen"><section class="crew-hero"><div><p class="crew-overline">OBRAS · CENTRO DE CUSTOS</p><h2>Alocação diária de equipes</h2><p>Escolha a obra e marque os funcionários presentes. O custo é calculado com o custo/hora da folha.</p></div><span class="crew-symbol">👷</span></section>'+
+   .map(date=>{const rows=forDay(s,pickedProject,date),amount=round(rows.reduce((a,x)=>a+num(x.total),0));return '<tr><td><button type="button" class="text-btn" data-crew-day="'+esc(date)+'">'+esc(dateBR(date))+'</button></td><td>'+rows.length+'</td><td class="num">'+rows.reduce((a,x)=>a+num(x.hours),0).toLocaleString('pt-BR')+' h</td></tr>'}).join('');
+  return '<div class="crew-screen"><section class="crew-hero"><div><p class="crew-overline">OBRAS · CENTRO DE CUSTOS</p><h2>Alocação diária de equipes</h2><p>Escolha a obra, toque nos funcionários e ajuste as horas. Valores financeiros não são mostrados aqui.</p></div><span class="crew-symbol">👷</span></section>'+
    (!options.length?'<div class="notice">Cadastre uma obra para iniciar os apontamentos.</div>':
    '<section class="panel crew-panel"><div class="crew-fields"><label>Obra<select id="crewProject">'+optionsHtml+'</select></label><label>Data da alocação<input type="date" id="crewDate" value="'+esc(day)+'"></label><label>Jornada padrão (horas)<input type="number" id="crewDefaultHours" min="0.25" max="24" step="0.25" value="8"></label><div class="crew-actions"><button type="button" class="button secondary" id="crewApplyHours">Aplicar horas aos selecionados</button></div></div>'+
-   '<div class="crew-metrics"><div><span>Funcionários selecionados</span><strong id="crewPeople">'+selected.length+'</strong></div><div><span>Horas previstas</span><strong id="crewHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div><div><span>Custo do dia</span><strong id="crewCost">'+format(dailyCost)+'</strong></div><div><span>Acumulado na obra</span><strong>'+format(total.cost)+'</strong></div></div>'+
-   '<div class="crew-toolbar"><input id="crewSearch" type="search" placeholder="Buscar nome ou função..." value="'+esc(keyword)+'"><button type="button" class="button secondary" id="crewAll">Selecionar todos com custo</button><button type="button" class="button secondary" id="crewClear">Desmarcar</button></div>'+
-   '<div class="crew-table-scroll"><table class="crew-table"><thead><tr><th>✓</th><th>Funcionário / função</th><th>Custo por hora</th><th>Horas no dia</th><th>Custo calculado</th></tr></thead><tbody>'+peopleHtml+'</tbody></table></div>'+
+   '<div class="crew-metrics"><div><span>Funcionários selecionados</span><strong id="crewPeople">'+selected.length+'</strong></div><div><span>Horas previstas</span><strong id="crewHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div></div>'+ '<div class="crew-toolbar"><input id="crewSearch" type="search" placeholder="Buscar funcionário..." value="'+esc(keyword)+'"><button type="button" class="button secondary" id="crewAll">Selecionar todos</button><button type="button" class="button secondary" id="crewClear">Desmarcar</button></div>'+
+   '<div class="crew-table-scroll"><table class="crew-table"><thead><tr><th>Selecionar</th><th>Funcionário</th><th>Tempo na obra</th></tr></thead><tbody>'+peopleHtml+'</tbody></table></div>'+
    '<div class="crew-footer"><p id="crewHint">'+(missing.length?'Atenção: '+missing.length+' funcionário(s) sem custo/hora; confira a folha.':selected.some(x=>x.rate?.chargesMissing)?'Confira os encargos lançados na folha: há custos com encargos zerados.':'Valor gerencial: não cria contas a pagar nem pagamentos duplicados.')+'</p><button type="button" class="button primary" id="crewSave" '+(busy?'disabled':'')+'>'+(busy?'Salvando…':'Salvar alocação do dia')+'</button></div></section>'+
-   '<div class="crew-split"><section class="panel"><div class="panel-head"><h2>Centro de custos da obra</h2></div><div class="crew-totals"><p>Competência '+esc(month.split('-').reverse().join('/'))+'</p><strong>'+format(monthCost)+'</strong><small>'+monthRows.length+' apontamentos no mês</small><p>Acumulado desde o primeiro lançamento</p><strong>'+format(total.cost)+'</strong><small>'+total.hours.toLocaleString('pt-BR')+' horas apontadas</small></div></section>'+
-   '<section class="panel"><div class="panel-head"><h2>Histórico de alocações</h2></div><div class="crew-table-scroll"><table><thead><tr><th>Data</th><th>Pessoas</th><th>Horas</th><th>Custo</th></tr></thead><tbody>'+ (history||'<tr><td colspan="4" class="empty">Ainda não há equipes alocadas nesta obra.</td></tr>')+'</tbody></table></div></section></div>')+'</div>';
+   '<div class="crew-split"><section class="panel"><div class="panel-head"><h2>Horas acumuladas</h2></div><div class="crew-totals"><p>Competência '+esc(month.split('-').reverse().join('/'))+'</p><strong>'+monthRows.length+' registros</strong><p>Total da obra</p><strong>'+total.hours.toLocaleString('pt-BR')+' h</strong></div></section>'+ '<section class="panel"><div class="panel-head"><h2>Histórico de alocações</h2></div><div class="crew-table-scroll"><table><thead><tr><th>Data</th><th>Pessoas</th><th>Horas</th></tr></thead><tbody>'+ (history||'<tr><td colspan="4" class="empty">Ainda não há equipes alocadas nesta obra.</td></tr>')+'</tbody></table></div></section></div>')+'</div>';
  }
  function attach(s,persist,render,notify){
   const $=id=>document.getElementById(id),refresh=()=>render();
@@ -85,13 +83,12 @@
    const rows=selectedRows(s),sum=round(rows.reduce((a,r)=>a+r.total,0));
    $('crewPeople').textContent=String(rows.length);
    $('crewHours').textContent=rows.reduce((a,r)=>a+r.hours,0).toLocaleString('pt-BR')+' h';
-   $('crewCost').textContent=format(sum);
+   
    $('crewHint').textContent=rows.some(x=>!x.rate)?'Há funcionário sem custo/hora na folha. Não será possível salvar até corrigir.':rows.some(x=>x.rate?.chargesMissing)?'Atenção: existem custos calculados com encargos zerados na folha.':'Valores gerenciais. Não criam lançamento de pagamento.';
    for(const e of employees(s)){
     const checked=!!draft.get(e.id)?.checked;
     const input=document.querySelector('[data-crew-hours="'+CSS.escape(e.id)+'"]');if(input)input.disabled=!checked;
-    const cell=document.querySelector('[data-crew-subtotal="'+CSS.escape(e.id)+'"]');
-    if(cell){const row=rows.find(r=>r.employee.id===e.id);cell.textContent=row?.rate?format(row.total):'—';cell.closest('tr')?.classList.toggle('crew-marked',checked)}
+    const inputRow=input?.closest('tr');if(inputRow)inputRow.classList.toggle('crew-marked',checked);
    }
   };
   document.querySelectorAll('[data-crew-select]').forEach(el=>el.onchange=e=>{const id=e.target.dataset.crewSelect,old=draft.get(id)||{hours:8};draft.set(id,{...old,checked:e.target.checked});draw()});
