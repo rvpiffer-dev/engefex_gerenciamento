@@ -1,1 +1,69 @@
 .crew-screen{margin-bottom:26px}.crew-hero{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:25px 28px;border-radius:16px;color:#fff;background:linear-gradient(120deg,#122b49,#1557ff);margin-bottom:18px}.crew-hero h2{font-size:25px;color:#fff}.crew-hero p{font-size:12px;opacity:.9;margin-top:7px;max-width:650px}.crew-overline{font-size:10px!important;letter-spacing:1.4px;font-weight:700}.crew-symbol{font-size:44px;opacity:.9}.crew-panel{overflow:visible;border-radius:14px}.crew-fields{display:grid;grid-template-columns:minmax(220px,2fr) minmax(145px,1fr) minmax(155px,1fr) auto;gap:15px;align-items:end;padding:20px}.crew-fields label{display:grid;gap:6px;color:#526074;font-size:11px;font-weight:700}.crew-fields select,.crew-fields input,.crew-toolbar input,.crew-hours{background:#fff;border:1px solid #d7e0eb;color:#182a44;border-radius:8px;padding:9px 11px;min-height:41px;max-width:100%;width:100%}.crew-actions .button{min-height:41px}.crew-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 20px 20px}.crew-metrics>div{background:#f0f5ff;border:1px solid #dbe8ff;border-radius:12px;padding:15px;min-width:0}.crew-metrics span{display:block;color:#54677c;font-size:11px;font-weight:600}.crew-metrics strong{display:block;font-size:clamp(18px,2vw,25px);color:#17365b;margin-top:5px;overflow-wrap:anywhere}.crew-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 20px;background:#f8fafc;border-block:1px solid #e4ebf3}.crew-toolbar input{flex:1;min-width:180px}.crew-table-scroll{overflow:auto;max-height:560px}.crew-table{min-width:730px}.crew-table td:nth-child(2) small,.crew-table td:nth-child(3) small{display:block;color:#748296;margin-top:4px;font-size:10px}.crew-table td{vertical-align:middle}.crew-table tr.crew-marked td{background:#eff7f3}.crew-table input[type=checkbox]{width:19px;height:19px;accent-color:#187451}.crew-hours{width:95px;min-height:35px;padding:6px 8px}.crew-hours:disabled{opacity:.55}.crew-missing{color:#bc5a2d;font-size:11px;font-weight:700}.crew-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 20px}.crew-footer p{color:#627084;font-size:11px;flex:1}.crew-split{display:grid;grid-template-columns:minmax(200px,.65fr) minmax(300px,1.35fr);gap:18px}.crew-split .panel{border-radius:12px}.crew-totals{display:grid;gap:6px;padding:24px}.crew-totals p{color:#52677d;font-weight:700;font-size:11px}.crew-totals strong{color:#1e3d64;font-size:25px}.crew-totals small{color:#7f8898;font-size:11px;margin-bottom:20px}.crew-legacy{border:1px solid #dbe3ee;border-radius:12px;background:white;margin:12px 0 24px;padding:16px}.crew-legacy>summary{cursor:pointer;color:#315a89;font-size:13px;font-weight:700;padding:4px 8px}.crew-legacy[open]>summary{margin-bottom:18px}.crew-legacy .page-head{padding:5px 8px}.crew-legacy .page-head h1{font-size:19px}@media(max-width:1000px){.crew-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.crew-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.crew-split{grid-template-columns:1fr}}@media(max-width:640px){.crew-hero{padding:18px}.crew-hero h2{font-size:21px}.crew-symbol{font-size:29px}.crew-fields{grid-template-columns:1fr}.crew-fields,.crew-metrics{padding-inline:14px}.crew-toolbar{padding:12px 14px}.crew-metrics{gap:8px}.crew-metrics>div{padding:12px}.crew-metrics strong{font-size:18px}.crew-footer{align-items:stretch}.crew-footer .button{width:100%}}
+/* Experiência de apontamento otimizada para campo (toque e telas pequenas). */
+.crew-date-field>label{display:block;font-size:11px;font-weight:700;color:#526074;margin-bottom:6px}
+.crew-date-buttons{display:flex;align-items:center;gap:7px;min-width:0}
+.crew-date-buttons input{flex:1;min-width:0}
+.crew-date-buttons .button{flex:none;width:43px;height:43px;min-width:43px;font-size:26px;line-height:1;padding:0}
+.crew-quick-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.crew-name-cell label{display:flex;flex-direction:column;gap:4px;cursor:pointer;min-height:40px;justify-content:center}
+.crew-hour-controls{display:flex;align-items:center;gap:6px;justify-content:flex-start}
+.crew-hour-controls .crew-hours{width:82px;flex:none;text-align:center;font-weight:700}
+.crew-step{width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;background:#eef4ff;color:#154d98;border:1px solid #cadbf8;border-radius:9px;font-size:22px;font-weight:700;cursor:pointer;touch-action:manipulation}
+.crew-step:disabled{opacity:.38;cursor:not-allowed}
+.crew-step:focus-visible,.crew-date-buttons button:focus-visible,.crew-name-cell label:focus-visible{outline:3px solid #5b97fc;outline-offset:2px}
+.crew-save-metrics{display:none}
+@media(max-width:720px){
+ .crew-screen{margin-inline:-6px;overflow:visible}
+ .crew-screen .crew-hero{margin:0 5px 12px;padding:15px 16px;border-radius:13px}
+ .crew-screen .crew-hero h2{font-size:20px;line-height:1.2}
+ .crew-screen .crew-hero p{font-size:12px;line-height:1.45}
+ .crew-screen .crew-symbol{font-size:29px}
+ .crew-panel{margin:0 5px;border-radius:12px;overflow:visible!important}
+ .crew-screen .crew-panel .crew-fields{display:grid;grid-template-columns:1fr;gap:13px;padding:14px 13px}
+ .crew-screen .crew-panel .crew-fields label,.crew-date-field>label{font-size:12px}
+ .crew-screen .crew-panel .crew-fields select,.crew-screen .crew-panel .crew-fields input,.crew-toolbar input{min-height:48px;font-size:16px}
+ .crew-screen .crew-panel .crew-actions{width:100%}
+ .crew-screen .crew-panel .crew-actions .button{min-height:46px;width:100%;font-size:14px;white-space:normal}
+ .crew-date-buttons .button{min-width:48px;height:48px;width:48px}
+ .crew-screen .crew-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:2px 13px 14px}
+ .crew-screen .crew-metrics>div{padding:12px 10px;border-radius:11px}
+ .crew-screen .crew-metrics span{font-size:11px;line-height:1.25}
+ .crew-screen .crew-metrics strong{font-size:18px}
+ .crew-screen .crew-toolbar{padding:12px 13px;display:block}
+ .crew-screen .crew-toolbar input{display:block;min-width:0;width:100%;box-sizing:border-box;margin-bottom:9px}
+ .crew-screen .crew-quick-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .crew-screen .crew-quick-actions button{min-height:45px;font-size:12px;line-height:1.25;white-space:normal;padding:8px}
+ .crew-screen .crew-quick-actions button:first-child{grid-column:1/-1}
+ .crew-screen .crew-panel .crew-table-scroll{overflow:visible;max-height:none;width:100%}
+ .crew-screen .crew-panel .crew-table,.crew-screen .crew-panel .crew-table tbody{display:block;width:100%;min-width:0!important;max-width:100%}
+ .crew-screen .crew-panel .crew-table thead{display:none}
+ .crew-screen .crew-panel .crew-table tbody tr{display:grid;grid-template-columns:47px minmax(0,1fr);gap:0 7px;margin:10px 12px;padding:12px;border:1px solid #d9e3ef;border-radius:12px;background:#fff;box-shadow:0 2px 9px rgba(16,38,67,.05)}
+ .crew-screen .crew-panel .crew-table tbody tr.crew-marked{border-color:#99cfb1;background:#f0fbf4;box-shadow:0 2px 10px rgba(35,137,74,.09)}
+ .crew-screen .crew-panel .crew-table tbody tr td{display:flex;align-items:center;min-width:0;padding:8px 4px!important;background:transparent!important;border:0!important;vertical-align:middle}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(1){grid-column:1;grid-row:1;justify-content:center}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(2){grid-column:2;grid-row:1;justify-content:flex-start;min-height:48px}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(2) label{width:100%;padding:5px 0;min-height:52px}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(2) strong{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(2) small{font-size:12px!important}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(3){grid-column:1/-1;grid-row:2;gap:7px;flex-wrap:wrap;border-top:1px solid #e4eaf1!important}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(3):before{content:"Custo/hora";font-size:12px;color:#54677c;margin-right:auto}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(3)>strong{font-size:14px}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(3)>small{flex-basis:100%;text-align:right}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(4){grid-column:1/-1;grid-row:3;justify-content:space-between;gap:8px;border-top:1px solid #e4eaf1!important}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(4):before{content:"Horas do dia";font-size:12px;color:#54677c;flex:none}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(5){grid-column:1/-1;grid-row:4;justify-content:space-between;border-top:1px solid #e4eaf1!important;gap:7px;font-size:15px;font-weight:800}
+ .crew-screen .crew-panel .crew-table tbody tr td:nth-child(5):before{content:"Custo diário";font-size:12px;font-weight:600;color:#54677c}
+ .crew-screen .crew-panel .crew-table input[type=checkbox]{width:28px!important;height:28px!important;min-width:28px!important;touch-action:manipulation}
+ .crew-screen .crew-panel .crew-hour-controls{margin-left:auto}
+ .crew-screen .crew-panel .crew-hour-controls .crew-hours{height:44px;min-height:44px!important;width:65px!important;padding:5px 3px!important;font-size:16px!important}
+ .crew-screen .crew-panel .crew-hour-controls .crew-step{min-width:43px;width:43px;height:44px;font-size:24px;touch-action:manipulation}
+ .crew-screen .crew-panel .crew-footer{display:grid;grid-template-columns:1fr auto;gap:8px 12px;position:sticky;bottom:0;z-index:8;padding:11px 13px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.97);backdrop-filter:blur(9px);border-top:1px solid #dce4ee;box-shadow:0 -4px 18px rgba(12,36,62,.12)}
+ .crew-screen .crew-panel .crew-footer .crew-save-metrics{display:contents}
+ .crew-screen .crew-panel .crew-footer .crew-save-metrics strong{font-size:12px;color:#315172;align-self:center}
+ .crew-screen .crew-panel .crew-footer .crew-save-metrics strong:nth-child(2){font-size:17px;color:#133c65;text-align:right}
+ .crew-screen .crew-panel .crew-footer #crewHint{grid-column:1/-1;line-height:1.3;font-size:10px;margin:0}
+ .crew-screen .crew-panel .crew-footer #crewSave{grid-column:1/-1;min-height:54px;width:100%;font-size:16px;font-weight:800;border-radius:11px}
+ .crew-screen .crew-split{grid-template-columns:1fr;gap:12px;margin:14px 5px}
+ .crew-screen .crew-split .crew-table-scroll{overflow-x:auto;max-width:100%}
+ .crew-screen .crew-legacy{margin-inline:5px}
+}
