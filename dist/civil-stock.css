@@ -1,0 +1,25 @@
+/* Estoque Civil — identidade visual alinhada ao Estoque de Tintas */
+.civil-stock{width:100%;min-width:0;color:#242a32}
+.civil-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin:4px 0 22px}
+.civil-head h1{font-size:26px;font-weight:800;letter-spacing:-.65px;margin:0 0 5px}
+.civil-head p{font-size:12px;color:#667282;margin:0}
+.civil-head-actions{display:flex;gap:8px}
+.civil-metrics{display:grid;grid-template-columns:repeat(2,minmax(220px,344px));gap:14px;margin-bottom:20px}
+.civil-metrics>div{background:#fff;border:1px solid #d8e1ec;border-radius:8px;padding:18px 20px;box-shadow:0 5px 16px rgba(26,46,75,.035);display:flex;flex-direction:column;gap:10px}
+.civil-metrics small{font-size:11px;color:#68758a}.civil-metrics strong{font-size:23px;font-weight:800;color:#222831}
+.civil-stock .panel{background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 18px}
+.civil-stock .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.civil-stock .panel-head h2{font-size:15px;font-weight:750;margin:0}
+.civil-stock .civil-filters .form-grid{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.civil-stock .civil-filters .form-grid label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#657388;min-width:140px;flex:1 1 150px}
+.civil-stock input,.civil-stock select{border:1px solid #cfd9e7;border-radius:7px;background:#fff;min-height:38px;padding:7px 9px;color:#263243;max-width:100%;box-sizing:border-box}
+.civil-stock input[type=file]{font-size:11px;min-width:200px}
+.civil-stock .civil-grid-wrap{max-height:65vh;overflow:auto;border:1px solid #cbd5e1;border-radius:8px;background:#fff;scrollbar-gutter:stable}
+.civil-stock .civil-grid{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+.civil-stock .civil-grid thead th{position:sticky;top:0;z-index:1;background:#eaf0f8;color:#526b85;font-size:10px;text-transform:uppercase;letter-spacing:.02em;padding:12px 10px;border-right:1px solid #ccd8e5;white-space:nowrap}
+.civil-stock .civil-grid td{border-right:1px solid #d3deeb;border-top:1px solid #d3deeb;padding:10px;vertical-align:middle;line-height:1.45}
+.civil-stock .civil-grid tbody tr:nth-child(even){background:#f7f9fc}
+.civil-stock .civil-grid tbody tr:hover{background:#eef5ff}
+.civil-stock .civil-grid td:last-child{white-space:nowrap}
+.civil-stock .civil-grid .button{padding:7px 9px;font-size:11px}
+@media(max-width:700px){.civil-head h1{font-size:22px}.civil-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.civil-metrics>div{padding:14px}.civil-metrics strong{font-size:18px}.civil-stock .civil-filters .form-grid label{min-width:130px;flex:1 1 140px}}
