@@ -40,3 +40,17 @@ test('Resultado por obra inclui equipe sem gerar pagamento duplicado',()=>{
  assert.equal(a.outstanding,50000);
  assert.equal(b.crewCost,0);
 });
+
+test('Controle de equipes mobile preserva privacidade financeira',()=>{
+ const html=crew.page(state,'a');
+ assert.match(html,/id="crewPrevDate"/);
+ assert.match(html,/id="crewNextDate"/);
+ assert.match(html,/id="crewCopyPrevious"/);
+ assert.match(html,/id="crewSaveCount"/);
+ assert.match(html,/id="crewSaveHours"/);
+ assert.match(html,/data-crew-step="1"/);
+ assert.match(html,/data-crew-step="-1"/);
+ assert.match(html,/for="crew-employee-e1"/);
+ assert.match(html,/inputmode="decimal"/);
+ assert.doesNotMatch(html,/[Cc]usto por hora|Custo diário|R\\$\\s*[0-9]/);
+});
