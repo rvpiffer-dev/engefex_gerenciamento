@@ -12,6 +12,7 @@
  let accessVersion='',sessionFiles=new Set();
  let confirmedState=null,patchSupported=null,compactReadSupported=null,refreshing=false,tokenRefresh=null,lastSync=null,lastAccessCheck=0,lastReadCheck=0,notificationReadIds=new Set();
  let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
+ let lastRefreshAttempt=0, refreshFailures=0;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
  const ownDirty=()=>!!client?.isDirty?.();
@@ -291,6 +292,9 @@
  }
  async function refreshRemote(force=false){
   if(phase!=='ready'||pending||document.hidden||refreshing||!navigator.onLine)return;
+  const now=Date.now(),minGap=refreshFailures?Math.min(300000,30000*Math.pow(2,Math.min(refreshFailures,4))):15000;
+  if(!force&&now-lastRefreshAttempt<minGap)return;
+  lastRefreshAttempt=now;
   refreshing=true;const generation=authGeneration,startRevision=revision,startWorkspace=workspace;
   const stillCurrent=()=>generation===authGeneration&&phase==='ready'&&!pending&&!ownDirty()&&revision===startRevision&&workspace===startWorkspace;
   try{
@@ -306,7 +310,8 @@
    (root.Obras.onlineValid||root.Obras.backupValid)(row.payload);client.acceptState(row.payload);
    confirmedState=structuredClone(row.payload);for(const id of root.LocalFiles.refs(row.payload))knownFiles.add(id);revision=Number(row.revision);
    paintStatus('Atualizado com alterações da equipe · revisão '+revision);
-  }finally{refreshing=false}
+  }catch(e){refreshFailures=Math.min(5,refreshFailures+1);throw e}finally{refreshing=false}
+  refreshFailures=0;
  }
 
  async function prepareBackupImport(){
@@ -372,7 +377,7 @@
   client=app;setupVisual();patchFileLoading();setPhase('login');
   try{const cached=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');if(cached?.refresh_token)session=cached}catch{}
   if(session)connect().catch(e=>{if(e.status===401||e.status===403){saveSession(null);setPhase('login','Sua sessão expirou. Entre novamente.')}else setPhase('error',e.message)});
-  setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},20000);
+  setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},60000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
  root.EngefexCloud={fullSnapshot,prepareBackupImport,markNotificationsRead,hasNotificationBeenRead:id=>notificationReadIds.has(id),loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending}};
