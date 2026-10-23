@@ -40,3 +40,16 @@ test('Resultado por obra inclui equipe sem gerar pagamento duplicado',()=>{
  assert.equal(a.outstanding,50000);
  assert.equal(b.crewCost,0);
 });
+
+test('Interação facilitada no celular possui seleção acessível, horas e atalhos',()=>{
+ const html=crew.page(state,'a');
+ assert.match(html,/id="crewPrevDate"/);
+ assert.match(html,/id="crewNextDate"/);
+ assert.match(html,/id="crewCopyPrevious"/);
+ assert.match(html,/id="crewSaveCount"/);
+ assert.match(html,/id="crewSaveTotal"/);
+ assert.match(html,/data-crew-step="1"/);
+ assert.match(html,/data-crew-step="-1"/);
+ assert.match(html,/for="crew-employee-e1"/);
+ assert.match(html,/inputmode="decimal"/);
+});
