@@ -50,7 +50,7 @@ function attach(s,persist,render,notify,v){
   const cells=[rname,sal?.values?.B,discount,day5,day20,sal?cost(sal):null];
   const rendered=document.createElement('tr');
   rendered.innerHTML=cells.map((x,i)=>'<td>'+ (i===0?esc(x):money(x))+'</td>').join('')+
-   '<td style="white-space:nowrap"><button class="button secondary" type="button" data-action="view">Visualizar</button> <button class="button secondary" type="button" data-action="print">Holerite</button> <button class="button secondary" type="button" data-action="edit">Editar</button> <button class="button secondary" type="button" data-action="del">Excluir</button></td>';
+   '<td style="white-space:nowrap"><button class="button secondary" type="button" data-action="print">Holerite</button> <button class="button secondary" type="button" data-action="edit">Editar</button> <button class="button secondary" type="button" data-action="del">Excluir</button></td>';
   tableBody.appendChild(rendered);
   const actions=originalButtons.get(id)||{};
   rendered.querySelector('[data-action="edit"]').onclick=()=>actions.edit?.click();
