@@ -12,6 +12,7 @@ const rows=s=>(s[key()]||[]).filter(r=>r.period===month);
 const nam=r=>r.employeeName||r.values?.A||'';
 function page(s,v){
  if(v!=='hr-payroll')return prior.page(s,v);
+ aba='sal';
  const all=rows(s);
  const filtered=all.filter(r=>(!name||nam(r).toLocaleLowerCase('pt-BR').includes(name.toLocaleLowerCase('pt-BR')))).sort((a,b)=>(order==='za'?-1:1)*nam(a).localeCompare(nam(b),'pt-BR'));
  const c=cols(),editable=!!w.EngefexAccess?.canWrite(v);
