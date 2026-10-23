@@ -29,4 +29,34 @@ assert.equal(all.result,28710000);
 assert.ok(render(state,'A').includes('profit-donut'));
 assert.ok(render(state,'A').includes('profit-monthly'));
 assert.ok(render({projects:[{id:'A',name:'Obra A',value:100000}],costs:[]},'A').includes('não representa lucro realizado'));
-console.log('Project profit: 12 verificações aprovadas.');
+
+const withBilling=JSON.parse(JSON.stringify(state));
+const n1={date:'2026-10-13',supplier:'Fornecedor A',invoice:'123',order:'PC1',amount:2000};
+const n2={date:'2026-10-14',supplier:'Fornecedor B',invoice:'124',order:'PC2',amount:3000};
+withBilling.measurements=[
+ {project:'A',number:'MED001',status:'Aprovada',directInvoices:[n1]},
+ {project:'A',number:'MED001',status:'Aprovada',directInvoices:[n1]},
+ {project:'A',number:'MED002',status:'Aprovada',directInvoices:[n1,n2]},
+ {project:'B',number:'MED003',status:'Aprovada',directInvoices:[{...n1,amount:4000}]},
+ {project:'A',number:'MED004',status:'Preparada',plannedDirectInvoices:[{...n1,invoice:'PENDENTE',amount:5000}]}
+];
+const billA=calculate(withBilling,'A'),billB=calculate(withBilling,'B'),billAll=calculate(withBilling,'all');
+assert.equal(billA.contract,10000000);
+assert.equal(billA.directBilling,500000);
+assert.equal(billA.netContract,9500000);
+assert.equal(billA.result,8510000);
+assert.equal(billA.expenses,a.expenses);
+assert.equal(billA.received,a.received);
+assert.equal(billA.remainingToReceive,5000000);
+assert.equal(billA.margin,billA.result/billA.netContract);
+assert.equal(billA.directInvoices.length,2);
+assert.equal(billA.duplicateDirectInvoices,1);
+assert.equal(billB.directBilling,400000);
+assert.equal(billAll.directBilling,900000);
+assert.equal(billAll.netContract,29100000);
+assert.equal(billAll.perProject[0].directBilling,500000);
+assert.ok(render(withBilling,'A').includes('Notas abatidas do empreendimento'));
+assert.ok(render(withBilling,'A').includes('MED001'));
+assert.ok(render(withBilling,'A').includes('Contrato líquido'));
+assert.equal(calculate({...withBilling,measurements:[]},'A').directBilling,0);
+console.log('Project profit: verificações do faturamento direto aprovadas.');

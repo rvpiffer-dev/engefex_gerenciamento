@@ -1,3 +1,10 @@
+## v4.18.30 — Faturamento direto no Resultado da obra
+
+- O painel de Receitas × Despesas exibe faturamento direto de medições aprovadas, contrato bruto, líquido e resultado revisado.
+- Contabilização única por nota com detalhamento de obra, medição, NF, fornecedor, pedido, data e valor.
+- Aditivos e contrato original preservados. Faturamento direto não é recebimento nem nova despesa.
+- Margem, comparativo entre obras, barra de despesas e saldo a receber usam o contrato líquido.
+
 ## v4.13.0 — Usuários e acessos
 
 - Matriz de Visualizar, Editar e Sem acesso por módulo e por tela.
