@@ -52,6 +52,7 @@ function attach(s,persist,render,notify,v){
   const values={...(old.values||{})};
   cols().forEach((_,i)=>{const col=String.fromCharCode(65+i),v=String(fields.get(col)??'').trim();values[col]=col==='A'?v:v===''?'':Number(v)});
   const record={...old,id,period:month,employeeName:values.A,values,status:String(fields.get('status')||'Rascunho')};
+  if(k==='hrPayroll'){record.monthlyHours=Number(fields.get('monthlyHours'))>0?Number(fields.get('monthlyHours')):220;record.employerCosts=Math.max(0,Number(fields.get('employerCosts'))||0)}
   if(index<0)state[k].push(record);else state[k][index]=record;
   try{await save(state,'Lançamento salvo na folha.');dlg.close()}catch(err){notify(err.message)}
  };
