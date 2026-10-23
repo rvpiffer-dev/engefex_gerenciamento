@@ -13,7 +13,7 @@ const nam=r=>r.employeeName||r.values?.A||'';
 function page(s,v){
  if(v!=='hr-payroll')return prior.page(s,v);
  const all=rows(s);
- const filtered=all.filter(r=>(!name||nam(r).toLocaleLowerCase('pt-BR').includes(name.toLocaleLowerCase('pt-BR')))&&(only==='todos'||(r.status||'Rascunho')===only)).sort((a,b)=>(order==='za'?-1:1)*nam(a).localeCompare(nam(b),'pt-BR'));
+ const filtered=all.filter(r=>(!name||nam(r).toLocaleLowerCase('pt-BR').includes(name.toLocaleLowerCase('pt-BR')))).sort((a,b)=>(order==='za'?-1:1)*nam(a).localeCompare(nam(b),'pt-BR'));
  const c=cols(),editable=!!w.EngefexAccess?.canWrite(v);
  const tr=filtered.map(r=>'<tr>'+c.map((_,i)=>{const k=String.fromCharCode(65+i);return '<td>'+F(k==='A'?nam(r):r.values?.[k]??'')+'</td>'}).join('')+'<td>'+E(r.status||'Rascunho')+'</td><td><button type="button" class="button secondary" data-rh-edit="'+E(r.id)+'">Editar</button> <button type="button" class="button secondary" data-rh-del="'+E(r.id)+'">Excluir</button></td></tr>').join('');
  return '<section class="page-head hr-hero"><div><h1>Folha de pagamento</h1><p>Salário dia 05 · Vale dia 20. Valores conforme planilha.</p></div></section>'+
@@ -38,7 +38,7 @@ function attach(s,persist,render,notify,v){
   if(!writable())return notify('Sem permissão para editar.');
   const r=rows(s).find(x=>x.id===id);dlg.dataset.id=id||'';
   document.getElementById('rhPayTitle').textContent=id?'Editar lançamento':'Adicionar lançamento';
-  document.getElementById('rhPayFields').innerHTML=cols().map((label,i)=>{const k=String.fromCharCode(65+i),value=r?.values?.[k]??'';return '<label class="hr-edit-field"><span>'+E(label)+'</span><input name="'+k+'" type="'+(k==='A'?'text':'number')+'" '+(k==='A'?'required':'step="0.01"')+' value="'+E(value)+'"></label>'}).join('')+'<label class="hr-edit-field"><span>Situação</span><select name="status">'+['Rascunho','Conferido','Pago'].map(x=>'<option '+((r?.status||'Rascunho')===x?'selected':'')+'>'+x+'</option>').join('')+'</select></label>';
+  document.getElementById('rhPayFields').innerHTML=cols().map((label,i)=>{const k=String.fromCharCode(65+i),value=r?.values?.[k]??'';return '<label class="hr-edit-field"><span>'+E(label)+'</span><input name="'+k+'" type="'+(k==='A'?'text':'number')+'" '+(k==='A'?'required':'step="0.01"')+' value="'+E(value)+'"></label>'}).join('');
   dlg.showModal();
  };
  document.getElementById('rhAdd').onclick=()=>edit('');
@@ -51,7 +51,7 @@ function attach(s,persist,render,notify,v){
   const index=state[k].findIndex(r=>r.id===id&&r.period===month),old=index<0?{}:state[k][index];
   const values={...(old.values||{})};
   cols().forEach((_,i)=>{const col=String.fromCharCode(65+i),v=String(fields.get(col)??'').trim();values[col]=col==='A'?v:v===''?'':Number(v)});
-  const record={...old,id,period:month,employeeName:values.A,values,status:String(fields.get('status')||'Rascunho')};
+  const record={...old,id,period:month,employeeName:values.A,values,status:old.status||'Rascunho'};
   if(k==='hrPayroll'){record.monthlyHours=Number(fields.get('monthlyHours'))>0?Number(fields.get('monthlyHours')):220;record.employerCosts=Math.max(0,Number(fields.get('employerCosts'))||0)}
   if(index<0)state[k].push(record);else state[k][index]=record;
   try{await save(state,'Lançamento salvo na folha.');dlg.close()}catch(err){notify(err.message)}
