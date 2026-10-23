@@ -50,24 +50,24 @@ begin
      'crewHourlyRates',
      coalesce((
        select jsonb_agg(jsonb_build_object(
-         'employeeId',coalesce(r->>'employeeId',''),
-         'employeeName',coalesce(r->>'employeeName',r->'values'->>'A',''),
-         'period',coalesce(r->>'period',''),
+         'employeeId',coalesce(pay->>'employeeId',''),
+         'employeeName',coalesce(pay->>'employeeName',pay->'values'->>'A',''),
+         'period',coalesce(pay->>'period',''),
          'hourlyRate', round((
-           (case when coalesce(r->'values'->>'B','') ~ '^[0-9]+([.,][0-9]+)?$'
-             then replace(r->'values'->>'B',',','.')::numeric else 0 end)
-           +(case when coalesce(r->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?$'
-             then replace(r->>'employerCosts',',','.')::numeric else 0 end)
+           (case when coalesce(pay->'values'->>'B','') ~ '^[0-9]+([.,][0-9]+)?$'
+             then replace(pay->'values'->>'B',',','.')::numeric else 0 end)
+           +(case when coalesce(pay->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?$'
+             then replace(pay->>'employerCosts',',','.')::numeric else 0 end)
          )/
-         (case when coalesce(r->>'monthlyHours','') ~ '^[0-9]+([.,][0-9]+)?$'
-                 and replace(r->>'monthlyHours',',','.')::numeric>0
-           then replace(r->>'monthlyHours',',','.')::numeric else 220 end),6),
-         'chargesMissing',(case when coalesce(r->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?$'
-           then replace(r->>'employerCosts',',','.')::numeric<=0 else true end)
+         (case when coalesce(pay->>'monthlyHours','') ~ '^[0-9]+([.,][0-9]+)?$'
+                 and replace(pay->>'monthlyHours',',','.')::numeric>0
+           then replace(pay->>'monthlyHours',',','.')::numeric else 220 end),6),
+         'chargesMissing',(case when coalesce(pay->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?$'
+           then replace(pay->>'employerCosts',',','.')::numeric<=0 else true end)
        ))
        from jsonb_array_elements(
          case when jsonb_typeof(s->'hrPayroll')='array' then s->'hrPayroll' else '[]'::jsonb end
-       ) r
+       ) pay
      ),'[]'::jsonb)
    );
  end if;
