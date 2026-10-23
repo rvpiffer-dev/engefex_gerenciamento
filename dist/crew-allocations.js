@@ -6,7 +6,7 @@
  const round=v=>Math.round((v+Number.EPSILON)*100)/100;
  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\([^)]*\)/g,'').replace(/\s+/g,' ').trim().toLocaleLowerCase('pt-BR');
  const dateBR=v=>v&&/^\d{4}-\d{2}-\d{2}$/.test(v)?v.slice(8,10)+'/'+v.slice(5,7)+'/'+v.slice(0,4):v;
- let pickedProject='',day='',draftKey='',draft=new Map(),busy=false,keyword='';
+ let pickedProject='',seenGlobalProject=null,day='',draftKey='',draft=new Map(),busy=false,keyword='';
  function active(e){return e.active!==false&&!/^(inativo|desligado)$/i.test(String(e.employmentStatus||''))}
  function employees(s){
   const catalog=Array.isArray(s.crewEmployees)?s.crewEmployees:s.hrEmployees||[];
@@ -43,7 +43,7 @@
  function summary(s,project){const entries=(s.crewAllocations||[]).filter(x=>!project||x.project===project);return {entries,count:entries.length,hours:entries.reduce((a,x)=>a+num(x.hours),0),cost:round(entries.reduce((a,x)=>a+num(x.total),0))}}
  function page(s,globalProject){
   const options=s.projects||[];if(!options.some(p=>p.id===pickedProject))pickedProject=options[0]?.id||'';
-  if(globalProject!=='all'&&options.some(p=>p.id===globalProject))pickedProject=globalProject;
+  if(globalProject!==seenGlobalProject){seenGlobalProject=globalProject;if(globalProject!=='all'&&options.some(p=>p.id===globalProject))pickedProject=globalProject;}
   if(!day)day=new Date().toLocaleDateString('sv-SE');
   ensureDraft(s);
   const people=employees(s),selected=selectedRows(s),dailyCost=round(selected.reduce((a,x)=>a+x.total,0));
