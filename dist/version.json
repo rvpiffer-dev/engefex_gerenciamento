@@ -1,6 +1,6 @@
 {
-  "version": "4.18.21",
+  "version": "4.18.22",
   "date": "2026-10-23",
-  "name": "Corrige erro null onclick no RH após remoção de Visualizar",
-  "previous_version": "4.18.20"
+  "name": "Equipe diária e centro de custos por obra, integrados ao RH",
+  "previous_version": "4.18.21"
 }

@@ -30,7 +30,16 @@
        return {id:c.id,project:c.project,group:groupOf(c),amount:total,paid,when:ym(when),date:when,
          description:c.description||'Despesa cadastrada',supplier:c.supplier||'',source:c.purchase?'Nota / compra':c.laborContract?'Medição de mão de obra':c.fixedExpense?'Despesa geral':'Lançamento'};
      });
-   const expenses=items.reduce((a,x)=>a+x.amount,0),paid=items.reduce((a,x)=>a+x.paid,0);
+   // Apontamentos internos são custos de produção, mas não geram duplicatas em Contas a Pagar.
+   const payableExpenses=items.reduce((a,x)=>a+x.amount,0),paid=items.reduce((a,x)=>a+x.paid,0);
+   const crew=(state.crewAllocations||[]).filter(a=>ids.has(a.project)&&Number(a.hours)>0&&Number(a.hourlyRate)>0).map(a=>({
+     id:a.id,project:a.project,group:'Mão de obra',amount:cents(a.total),paid:0,when:ym(a.date),date:a.date,
+     description:'Equipe própria · '+String(a.employeeName||'Funcionário')+' · '+Number(a.hours)+' h',
+     supplier:'Folha de pagamento',source:'Apontamento interno'
+   }));
+   const crewCost=crew.reduce((a,x)=>a+x.amount,0);
+   items.push(...crew);
+   const expenses=payableExpenses+crewCost;
    const receipts=(state.receipts||[]).filter(r=>ids.has(r.project))
      .map(r=>({project:r.project,amount:Math.max(0,cents(r.amount)),month:ym(r.date)}));
    const received=receipts.reduce((a,x)=>a+x.amount,0);
@@ -59,7 +68,7 @@
    });
    return {projects,items,contract,originalContract,approvedAmendments,expenses,paid,received,result:contract-expenses,
      margin:contract?((contract-expenses)/contract):null,remainingToReceive:Math.max(0,contract-received),
-     outstanding:Math.max(0,expenses-paid),grouped,monthly,undated,futureLabor,perProject};
+     outstanding:Math.max(0,payableExpenses-paid),crewCost,grouped,monthly,undated,futureLabor,perProject};
  }
  function render(state,selected='all'){
    const r=calculate(state,selected);
@@ -76,7 +85,7 @@
    const maxMonthly=Math.max(1,...r.monthly.flatMap(m=>[m.expense,m.received]));
    const moneyCards=[
      ['Contrato atualizado',r.contract,r.approvedAmendments?money(r.originalContract)+' original + '+money(r.approvedAmendments)+' em aditivos':'Contrato original, sem aditivos aprovados','contract'],
-     ['Despesas lançadas',r.expenses,r.items.length+' lançamentos de custo','expense'],
+     ['Custos registrados',r.expenses,r.items.length+' lançamentos (inclusive equipes)','expense'],
      ['Resultado parcial',r.result,r.items.length?'Contrato menos custos lançados':'Sem despesas registradas','result '+(r.result<0?'bad':'good')],
      ['Margem parcial',null,r.contract?pct(r.margin)+' do contrato':'Contrato não informado','margin']
    ];
@@ -117,7 +126,7 @@
       </section>
       <section class="profit-panel"><div class="profit-panel-heading"><div><span class="profit-label">CONTROLE FINANCEIRO</span><h3>Caixa e compromissos</h3></div></div>
         <div class="profit-mini"><span>Recebido de clientes</span><strong>${money(r.received)}</strong></div>
-        <div class="profit-mini"><span>Despesas pagas</span><strong>${money(r.paid)}</strong></div>
+        <div class="profit-mini"><span>Despesas pagas</span><strong>${money(r.paid)}</strong></div><div class="profit-mini"><span>Custo de equipes alocadas</span><strong>${money(r.crewCost)}</strong></div>
         <div class="profit-mini emphasis"><span>Fluxo líquido registrado</span><strong>${money(r.received-r.paid)}</strong></div>
         <div class="profit-mini"><span>Custos lançados ainda não pagos</span><strong>${money(r.outstanding)}</strong></div>
         <div class="profit-mini"><span>Saldo contratual ainda não recebido*</span><strong>${money(r.remainingToReceive)}</strong></div>
@@ -129,7 +138,7 @@
     <section class="profit-panel"><div class="profit-panel-heading"><div><span class="profit-label">RASTREABILIDADE</span><h3>Últimos lançamentos de despesas</h3></div><span class="profit-counter">${r.items.length} lançamentos</span></div>
       <div class="profit-table-wrap"><table class="profit-table"><thead><tr><th>Origem / descrição</th><th>Obra</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>${recent||'<tr><td colspan="4" class="profit-no-data">Nenhuma nota, medição de mão de obra ou despesa vinculada ainda.</td></tr>'}</tbody></table></div>
     </section>
-    <p class="profit-disclaimer"><strong>Critério de cálculo:</strong> resultado parcial = soma dos contratos originais e aditivos aprovados − soma das contas de custo vinculadas à obra. Notas confirmadas com rateio e medições de mão de obra liberadas já geram contas em <em>Contas a Pagar</em>; por isso, não são somadas novamente. Descontos e acréscimos de pagamento são considerados. Compras do estoque e despesas gerais ainda não atribuídas a uma obra ficam fora. Não é lucro líquido contábil: impostos, retenções, custos futuros e despesas não lançadas podem mudar o resultado.</p>
+    <p class="profit-disclaimer"><strong>Critério de cálculo:</strong> resultado parcial = soma dos contratos originais e aditivos aprovados − contas de custo vinculadas à obra − custo de equipes próprias apontadas. Equipes integram o resultado gerencial, mas não são despesas pagas nem contas a pagar. Notas confirmadas com rateio e medições de mão de obra liberadas já geram contas em <em>Contas a Pagar</em>; por isso, não são somadas novamente. Descontos e acréscimos de pagamento são considerados. Compras do estoque e despesas gerais ainda não atribuídas a uma obra ficam fora. Não é lucro líquido contábil: impostos, retenções, custos futuros e despesas não lançadas podem mudar o resultado.</p>
    </div>`;
  }
  const api={calculate,render};
