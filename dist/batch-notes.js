@@ -304,7 +304,7 @@ function draftFromDocument(doc,archive){
   installments:[],attachments:(archive.attachments||[]).slice(),total,
   importedTotal:total,importedSourceId:archive.sourceId,importedFiscalId:archive.id,
   importedFinancialDirection:finance,importedCategory:doc.category||'',
-  note:[text(raw,'Descrição do serviço'),text(raw,'Descrições produtos/serviços (resumo')),
+  note:[text(raw,'Descrição do serviço'),text(raw,'Descrições produtos/serviços (resumo)'),
     text(raw,'Observações fiscais / do pedido'),text(raw,'Notas de conferência'),
     'Importação Engefex: '+doc.signature,
     originalItems.length!==items.length?'Itens incompletos: conferir dados originais no arquivo fiscal.':'',
