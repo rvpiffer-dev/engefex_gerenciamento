@@ -1,6 +1,6 @@
 {
-  "version": "4.18.18",
+  "version": "4.18.19",
   "date": "2026-10-23",
-  "name": "Holerite prévia sem impressão automática; impressão apenas no botão",
-  "previous_version": "4.18.17"
+  "name": "Apontamento diário de equipes e custo de funcionários por obra",
+  "previous_version": "4.18.18"
 }
