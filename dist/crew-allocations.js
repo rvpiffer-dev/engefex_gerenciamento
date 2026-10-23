@@ -8,13 +8,27 @@
  const dateBR=v=>v&&/^\d{4}-\d{2}-\d{2}$/.test(v)?v.slice(8,10)+'/'+v.slice(5,7)+'/'+v.slice(0,4):v;
  const moveDate=(iso,delta)=>{const [y,m,d]=iso.split('-').map(Number),v=new Date(y,m-1,d+delta);return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0')};
  let pickedProject='',seenGlobalProject=null,day='',draftKey='',draft=new Map(),busy=false,keyword='';
- function active(e){return e.active!==false&&!/^(inativo|desligado)$/i.test(String(e.employmentStatus||''))}
+ // A lista operacional segue a folha de pagamento, NÃO o cadastro de RH.
+ // Uma pessoa aparece uma vez, usando a competência mais recente até a data escolhida.
  function employees(s){
-  const source=Array.isArray(s.crewEmployees)?s.crewEmployees:(s.hrEmployees||[]); const payroll=Array.isArray(s.crewHourlyRates)?s.crewHourlyRates:(s.hrPayroll||[]); const catalog=source.filter(e=>payroll.some(r=>String(r.employeeId||'')===String(e.id)||norm(r.employeeName||r.values?.A)===norm(e.name)));
-  const list=catalog.filter(active).map(e=>({id:String(e.id),name:String(e.name||''),role:String(e.role||'')}));
-  const ids=new Set(list.map(e=>e.id));
-  for(const a of s.crewAllocations||[])if(a.project===pickedProject&&a.date===day&&!ids.has(String(a.employeeId))){list.push({id:String(a.employeeId),name:String(a.employeeName||'Funcionário histórico'),role:'Inativo / histórico'});ids.add(String(a.employeeId))}
-  return list.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  const payroll=Array.isArray(s.crewHourlyRates)?s.crewHourlyRates:(s.hrPayroll||[]);
+  const nameOf=r=>String(r.employeeName||r.values?.A||'').trim();
+  const valid=payroll.filter(r=>/^\d{4}-\d{2}$/.test(String(r.period||''))&&nameOf(r)&&!/^totais?\s*:?\s*$/i.test(nameOf(r)));
+  const dated=valid.filter(r=>String(r.period)<=day.slice(0,7));
+  const latest=dated.reduce((a,r)=>String(r.period)>a?String(r.period):a,'');
+  if(!latest)return [];
+  const idsByName=new Map();
+  for(const r of valid)if(r.employeeId&&!idsByName.has(norm(nameOf(r))))idsByName.set(norm(nameOf(r)),String(r.employeeId));
+  const people=new Map();
+  for(const r of dated)if(r.period===latest){
+   const name=nameOf(r),key=norm(name);
+   if(!people.has(key))people.set(key,{
+    id:idsByName.get(key)||'payroll:'+key,
+    name,
+    role:''
+   });
+  }
+  return [...people.values()].sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
  }
  function payrollCandidates(s,employee,date){
   const arr=Array.isArray(s.crewHourlyRates)?s.crewHourlyRates:s.hrPayroll||[];
@@ -67,7 +81,7 @@
   }).join('');
   const history=[...new Map((s.crewAllocations||[]).filter(a=>a.project===pickedProject).map(a=>[a.date,a.date])).values()].sort().reverse().slice(0,35)
    .map(date=>{const rows=forDay(s,pickedProject,date),amount=round(rows.reduce((a,x)=>a+num(x.total),0));return '<tr><td><button type="button" class="text-btn" data-crew-day="'+esc(date)+'">'+esc(dateBR(date))+'</button></td><td>'+rows.length+'</td><td class="num">'+rows.reduce((a,x)=>a+num(x.hours),0).toLocaleString('pt-BR')+' h</td></tr>'}).join('');
-  return '<div class="crew-screen"><section class="crew-hero"><div><p class="crew-overline">OBRAS · CENTRO DE CUSTOS</p><h2>Alocação diária de equipes</h2><p>Escolha a obra, toque nos funcionários e ajuste as horas. Valores financeiros não são mostrados aqui.</p></div><span class="crew-symbol">👷</span></section>'+
+  return '<div class="crew-screen"><section class="crew-hero"><div><p class="crew-overline">OBRAS · CENTRO DE CUSTOS</p><h2>Alocação diária de equipes</h2><p>Lista vinculada à folha de pagamento. Escolha a obra, marque as pessoas e ajuste as horas.</p></div><span class="crew-symbol">👷</span></section>'+
    (!options.length?'<div class="notice">Cadastre uma obra para iniciar os apontamentos.</div>':
    '<section class="panel crew-panel"><div class="crew-fields"><label>Obra<select id="crewProject">'+optionsHtml+'</select></label><div class="crew-date-field"><label for="crewDate">Data da alocação</label><div class="crew-date-buttons"><button type="button" id="crewPrevDate" class="button secondary" aria-label="Dia anterior">‹</button><input type="date" id="crewDate" value="'+esc(day)+'"><button type="button" id="crewNextDate" class="button secondary" aria-label="Dia seguinte">›</button></div></div><label>Jornada padrão (horas)<input type="number" id="crewDefaultHours" inputmode="decimal" min="0.25" max="24" step="0.25" value="8"></label><div class="crew-actions"><button type="button" class="button secondary" id="crewApplyHours">Aplicar horas aos selecionados</button></div></div>'+
    '<div class="crew-metrics"><div><span>Funcionários selecionados</span><strong id="crewPeople">'+selected.length+'</strong></div><div><span>Horas previstas</span><strong id="crewHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div></div><div class="crew-toolbar"><input id="crewSearch" type="search" placeholder="Buscar funcionário..." value="'+esc(keyword)+'" aria-label="Buscar funcionários"><div class="crew-quick-actions"><button type="button" class="button secondary" id="crewCopyPrevious" '+(earlier?'':'disabled')+'>↻ Copiar última equipe</button><button type="button" class="button secondary" id="crewAll">✓ Selecionar todos</button><button type="button" class="button secondary" id="crewClear">Limpar</button></div></div>'+
