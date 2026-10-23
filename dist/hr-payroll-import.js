@@ -38,7 +38,7 @@ async function parse(file){
  const advances=out['Vale']||Object.entries(out).find(([k])=>/^vale/i.test(k))?.[1];
  if(!salary||!advances)throw Error('A planilha precisa conter as abas Salario - Set (ou Salário) e Vale.');
  const entries=salary.filter(r=>typeof r.A==='string'&&r.A.trim()&&!/^nome|total/i.test(r.A)).map(r=>({name:r.A,values:Object.fromEntries('ABCDEFGHIJKLMNO'.split('').map(k=>[k,val(r,k)]))}));
- const vs=advances.filter(r=>typeof r.A==='string'&&r.A.trim()).map(r=>({name:r.A,amount:num(r.C)}));
+ const vs=advances.filter(r=>typeof r.A==='string'&&r.A.trim()&&!/^total|nome/i.test(r.A)).map(r=>({name:r.A,amount:num(r.C),values:{...r}}));
  for(const e of entries){let matches=vs.filter(v=>norm(v.name)===norm(e.name));if(matches.length===1)e.valeSheet=matches[0].amount;else e.valeSheet=null;}
  return {entries,advances:vs};
 }
@@ -103,6 +103,7 @@ function attach(s,persist,render,notify,view){
    if(!confirm('Importar competência '+selectedPeriod+'?\n'+summary+'\nAs linhas existentes deste mês serão substituídas, mantendo todos os outros meses.'))return;
    const next=structuredClone(s);
    next.hrPayroll=(next.hrPayroll||[]).filter(r=>r.period!==selectedPeriod).concat(records);
+   next.hrPayrollVale=(next.hrPayrollVale||[]).filter(r=>r.period!==selectedPeriod).concat(advances.map(v=>({id:crypto.randomUUID(),period:selectedPeriod,employeeName:v.name,values:v.values,status:'Rascunho'})));
    const result=await persist(next,'Folha '+selectedPeriod+' salva no Supabase.');
    if(result===false)throw Error('O Supabase não confirmou o salvamento.');
    notify('Importação salva: '+summary);render();
