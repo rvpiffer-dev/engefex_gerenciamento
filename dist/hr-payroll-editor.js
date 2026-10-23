@@ -39,6 +39,15 @@ function attach(s,persist,render,notify,v){
   const r=rows(s).find(x=>x.id===id);dlg.dataset.id=id||'';
   document.getElementById('rhPayTitle').textContent=id?'Editar lançamento':'Adicionar lançamento';
   document.getElementById('rhPayFields').innerHTML='<label class="hr-edit-field"><span>Funcionário cadastrado</span><select name="employeeId"><option value="">Selecionar funcionário</option>'+((s.hrEmployees||[]).map(e=>'<option value="'+E(e.id)+'" '+(e.id===r?.employeeId?'selected':'')+'>'+E(e.name)+'</option>').join(''))+'</select></label>'+cols().map((label,i)=>{const k=String.fromCharCode(65+i),value=r?.values?.[k]??'';return '<label class="hr-edit-field"><span>'+E(label)+'</span><input name="'+k+'" type="'+(k==='A'?'text':'number')+'" '+(k==='A'?'required':'step="0.01"')+' value="'+E(value)+'"></label>'}).join('');
+  const employeeSelect=document.querySelector('#rhPayFields select[name="employeeId"]');
+  employeeSelect?.addEventListener('change',()=>{
+   const employee=(s.hrEmployees||[]).find(x=>x.id===employeeSelect.value);
+   if(!employee)return;
+   const nameInput=document.querySelector('#rhPayFields input[name="A"]');
+   if(nameInput)nameInput.value=employee.name||'';
+   const salaryInput=document.querySelector('#rhPayFields input[name="B"]');
+   if(salaryInput&&!salaryInput.value&&employee.baseSalary!=null)salaryInput.value=employee.baseSalary;
+  });
   dlg.showModal();
  };
  document.getElementById('rhAdd').onclick=()=>edit('');
