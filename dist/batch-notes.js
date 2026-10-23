@@ -9,7 +9,7 @@
  const $=x=>document.querySelector(x);
  const money=n=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(n)||0);
  const uid=()=>root.crypto?.randomUUID?.()||'batch-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
- let api,documents=[],selection=new Set(),busy=false,filename='',associatedFiles=new Map(),search='',active=false,mode='archive';
+ let api,documents=[],selection=new Set(),busy=false,filename='',associatedFiles=new Map(),search='',active=false;
  const field=(r,k)=>r?.[k]??'';
  const financialCategories=s=>root.EngefexFinancialCategories?.list?.(s)||(Array.isArray(s?.costCategories)?s.costCategories.filter(c=>c&&c.active!==false&&c.code&&c.name).map(c=>c.code+'-'+c.name):D.CATEGORIES);
  const text=(r,k)=>String(field(r,k)).trim();
@@ -122,7 +122,7 @@
   active=true;
   $('#readerTitle').textContent='Lançamento em lote — Notas e documentos';
   $('#readerContent').innerHTML='<div class="reader-page batch-notes">'+
-   '<p class="notice neutral">Importe a planilha com as abas <strong>Documentos, Itens e Vencimentos</strong>. Cada documento terá sua própria seleção. Nenhuma nota desmarcada será importada.</p>'+
+   '<p class="notice neutral">Todas as notas da planilha são selecionadas inicialmente para serem cadastradas como <strong>Rascunho</strong> em Compras e Notas. Você pode desmarcar as que não deseja importar. Nenhuma delas gerará Contas a Pagar até ser conferida e confirmada individualmente.</p>'+
    '<div class="batch-upload"><label>Planilha Excel (.xlsx)<input type="file" id="batchNotesExcel" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></label>'+
    '<label>PDFs originais ou ZIP de PDFs (opcional)<input type="file" id="batchNotesPDFs" multiple accept=".pdf,.zip,application/pdf,application/zip"></label></div>'+
    '<p class="section-note" id="batchNotesFilename">'+h(filename?filename+' · '+documents.length+' registros reconhecidos':'Selecione a planilha para começar.')+'</p>'+
@@ -150,7 +150,7 @@
     seen.add(sig);
     return {id:id+'-'+i,signature:sig,repeat,raw,items:im.get(id)||[],due:dm.get(id)||[],sourceText:tm.get(id)||[],project:api.getProject()==='all'?'':api.getProject(),stage:'',category:''};
    });
-   filename=file.name;selection.clear();search='';mode='archive';associatedFiles.clear();
+   filename=file.name;selection=new Set(documents.map(d=>d.id));search='';associatedFiles.clear();
    if($('#batchNotesFilename'))$('#batchNotesFilename').textContent=filename+' · '+documents.length+' documentos';
    paint();
   }catch(err){message(err.message)}finally{busy=false}
@@ -202,11 +202,10 @@
      '<td class="num">'+(val===null?'—':money(val))+'</td>'+
      '<td><select data-batch-project="'+h(d.id)+'">'+projectOptions(d.project,s)+'</select></td>'+
      '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+ '<td><select data-batch-category="'+h(d.id)+'"><option value="">Conferir...</option>'+financialCategories(s).map(c=>'<option value="'+h(c)+'" '+(c===d.category?'selected':'')+'>'+h(c)+'</option>').join('')+'</select></td>'+ 
-     '<td>'+ (issue?'<span class="tag amber">'+h(issue)+'</span>':(outgoing(r)?'<span class="tag green">Contas a pagar</span>':'<span class="tag">Conferir destino</span>'))+'</td></tr>';
+     '<td>'+ (issue?'<span class="tag amber">'+h(issue)+'</span>':(outgoing(r)?'<span class="tag">Rascunho · a pagar após confirmação</span>':'<span class="tag amber">Rascunho · conferir destino</span>'))+'</td></tr>';
     }).join('')+'</tbody></table></div>'+
-    '<div class="batch-import-footer"><label class="batch-check-finance"><input type="checkbox" id="batchGenerateAccounts" '+(mode==='finance'?'checked':'')+'> Gerar Contas a Pagar dos documentos aptos (exige obra/etapa ou Geral, fornecedor, data, valor e vencimento)</label>'+
-    '<p class="muted small">Sem essa opção, os documentos selecionados serão guardados para conferência, sem gerar despesas. Notas repetidas são ignoradas. Anexos em PDF só serão enviados se você os selecionar acima.</p>'+
-    '<button type="button" class="button primary" id="batchSaveSelected" '+(!selection.size?'disabled':'')+'>Importar somente as '+selection.size+' selecionada(s)</button></div>';
+    '<div class="batch-import-footer"><p class="muted small">Todas as selecionadas serão lançadas em Compras e Notas como rascunhos, inclusive com dados financeiros incompletos. Notas já cadastradas e documentos exatamente repetidos serão ignorados para evitar duplicação. Nenhuma despesa será gerada agora. PDFs serão enviados somente se você os selecionar.</p>'+
+    '<button type="button" class="button primary" id="batchSaveSelected" '+(!selection.size?'disabled':'')+'>Cadastrar '+selection.size+' nota(s) como rascunho</button></div>';
   container.querySelectorAll('[data-batch-check]').forEach(el=>el.onchange=()=>{
    if(el.checked)selection.add(el.dataset.batchCheck);else selection.delete(el.dataset.batchCheck);
    paint();
@@ -225,7 +224,6 @@
   $('#batchClearAll').onclick=()=>{selection.clear();paint()};
   $('#batchSelectSafe').onclick=()=>{selection.clear();documents.filter(d=>!existing(s,d)&&!d.repeat&&!related(d.raw)&&outgoing(d.raw)).forEach(d=>selection.add(d.id));paint()};
   $('#batchSearch').oninput=e=>{search=e.target.value;paint();$('#batchSearch')?.focus()};
-  $('#batchGenerateAccounts').onchange=e=>{mode=e.target.checked?'finance':'archive'};
   $('#batchSaveSelected').onclick=commit;
  }
  function schedule(doc,amount){
@@ -281,68 +279,99 @@
   try{P.validate(s,p)}catch(error){return {error:'Não passou na validação financeira: '+error.message}}
   return {purchase:p};
  }
- async function commit(){
-  if(busy)return;
-  const chosen=selectedRows(),box=$('#batchGenerateAccounts');
-  if(!chosen.length)return message('Marque pelo menos uma nota.');
-  const generate=!!box?.checked,s=api.getState(),unique=[],dups=[],invalid=[],ready=[];
-  const seen=new Set();
-  for(const d of chosen){
-   const reason=existing(s,d)||d.repeat||seen.has(d.signature)?'Já existe / duplicada':'';
-   if(reason){dups.push(d);continue}
-   seen.add(d.signature);unique.push(d);
-   if(generate){const check=transactionDoc(s,d);if(check.error)invalid.push({doc:d,reason:check.error});else ready.push({doc:d,purchase:check.purchase})}
-  }
-  if(!unique.length)return message('Todas as notas escolhidas já estão cadastradas ou são repetidas.');
-  let summary='Você selecionou '+chosen.length+' documento(s).\n'+unique.length+' serão guardados no arquivo fiscal; '+dups.length+' repetido(s) serão ignorados.';
-  if(generate){summary+='\n'+ready.length+' gerarão Contas a Pagar; '+invalid.length+' ficarão pendentes, sem lançar despesas.\nAs notas aptas gerarão custos e parcelas. Verifique obra, etapa, categoria e vencimentos.';if(invalid.length)summary+='\nPendências (primeiras 5): '+invalid.slice(0,5).map(x=>lineName(x.doc)+': '+x.reason).join(' | ');}
-  summary+='\n\nConfirma a importação somente das notas selecionadas?';
-  if(!root.confirm(summary))return;
-  busy=true;
-  try{
-   if(root.EngefexAccess&&!root.EngefexAccess.canWrite('supplies'))throw Error('Sem permissão para editar Compras e Notas.');
-   root.EngefexCloud?.requireWrite();
-   const next=D.clone(s);next.fiscalImports=next.fiscalImports||[];
-   const docsMap=new Map(),pdfMap=new Map();
-   for(const d of unique){
-    let attachment=null;
-    const source=norm(text(d.raw,'Arquivo de origem no RAR'));
-    const file=associatedFiles.get(source)||associatedFiles.get(norm(text(d.raw,'Arquivo PDF extraído')));
-    if(file){
-     const fileKey=norm(file.name);
-     if(!pdfMap.has(fileKey)){
-      const prepared=await root.LocalFiles.prepare(file);
-      await root.LocalFiles.put([prepared]);
-      pdfMap.set(fileKey,{id:prepared.id,name:prepared.name,type:prepared.type});
-     }
-     attachment=pdfMap.get(fileKey);
-    }
-    const archived={id:uid(),sourceId:text(d.raw,'ID da linha'),signature:d.signature,sourceExcel:filename,
-     originalDocument:text(d.raw,'Arquivo de origem no RAR'),importedAt:new Date().toISOString(),
-     project:d.project||'',stage:d.stage||'',raw:d.raw,items:d.items,due:d.due,
-     status:'Pendente de conferência',purchaseId:'',category:d.category||'',attachments:attachment?[attachment]:[]};
-    next.fiscalImports.push(archived);docsMap.set(d.id,archived);
-   }
-   for(const item of ready){
-    const archived=docsMap.get(item.doc.id);if(!archived)continue;
-    item.purchase.attachments=archived.attachments.slice();
-    const processed=P.save(next,item.purchase);
-    for(const cost of processed.costs.filter(c=>c.purchase===item.purchase.id)){cost.category=item.doc.category;D.validateRecord(processed,'costs',cost)}
-    Object.assign(next,processed);archived.purchaseId=item.purchase.id;archived.status='Lançado em Contas a Pagar';
-    // P.save clona o estado; atualizar registro no novo snapshot.
-    const stored=next.fiscalImports.find(a=>a.id===archived.id);if(stored)Object.assign(stored,archived);
-   }
-   next.history.unshift({id:uid(),time:new Date().toISOString(),kind:'fiscalImport',record:filename,
-    action:'Lançamento em lote: '+unique.length+' documentos arquivados e '+ready.length+' contas cadastradas',
-    after:{source:filename,documents:unique.map(d=>d.signature),financial:ready.map(d=>d.purchase.id),skipped:dups.length}});
-   D.onlineValid(next);
-   const confirmed=await api.save(next);
-   if(confirmed===false)throw Error('O banco não confirmou a importação.');
-   busy=false;active=false;$('#reader').close();api.render();
-   api.toast(unique.length+' documento(s) importados. '+ready.length+' lançados no financeiro; '+invalid.length+' aguardando conferência.');
-  }catch(err){message(err.message);busy=false}
+function draftFromDocument(doc,archive){
+ const raw=doc.raw,total=number(field(raw,'Valor total do documento / a pagar'));
+ const originalItems=doc.items||[],items=[];
+ for(const line of originalItems){
+  const desc=text(line,'Descrição item'),q=number(field(line,'Quantidade')),amount=number(field(line,'Valor total item'));
+  if(!desc||q===null||q<=0||amount===null||amount<0)continue;
+  items.push({id:uid(),description:desc,unit:text(line,'Unidade')||'un',quantity:q,unitPrice:amount/q,total:amount,budgetItem:''});
  }
-
+ const allItemsValid=items.length>0&&items.length===originalItems.length;
+ const sum=items.reduce((n,item)=>n+Math.round(item.total*100),0)/100;
+ const adjustment=allItemsValid&&total!==null?Math.round((total-sum)*100)/100:0;
+ const type=text(raw,'Tipo de documento'),numberDoc=text(raw,'Número NF / fatura / nota');
+ const key=text(raw,'Chave de acesso NFC-e / NF-e / NFS-e').replace(/\D/g,'');
+ const destination=text(raw,'Destino financeiro sugerido');
+ const finance=outgoing(raw)?'payable':norm(destination).includes('receber')?'receivable':'unknown';
+ const p=P.fresh(doc.project||'');
+ Object.assign(p,{
+  id:uid(),project:doc.project||'',destination:doc.project==='Geral'?'general':'work',
+  kind:/nf/i.test(type)?'Nota fiscal':'Compra',number:numberDoc,
+  series:text(raw,'Série da NF'),supplier:text(raw,'Emitente / fornecedor / prestador'),
+  supplierDocument:text(raw,'CNPJ fornecedor'),date:date(field(raw,'Data de emissão')),
+  status:'Rascunho',accessKey:key.length===44?key:'',items,adjustment,
+  installments:[],attachments:(archive.attachments||[]).slice(),total,
+  importedTotal:total,importedSourceId:archive.sourceId,importedFiscalId:archive.id,
+  importedFinancialDirection:finance,importedCategory:doc.category||'',
+  note:[text(raw,'Descrição do serviço'),text(raw,'Descrições produtos/serviços (resumo')),
+    text(raw,'Observações fiscais / do pedido'),text(raw,'Notas de conferência'),
+    'Importação Engefex: '+doc.signature,
+    originalItems.length!==items.length?'Itens incompletos: conferir dados originais no arquivo fiscal.':'',
+    doc.due?.length?'Vencimentos originais disponíveis no arquivo fiscal para conferência.':''
+  ].filter(Boolean).join('\n')
+ });
+ if(doc.project&&doc.project!=='Geral'&&doc.stage&&archive.stage){
+  for(const item of p.items)item.allocations=[{destination:'work',project:doc.project,stage:doc.stage,share:100}];
+ }
+ return p;
+}
+async function commit(){
+ if(busy)return;
+ const chosen=selectedRows();
+ if(!chosen.length)return message('Marque pelo menos uma nota.');
+ const s=api.getState(),unique=[],duplicates=[],seen=new Set();
+ for(const doc of chosen){
+  const reason=existing(s,doc)||(doc.repeat||seen.has(doc.signature)?'Duplicada neste Excel':'');
+  if(reason){duplicates.push(doc);continue}
+  seen.add(doc.signature);unique.push(doc);
+ }
+ if(!unique.length)return message('Todas as notas escolhidas já estão cadastradas ou repetidas.');
+ const confirmText='Cadastrar '+unique.length+' documento(s) como RASCUNHO em Compras e Notas?\n'+
+  duplicates.length+' repetido(s) serão ignorados.\n'+
+  'Nenhuma compra será confirmada e nenhuma conta a pagar será criada.\n'+
+  'Você poderá conferir e confirmar cada nota depois.';
+ if(!root.confirm(confirmText))return;
+ busy=true;
+ try{
+  if(root.EngefexAccess&&!root.EngefexAccess.canWrite('supplies'))throw Error('Sem permissão para editar Compras e Notas.');
+  root.EngefexCloud?.requireWrite();
+  const next=D.clone(s);next.fiscalImports=next.fiscalImports||[];next.purchases=next.purchases||[];
+  const pdfMap=new Map();
+  for(const doc of unique){
+   const source=norm(text(doc.raw,'Arquivo de origem no RAR'));
+   const file=associatedFiles.get(source)||associatedFiles.get(norm(text(doc.raw,'Arquivo PDF extraído')));
+   let attachment=null;
+   if(file){
+    const fileKey=norm(file.name);
+    if(!pdfMap.has(fileKey)){
+     const prepared=await root.LocalFiles.prepare(file);
+     await root.LocalFiles.put([prepared]);
+     pdfMap.set(fileKey,{id:prepared.id,name:prepared.name,type:prepared.type});
+    }
+    attachment=pdfMap.get(fileKey);
+   }
+   const archive={id:uid(),sourceId:text(doc.raw,'ID da linha'),signature:doc.signature,
+    sourceExcel:filename,originalDocument:text(doc.raw,'Arquivo de origem no RAR'),
+    importedAt:new Date().toISOString(),project:doc.project||'',stage:doc.stage||'',
+    raw:doc.raw,items:doc.items,due:doc.due,status:'Rascunho em Compras e Notas',
+    category:doc.category||'',purchaseId:'',attachments:attachment?[attachment]:[]};
+   const purchase=draftFromDocument(doc,archive);
+   P.validate(next,purchase);
+   archive.purchaseId=purchase.id;
+   next.purchases.push(purchase);
+   next.fiscalImports.push(archive);
+  }
+  next.history.unshift({id:uid(),time:new Date().toISOString(),kind:'fiscalImport',record:filename,
+   action:'Importação em lote: '+unique.length+' documentos cadastrados como rascunho em Compras e Notas',
+   after:{source:filename,documents:unique.map(d=>d.signature),purchaseIds:next.purchases.slice(-unique.length).map(p=>p.id),skippedDuplicates:duplicates.length,createdPayables:0}});
+  D.onlineValid(next);
+  const saved=await api.save(next);
+  if(saved===false)throw Error('O Supabase não confirmou o salvamento. Confira a conexão antes de tentar novamente.');
+  busy=false;active=false;$('#reader').close();api.render();
+  api.toast(unique.length+' nota(s) cadastrada(s) como rascunho. '+duplicates.length+' repetida(s) ignorada(s). Nenhuma conta a pagar foi criada.');
+ }catch(err){message(err.message);busy=false}
+}
  function reviewPending(id){
   const source=api.getState(),archive=(source.fiscalImports||[]).find(r=>r.id===id);
   if(!archive)return api.toast('Documento importado não encontrado.');
@@ -415,11 +444,14 @@
  function archive(state){
   const rows=state.fiscalImports||[];
   if(!rows.length)return '';
-  const q=rows.filter(r=>r.status==='Lançado em Contas a Pagar').length;
-  return '<details class="panel batch-archive"><summary>📁 Documentos fiscais importados: '+rows.length+' · '+q+' lançados · '+(rows.length-q)+' pendentes</summary>'+
-   '<div class="table-wrap"><table><thead><tr><th>Documento</th><th>Fornecedor</th><th>Valor</th><th>Vínculo</th><th>Situação</th><th></th></tr></thead><tbody>'+
-   rows.slice().reverse().slice(0,350).map(r=>'<tr><td>'+h(text(r.raw,'Tipo de documento'))+' '+h(text(r.raw,'Número NF / fatura / nota')||r.sourceId)+'</td><td>'+h(text(r.raw,'Emitente / fornecedor / prestador'))+'</td><td>'+h(field(r.raw,'Valor total do documento / a pagar'))+'</td><td>'+h(state.projects.find(p=>p.id===r.project)?.name||r.project||'Não vinculado')+'</td><td>'+h(r.status)+'</td><td><button class="text-btn" data-action="batch-view:'+h(r.id)+'">Ver todos os campos</button>'+(r.purchaseId?'':' <button class="text-btn" data-action="batch-pending:'+h(r.id)+'">Conferir / lançar</button>')+'</td></tr>').join('')+
-   '</tbody></table></div></details>';
+  const confirmed=rows.filter(r=>(state.purchases||[]).some(p=>p.id===r.purchaseId&&p.status==='Confirmada')||r.status==='Lançado em Contas a Pagar').length;
+  const drafts=rows.filter(r=>(state.purchases||[]).some(p=>p.id===r.purchaseId&&p.status==='Rascunho')).length;
+  return '<details class="panel batch-archive"><summary>📁 Documentos fiscais importados: '+rows.length+' · '+drafts+' rascunhos · '+confirmed+' confirmados · '+(rows.length-drafts-confirmed)+' para conferir</summary>'+
+   '<div class="table-wrap"><table><thead><tr><th>Documento</th><th>Fornecedor</th><th>Valor</th><th>Obra</th><th>Situação</th><th>Ações</th></tr></thead><tbody>'+
+   rows.slice().reverse().slice(0,350).map(r=>{
+    const purchase=(state.purchases||[]).find(p=>p.id===r.purchaseId),status=purchase?(purchase.status==='Confirmada'?'Confirmada / Contas a Pagar':purchase.status):r.status;
+    return '<tr><td>'+h(text(r.raw,'Tipo de documento'))+' '+h(text(r.raw,'Número NF / fatura / nota')||r.sourceId)+'</td><td>'+h(text(r.raw,'Emitente / fornecedor / prestador'))+'</td><td>'+h(field(r.raw,'Valor total do documento / a pagar'))+'</td><td>'+h(state.projects.find(p=>p.id===r.project)?.name||r.project||'A definir')+'</td><td>'+h(status)+'</td><td><button class="text-btn" data-action="batch-view:'+h(r.id)+'">Ver dados fiscais</button> '+(purchase?'<button class="text-btn" data-action="purchase-edit:'+h(purchase.id)+'">Editar '+(purchase.status==='Rascunho'?'rascunho':'compra')+'</button>':'<button class="text-btn" data-action="batch-pending:'+h(r.id)+'">Conferir / lançar</button>')+'</td></tr>';
+   }).join('')+'</tbody></table></div></details>';
  }
  function detail(id){
   const doc=(api.getState().fiscalImports||[]).find(x=>x.id===id);if(!doc)return api.toast('Documento não encontrado.');
