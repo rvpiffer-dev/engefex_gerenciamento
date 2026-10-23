@@ -82,6 +82,19 @@ function attach(s,persist,render,notify){
   }else{
    fields.innerHTML=field('Nome completo','<input name="name" required maxlength="150" value="'+h(item?.name||'')+'" placeholder="Nome do colaborador">')+
    field('Categoria','<select name="category">'+choice('outros','Demais funcionários',item?.category||'outros')+choice('pedreiros','Pedreiros',item?.category||'outros')+'</select>')+
+   field('CPF','<input name="cpf" value="'+h(item?.cpf||'')+'">')+
+   field('RG','<input name="rg" value="'+h(item?.rg||'')+'">')+
+   field('Nascimento','<input type="date" name="birthDate" value="'+h(item?.birthDate||'')+'">')+
+   field('Telefone','<input name="phone" value="'+h(item?.phone||'')+'">')+
+   field('Endereço','<input name="address" value="'+h(item?.address||'')+'">')+
+   field('Função','<input name="role" value="'+h(item?.role||'')+'">')+
+   field('Admissão','<input type="date" name="admissionDate" value="'+h(item?.admissionDate||'')+'">')+
+   field('Vínculo','<select name="companyStatus">'+choice('engefex','Engefex',item?.companyStatus||'engefex')+choice('outro_cnpj','Outro CNPJ',item?.companyStatus||'engefex')+choice('afastado','Afastado',item?.companyStatus||'engefex')+'</select>')+
+   field('Salário-base (R$)','<input type="number" min="0" step="0.01" name="baseSalary" value="'+h(item?.baseSalary??'')+'">')+
+   field('Horas mensais','<input type="number" min="1" step="1" name="monthlyHours" value="'+h(item?.monthlyHours||220)+'">')+
+   field('Início do período aquisitivo','<input type="date" name="vacationPeriodStart" value="'+h(item?.vacationPeriodStart||'')+'">')+
+   field('Documentos','<p>ASO, NRs e certificados são lançados na aba Documentos, vinculados por este cadastro.</p>')+
+   field('Observações','<textarea name="spreadsheetNote">'+h(item?.spreadsheetNote||'')+'</textarea>')+
    (kind==='employee'?field('Situação','<select name="active">'+choice('true','Ativo',isActive(item)?'true':'false')+choice('false','Inativo',isActive(item)?'true':'false')+'</select>'):'');
   }
   document.getElementById('hrEditorSave').textContent=kind.startsWith('new')?'Cadastrar':'Salvar alterações';editModal.showModal();
@@ -99,8 +112,11 @@ function attach(s,persist,render,notify){
   }else{
    const name=root.EngefexNameCase(String(data.get('name')||''));if(!name)return notify('Informe o nome.');
    const category=String(data.get('category'));
-   if(editorMode==='employee'){const target=next.hrEmployees.find(x=>x.id===editorId);if(!target)return notify('Funcionário não encontrado.');const active=data.get('active')==='true';if(isActive(target)!==active)target.employmentChangedAt=new Date().toISOString();Object.assign(target,{name,category,active,employmentStatus:active?'ativo':'inativo'})}
-   else next.hrEmployees.push({id:crypto.randomUUID(),name,category,active:true,employmentStatus:'ativo'});
+   const extras=Object.fromEntries(['cpf','rg','birthDate','phone','address','role','admissionDate','companyStatus','spreadsheetNote','vacationPeriodStart'].map(k=>[k,String(data.get(k)||'')]));
+   extras.baseSalary=data.get('baseSalary')===''?null:Number(data.get('baseSalary'));
+   extras.monthlyHours=Number(data.get('monthlyHours'))||220;
+   if(editorMode==='employee'){const target=next.hrEmployees.find(x=>x.id===editorId);if(!target)return notify('Funcionário não encontrado.');const active=data.get('active')==='true';if(isActive(target)!==active)target.employmentChangedAt=new Date().toISOString();Object.assign(target,{name,category,active,employmentStatus:active?'ativo':'inativo'},extras)}
+   else next.hrEmployees.push({id:crypto.randomUUID(),name,category,active:true,employmentStatus:'ativo',...extras});
   }
   const save=document.getElementById('hrEditorSave');save.disabled=true;save.textContent='Salvando…';
   try{await persist(next,'Dados de RH salvos.');closeEditor();render()}catch(err){notify(err.message||'Erro ao salvar.');save.disabled=false;save.textContent='Salvar alterações'}
