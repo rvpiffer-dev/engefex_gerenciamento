@@ -55,7 +55,22 @@ function attach(s,persist,render,notify,v){
   const actions=originalButtons.get(id)||{};
   rendered.querySelector('[data-action="edit"]').onclick=()=>actions.edit?.click();
   rendered.querySelector('[data-action="del"]').onclick=()=>actions.del?.click();
-  rendered.querySelector('[data-action="print"]').onclick=()=>actions.print?.click();
+  rendered.querySelector('[data-action="print"]').onclick=()=>{
+   const existing=document.getElementById('rhHoleritePreview');
+   existing?.remove();
+   const preview=document.createElement('dialog');
+   preview.id='rhHoleritePreview';preview.className='hr-editor';
+   preview.style.cssText='width:min(720px,calc(100vw - 24px));max-width:none;max-height:90vh;box-sizing:border-box;overflow:auto;padding:0;border-radius:16px';
+   const row=(label,value)=>'<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;padding:9px 16px;border-bottom:1px solid #e4eaf1"><span>'+esc(label)+'</span><strong>'+value+'</strong></div>';
+   const items=labels.slice(1).map((label,i)=>{const k=String.fromCharCode(66+i);return row(label,money(sal?.values?.[k]))}).join('');
+   const valeSection=vale?row('Vale dia 20',money(vale.values?.C)):'<p style="padding:12px 16px">Vale ainda não registrado nesta competência.</p>';
+   preview.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;background:#e9f1fc;color:#173b64"><div><strong>Demonstrativo de pagamento</strong><div>'+esc(rname)+' · '+esc(month)+'</div></div><button type="button" class="button secondary" id="rhHoleriteClose">Fechar</button></div><div id="rhHoleriteBody" style="padding:16px;overflow-x:hidden"><h3>Salário e descontos</h3>'+(sal?items:'<p>Sem lançamento de salário.</p>')+'<h3>Adiantamento</h3>'+valeSection+'<p style="font-size:12px;opacity:.75">Demonstrativo interno dos valores informados na planilha.</p></div><div style="display:flex;justify-content:flex-end;gap:10px;padding:12px 16px"><button type="button" class="button primary" id="rhHoleritePrint">Imprimir / Salvar PDF</button></div>';
+   document.body.appendChild(preview);
+   preview.querySelector('#rhHoleriteClose').onclick=()=>preview.close();
+   preview.querySelector('#rhHoleritePrint').onclick=()=>actions.print?.click();
+   preview.addEventListener('close',()=>preview.remove(),{once:true});
+   preview.showModal();
+  };
   rendered.querySelector('[data-action="view"]').onclick=()=>{
    const records=[['Salário',sal,labels],['Vale',vale,['Nome','SALÁRIO','VALE 40%']]];
    const sections=records.map(([title,item,fields])=>{
