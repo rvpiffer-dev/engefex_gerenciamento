@@ -12,7 +12,7 @@
  let accessVersion='',sessionFiles=new Set();
  let confirmedState=null,patchSupported=null,compactReadSupported=null,refreshing=false,tokenRefresh=null,lastSync=null,lastAccessCheck=0,lastReadCheck=0,notificationReadIds=new Set();
  let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
- let lastRefreshAttempt=0, refreshFailures=0;
+ let lastRefreshAttempt=0, refreshFailures=0, unsavedPayload=null, activeDraft=null, recovering=false, draftPersisted=false;
  const $=id=>document.getElementById(id);
  const current=()=>client?.getState();
  const ownDirty=()=>!!client?.isDirty?.();
@@ -20,6 +20,9 @@
  function saveSession(s){session=s;try{if(s)localStorage.setItem(SESSION_KEY,JSON.stringify(s));else localStorage.removeItem(SESSION_KEY)}catch(e){if(!(/quota/i.test(e?.name+' '+e?.message)||e?.code===22||e?.code===1014))throw e}}
  function expiring(){return !session||!session.access_token||Date.now()>=Number(session.expires_at||0)-60000}
  async function raw(path,options={}){
+  // Retries are limited to read-only requests: never replay financial writes blindly.
+  const safeRead=(options.method||'GET')==='GET'||/^\/rest\/v1\/rpc\/engefex_(?:read_state|read_state_compact|access_context|list_access|birthdays_today)/.test(path);
+  const retry=async()=>{await new Promise(resolve=>setTimeout(resolve,300*Math.pow(2,options.retryAttempt||0)));return raw(path,{...options,retryAttempt:(options.retryAttempt||0)+1})};
   const headers={apikey:API_KEY,...options.headers};
   if(options.auth!==false){
    if(expiring()&&!options.skipRefresh)await refreshToken();
@@ -35,13 +38,18 @@
    if(options.binary&&res.ok)blob=await res.blob();
    else txt=await res.text();
   }catch(e){
+   if(safeRead&&(options.retryAttempt||0)<2)return retry();
    if(controller.signal.aborted)throw Error('O Supabase não respondeu em 120 segundos. Confira sua internet e tente novamente.');
    throw Error('Não foi possível comunicar com o Supabase. Confira sua conexão.');
   }finally{clearTimeout(timeout)}
   if(blob)return blob;
   let parsed=null;
   try{parsed=txt?JSON.parse(txt):null}catch{parsed=txt}
-  if(!res.ok){let error=new Error((parsed?.message||parsed?.msg||parsed?.error_description||parsed?.error||('HTTP '+res.status)));error.status=res.status;error.code=parsed?.code;throw error}
+  if(!res.ok){
+   if(safeRead&&[429,502,503,504].includes(res.status)&&(options.retryAttempt||0)<2)return retry();
+   let error=new Error((parsed?.message||parsed?.msg||parsed?.error_description||parsed?.error||('HTTP '+res.status)));
+   error.status=res.status;error.code=parsed?.code;throw error
+  }
   return parsed;
  }
  async function refreshToken(){if(tokenRefresh)return tokenRefresh;tokenRefresh=performTokenRefresh();try{return await tokenRefresh}finally{tokenRefresh=null}}
@@ -64,6 +72,36 @@
   const footer=$('saveStatus');
   if(footer&&phase==='ready')footer.textContent=value;
  }
+ function draftKey(){return SESSION_KEY+':draft:'+String(session?.user?.id||'')+':'+String(workspace||'')}
+ function loadDraft(){
+  try{const d=JSON.parse(localStorage.getItem(draftKey())||'null');return d&&Number.isFinite(Number(d.revision))&&Array.isArray(d.changes)?d:null}
+  catch{return null}
+ }
+ function updateRecoveryUI(){
+  const show=phase==='ready'&&!pending&&!!activeDraft;
+  const retry=$('engefex-cloud-retry-save'),exportButton=$('engefex-cloud-export-draft'),discard=$('engefex-cloud-discard-draft');
+  if(retry)retry.hidden=!show;if(exportButton)exportButton.hidden=!show;if(discard)discard.hidden=!show;
+ }
+ function clearDraft(){
+  try{if(session?.user?.id&&workspace)localStorage.removeItem(draftKey())}catch{}
+  activeDraft=null;unsavedPayload=null;draftPersisted=false;updateRecoveryUI();
+ }
+ function stashDraft(next){
+  if(!next||!confirmedState||!session?.user?.id||!workspace)return;
+  const draft={revision,created_at:new Date().toISOString(),changes:buildPatch(confirmedState,next)};
+  activeDraft=draft;
+  try{localStorage.setItem(draftKey(),JSON.stringify(draft));draftPersisted=true}
+  catch{draftPersisted=false}
+  updateRecoveryUI();
+ }
+ function exportDraft(){
+  const draft=activeDraft||loadDraft();
+  if(!draft)return false;
+  const body=JSON.stringify({format:'engefex-rascunho-v1',project:'Engefex',workspace,created_at:draft.created_at,revision:draft.revision,changes:draft.changes},null,2);
+  const url=URL.createObjectURL(new Blob([body],{type:'application/json'}));
+  const a=document.createElement('a');a.href=url;a.download='engefex-rascunho-nao-confirmado.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return true;
+ }
  function setPhase(next,note){
   phase=next;
   const connecting=next==='loading';
@@ -77,7 +115,7 @@
   const view=$('engefex-cloud-view');
   if(!view)return;
   for(const panel of cover.querySelectorAll('[data-cloud-panel]'))panel.hidden=panel.dataset.cloudPanel!==next;
-  setMessage(note||'');
+  setMessage(note||'');updateRecoveryUI();
  }
  function setupVisual(){
   const style=document.createElement('style');
@@ -130,7 +168,7 @@
   loadingNote=document.createElement('div');loadingNote.id='engefex-cloud-connecting';loadingNote.hidden=true;loadingNote.setAttribute('role','status');loadingNote.textContent='Conectando à base compartilhada…';document.body.append(loadingNote);
   messageEl=$('engefex-cloud-message');
   const top=document.createElement('div');top.id='engefex-cloud-header';
-  top.innerHTML='<span id="engefex-cloud-status">Aguardando login</span><button id="engefex-cloud-refresh" type="button">Atualizar dados</button><button id="engefex-cloud-logout" type="button">Sair</button>';
+  top.innerHTML='<span id="engefex-cloud-status">Aguardando login</span><button id="engefex-cloud-retry-save" type="button" hidden>Recuperar salvamento</button><button id="engefex-cloud-export-draft" type="button" hidden>Baixar rascunho</button><button id="engefex-cloud-discard-draft" type="button" hidden>Descartar rascunho</button><button id="engefex-cloud-refresh" type="button">Atualizar dados</button><button id="engefex-cloud-logout" type="button">Sair</button>';
   const nav=document.querySelector('.top-actions');
   if(nav)nav.append(top);else document.body.append(top);
   statusEl=$('engefex-cloud-status');
@@ -140,11 +178,18 @@
    try{setMessage('Entrando na sua conta…');await login($('engefex-cloud-email').value.trim(),$('engefex-cloud-password').value);$('engefex-cloud-password').value=''}
    catch(e){saveSession(null);setPhase('login',e.message)}finally{button.disabled=false;button.textContent=label}
   });
-  $('engefex-cloud-export').onclick=()=>client?.exportBackup();
-  $('engefex-cloud-retry').onclick=()=>connect().catch(e=>setPhase('error',e.message));
+  $('engefex-cloud-export').onclick=()=>{if(!exportDraft())client?.exportBackup()};
+  $('engefex-cloud-retry').onclick=()=>activeDraft?retryPending():connect().catch(e=>setPhase('error',e.message));
+  $('engefex-cloud-retry-save').onclick=()=>retryPending();
+  $('engefex-cloud-export-draft').onclick=()=>exportDraft();
+  $('engefex-cloud-discard-draft').onclick=()=>{
+   if(!root.confirm?.('Descartar definitivamente o rascunho não confirmado deste aparelho?'))return;
+   clearDraft();failed='';paintStatus('Rascunho descartado. Dados da equipe preservados no Supabase.');
+   refreshRemote(true).catch(e=>paintStatus('Falha ao atualizar: '+e.message));
+  };
   $('engefex-cloud-out').onclick=()=>logout();
   $('engefex-cloud-logout').onclick=()=>logout();
-  $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>{paintStatus('Erro de sincronização: '+e.message);setPhase('error',e.message)});
+  $('engefex-cloud-refresh').onclick=()=>refreshRemote(true).catch(e=>paintStatus('Falha temporária ao atualizar: '+e.message));
  }
  function acceptRemote(snapshot){
   try{
@@ -153,6 +198,7 @@
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;confirmedState=structuredClone(snapshot);
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
+   activeDraft=loadDraft();if(activeDraft){failed='Rascunho não confirmado: recupere ou baixe antes de continuar.';paintStatus('RASCUNHO PENDENTE · Recupere ou baixe para sua segurança.');updateRecoveryUI()}
   }catch(e){setPhase('error',e.message)}
  }
  async function loadAccess(){if(!root.EngefexAccess)return false;let next=await raw('/rest/v1/rpc/engefex_access_context',{method:'POST',json:true,body:{p_workspace:workspace}}),fingerprint=JSON.stringify(next),changed=!!accessVersion&&fingerprint!==accessVersion;accessVersion=fingerprint;lastAccessCheck=Date.now();root.EngefexAccess.setContext(next);return changed}
@@ -265,33 +311,84 @@
   confirmedState=structuredClone(payload);return row;
  }
 
+ function applyDraft(base,changes){
+  const next=structuredClone(base);
+  for(const c of changes){
+   if(typeof c.key!=='string')throw Error('Rascunho inválido.');
+   if(c.remove)delete next[c.key];
+   else if(Object.prototype.hasOwnProperty.call(c,'value'))next[c.key]=structuredClone(c.value);
+   else if(Array.isArray(next[c.key])&&Number.isInteger(c.start)&&Number.isInteger(c.deleteCount)&&Array.isArray(c.items))
+    next[c.key].splice(c.start,c.deleteCount,...structuredClone(c.items));
+   else throw Error('Não foi possível aplicar o rascunho com segurança.');
+  }
+  return next;
+ }
+ function draftApplied(remote,changes){
+  // Confirm lost acknowledgements conservatively; a mismatched deletion requires manual review.
+  return changes.every(c=>{
+   const value=remote?.[c.key];
+   if(c.remove)return !Object.prototype.hasOwnProperty.call(remote,c.key);
+   if(Object.prototype.hasOwnProperty.call(c,'value'))return JSON.stringify(value)===JSON.stringify(c.value);
+   if(!Array.isArray(value)||!Array.isArray(c.items)||c.deleteCount>c.items.length)return false;
+   return JSON.stringify(value.slice(c.start,c.start+c.items.length))===JSON.stringify(c.items);
+  });
+ }
+ async function retryPending(){
+  if(recovering||pending||phase!=='ready')return false;
+  const draft=activeDraft||loadDraft();if(!draft)return false;
+  recovering=true;paintStatus('Verificando a revisão do banco antes de recuperar…');
+  try{
+   const head=(await readState(true))?.[0];
+   if(!head||!Number.isFinite(Number(head.revision)))throw Error('Não foi possível confirmar a revisão do banco.');
+   if(Number(head.revision)!==Number(draft.revision)){
+    const remote=(await readState())?.[0];
+    if(remote?.payload&&draftApplied(remote.payload,draft.changes)){
+     revision=Number(remote.revision);confirmedState=structuredClone(remote.payload);
+     client.acceptState(remote.payload);clearDraft();failed='';paintStatus('Salvamento anterior confirmado no Supabase · revisão '+revision);client.saved?.();
+     return true;
+    }
+    throw Error('A equipe alterou a base desde este rascunho. Baixe o rascunho para conferir; nenhuma alteração será sobrescrita.');
+   }
+   const next=unsavedPayload||applyDraft(confirmedState,draft.changes);
+   (root.Obras.onlineValid||root.Obras.backupValid)(next);
+   failed='';
+   const ok=await send(next);
+   if(ok)client.acceptState(next);
+   return ok;
+  }catch(e){
+   failed=e.message||'Não foi possível recuperar o rascunho.';
+   paintStatus('NÃO SALVO · '+failed);setMessage(failed);updateRecoveryUI();return false;
+  }finally{recovering=false;updateRecoveryUI()}
+ }
+
  function requireWrite(next){
   if(phase!=='ready'||pending||failed)throw Error(failed||'Aguarde a sincronização e o carregamento da base online antes de editar.');
   if(!navigator.onLine)throw Error('Sem conexão: a edição compartilhada está bloqueada.');
   if(root.EngefexAccess&&!root.EngefexAccess.canWrite(root.EngefexAccess.currentView())&&!(next&&root.EngefexAccess.personalOnly(confirmedState,next,session?.user)))throw Error('Seu usuário não tem permissão para editar esta tela.');
+  if(next)stashDraft(next);
  }
  function send(next){
   requireWrite(next);
-  pending=true;paintStatus('Enviando alterações ao Supabase…');
+  pending=true;unsavedPayload=structuredClone(next);updateRecoveryUI();paintStatus('Enviando alterações ao Supabase…');
   return (async()=>{
    await uploadFiles(next);
    const out=await writeState(next);
    revision=Number(out.revision);
-   pending=false;failed='';
+   pending=false;failed='';clearDraft();
    paintStatus('Salvo no Supabase · revisão '+revision+' · '+new Date().toLocaleTimeString('pt-BR'));
    client.saved?.();
    return true;
   })().catch(e=>{
    pending=false;
    failed=e.message||'Erro de sincronização';
-   paintStatus('NÃO SALVO online · '+failed);
-   setPhase('error','A alteração não foi confirmada pelo Supabase: '+failed+'\nExporte o backup antes de tentar recuperar.');
-   client.saveError?.(failed);
+   paintStatus('NÃO SALVO online · '+failed+(draftPersisted?' · Rascunho guardado neste aparelho.':' · Baixe o rascunho antes de fechar.'));
+   setMessage('A alteração não foi confirmada pelo Supabase: '+failed);
+   updateRecoveryUI();client.saveError?.(failed);
    return false;
   });
  }
  async function refreshRemote(force=false){
-  if(phase!=='ready'||pending||document.hidden||refreshing||!navigator.onLine)return;
+  if(phase!=='ready'||pending||failed||activeDraft||document.hidden||refreshing||!navigator.onLine)return;
   const now=Date.now(),minGap=refreshFailures?Math.min(300000,30000*Math.pow(2,Math.min(refreshFailures,4))):15000;
   if(!force&&now-lastRefreshAttempt<minGap)return;
   lastRefreshAttempt=now;
@@ -365,11 +462,12 @@
  }
  async function logout(){
   if(pending){alert('Aguarde o servidor confirmar o salvamento antes de sair.');return}
+  if(activeDraft&&!root.confirm?.('Há um rascunho não confirmado. Baixe-o antes de sair. Continuar mesmo assim?'))return;
   const token=session?.access_token;
   const wasConnected=phase==='ready';
   authGeneration++;
   saveSession(null);accessVersion='';sessionFiles.clear();root.EngefexAccess?.setContext({is_admin:false,permissions:{modules:{},views:{}},restricted:true});workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;lastReadCheck=0;notificationReadIds.clear();lastSync=null;knownFiles.clear();failed='';
-  setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
+  activeDraft=null;unsavedPayload=null;draftPersisted=false;setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
  function boot(app){if(root.EngefexUpdateGate){root.EngefexUpdateGate.then(ready=>{if(ready!==false)start(app)}).catch(()=>start(app));return}start(app)}
@@ -380,7 +478,7 @@
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},60000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={fullSnapshot,prepareBackupImport,markNotificationsRead,hasNotificationBeenRead:id=>notificationReadIds.has(id),loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending}};
+ root.EngefexCloud={fullSnapshot,prepareBackupImport,markNotificationsRead,hasNotificationBeenRead:id=>notificationReadIds.has(id),loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending||!!activeDraft},get unsynced(){return !!activeDraft||pending||!!failed},retryPending};
 })(window);
 
 

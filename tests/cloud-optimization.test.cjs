@@ -1,26 +1,63 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../dist/cloud.js'),'utf8'),clone=x=>JSON.parse(JSON.stringify(x));
 function apply(before,changes){let next=clone(before);for(let c of changes){if(c.remove)delete next[c.key];else if('value'in c)next[c.key]=clone(c.value);else next[c.key].splice(c.start,c.deleteCount,...clone(c.items))}return next}
-async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false}={}){
- let payload={version:1,dataModel:2,projects:[{id:'p',name:'Obra'}],activities:Array.from({length:1000},(_,i)=>({id:'a'+i,name:'Atividade '+i,quantity:100,executed:0})),history:Array.from({length:1000},(_,i)=>({id:'h'+i,before:{name:'Antes '+i},after:{name:'Depois '+i}}))},revision=5,requests=[],accepted=[],callbacks={},nodes=new Map(),headResolve=null;
- const node=()=>({innerHTML:'',textContent:'',hidden:false,setAttribute(){},append(){},addEventListener(n,f){this[n]=f},querySelectorAll(){return []}}),el=id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},document={hidden:false,createElement:node,getElementById:el,head:{append(){}},body:{append(){}},querySelector:()=>null,documentElement:{classList:{toggle(){}}}},session={access_token:'token',refresh_token:'refresh',expires_at:Date.now()+3600000,user:{id:'u'}},w={structuredClone,document,AbortController,FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload()})}},navigator:{onLine:true},setTimeout,clearTimeout,setInterval:f=>{callbacks.poll=f;return 1},addEventListener:(n,f)=>callbacks[n]=f,localStorage:{getItem:()=>JSON.stringify(session),setItem(){},removeItem(){}},Obras:{backupValid:s=>{if(!s?.projects)throw Error('Inválido')}},LocalFiles:{refs:()=>[],metadata:()=>({name:'projeto.pdf'}),load:async()=>{if(cacheFailure)throw Error('Armazenamento indisponível');return []},put:async()=>{if(cacheFailure)throw Error('quota exceeded')}},fetch:async(url,options)=>{
+async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false,savedStore=null}={}){
+ let shouldFail=fail;let payload={version:1,dataModel:2,projects:[{id:'p',name:'Obra'}],activities:Array.from({length:1000},(_,i)=>({id:'a'+i,name:'Atividade '+i,quantity:100,executed:0})),history:Array.from({length:1000},(_,i)=>({id:'h'+i,before:{name:'Antes '+i},after:{name:'Depois '+i}}))},revision=5,requests=[],accepted=[],callbacks={},nodes=new Map(),headResolve=null;
+ const node=()=>({innerHTML:'',textContent:'',hidden:false,setAttribute(){},append(){},addEventListener(n,f){this[n]=f},querySelectorAll(){return []}}),el=id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},document={hidden:false,createElement:node,getElementById:el,head:{append(){}},body:{append(){}},querySelector:()=>null,documentElement:{classList:{toggle(){}}}},session={access_token:'token',refresh_token:'refresh',expires_at:Date.now()+3600000,user:{id:'u'}},store=savedStore||new Map([['engefex-cloud-auth-v1',JSON.stringify(session)]]),w={structuredClone,document,AbortController,FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload()})}},navigator:{onLine:true},setTimeout,clearTimeout,setInterval:f=>{callbacks.poll=f;return 1},addEventListener:(n,f)=>callbacks[n]=f,localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},Obras:{backupValid:s=>{if(!s?.projects)throw Error('Inválido')}},LocalFiles:{refs:()=>[],metadata:()=>({name:'projeto.pdf'}),load:async()=>{if(cacheFailure)throw Error('Armazenamento indisponível');return []},put:async()=>{if(cacheFailure)throw Error('quota exceeded')}},fetch:async(url,options)=>{
   const body=options.body?JSON.parse(options.body):null;requests.push({url,body});let data,status=200;
   if(url.includes('/rpc/engefex_read_state_compact'))return missing?{ok:false,status:404,text:async()=>JSON.stringify({code:'PGRST202',message:'Função ausente'})}:{ok:true,status:200,text:async()=>JSON.stringify([{payload:clone(payload),revision}])};if(url.includes('engefex_notification_reads?'))return {ok:true,status:200,text:async()=>JSON.stringify([])};if(url.includes('/storage/v1/object/authenticated/'))return {ok:true,blob:async()=>new Blob(['%PDF-teste'],{type:'application/pdf'})};if(url.includes('engefex_members'))data=[{workspace_id:'work'}];
   else if(url.includes('/rpc/')){
    if(url.includes('engefex_read_state')&&body?.p_head){if(delayHead)await new Promise(r=>headResolve=r);return {ok:true,status:200,text:async()=>JSON.stringify([{revision,payload:null}])}}
    if(url.includes('engefex_read_state'))return {ok:true,status:200,text:async()=>JSON.stringify([{revision,payload:clone(payload)}])};
    if(url.includes('engefex_patch_state')&&missing){data={code:'PGRST202',message:'Função ausente'};status=404}
-   else if(fail||body.p_revision!==revision){data={code:'40001',message:'A base mudou'};status=409}
+   else if(shouldFail||body.p_revision!==revision){data={code:'40001',message:'A base mudou'};status=409}
    else{payload=url.includes('patch_state')?apply(payload,body.p_changes):clone(body.p_payload);revision++;data=[{revision}]}
   }else if(url.includes('select=revision&')){if(delayHead)await new Promise(r=>headResolve=r);data=[{revision}]}
   else data=[{payload:clone(payload),revision}];
   return {ok:status===200,status,text:async()=>JSON.stringify(data)};
- }};w.window=w;vm.createContext(w);vm.runInContext(source,w);let current=clone(payload);w.EngefexCloud.boot({getState:()=>current,acceptState:s=>{current=s;accepted.push(s)},isDirty:()=>false});await new Promise(r=>setImmediate(r));return {w,api:w.EngefexCloud,requests,accepted,callbacks,el,current:()=>clone(current),server:()=>clone(payload),setRemote(fn){payload=fn(payload);revision++},releaseHead(){headResolve?.()}};
+ }};w.window=w;vm.createContext(w);vm.runInContext(source,w);let current=clone(payload);w.EngefexCloud.boot({getState:()=>current,acceptState:s=>{current=s;accepted.push(s)},isDirty:()=>false});await new Promise(r=>setImmediate(r));return {w,api:w.EngefexCloud,requests,accepted,callbacks,el,current:()=>clone(current),server:()=>clone(payload),setRemote(fn){payload=fn(payload);revision++},releaseHead(){headResolve?.()},setFail(value){shouldFail=!!value},store};
 }
 test('salvar uma atividade envia só a edição e o histórico novo, com economia superior a 95%',async()=>{let h=await boot(),next=h.current();next.activities[500].executed=40;next.history.unshift({id:'new',after:{executed:40}});assert.equal(await h.api.send(next),true);let request=h.requests.find(r=>r.url.includes('/rpc/engefex_patch_state'));assert.match(request.url,/patch_state/);assert.equal(request.body.p_changes.length,2);assert.deepEqual(h.server(),next);assert.ok(h.api.lastSync.characters<h.api.lastSync.fullCharacters*.05);let again=clone(next);again.activities[1].executed=20;assert.equal(await h.api.send(again),true);assert.equal(h.server().history.length,1001)});
 test('patch mantém campos omitidos, exclusões, inclusões e ordem para alterações variadas',async()=>{let h=await boot(),before=h.current();for(let transform of [s=>{s.activities.splice(3,1)},s=>{s.activities.push({id:'novo'})},s=>{s.activities.reverse()},s=>{s.history.unshift({id:'h-new'});delete s.dataModel},s=>{s.projects[0].name='Renomeada';s.extra={a:1}}]){let next=clone(before);transform(next);assert.deepEqual(apply(before,h.api.buildPatch(before,next)),next);assert.equal(before.activities.length,1000)}});
 test('instalação antiga usa salvamento existente só quando a função incremental está ausente',async()=>{let h=await boot({missing:true}),next=h.current();next.activities[0].executed=10;assert.equal(await h.api.send(next),true);assert.equal(h.requests.filter(r=>r.url.includes('patch_state')).length,1);assert.equal(h.requests.filter(r=>r.url.includes('save_state')).length,1);next.activities[0].executed=20;assert.equal(await h.api.send(next),true);assert.equal(h.requests.filter(r=>r.url.includes('patch_state')).length,1)});
-test('conflito não tenta sobrescrever a base inteira nem confirma como salvo',async()=>{let h=await boot({fail:true}),next=h.current();next.activities[0].executed=10;assert.equal(await h.api.send(next),false);assert.equal(h.requests.some(r=>r.url.includes('save_state')),false);assert.equal(h.server().activities[0].executed,0);assert.equal(h.api.ready,false);assert.match(h.el('engefex-cloud-message').textContent,/não foi confirmada/)});
+test('conflito não tenta sobrescrever a base inteira nem confirma como salvo',async()=>{let h=await boot({fail:true}),next=h.current();next.activities[0].executed=10;assert.equal(await h.api.send(next),false);assert.equal(h.requests.some(r=>r.url.includes('save_state')),false);assert.equal(h.server().activities[0].executed,0);assert.equal(h.api.ready,true);assert.equal(h.api.unsynced,true);assert.match(h.el('engefex-cloud-message').textContent,/não foi confirmada/)});
 test('atualização sem mudança baixa só a revisão e baixa a base quando outra pessoa altera',async()=>{let h=await boot();h.callbacks.poll();await new Promise(r=>setImmediate(r));assert.match(h.requests.at(-1).url,/engefex_read_state/);assert.equal(h.accepted.length,1);h.setRemote(s=>({...s,projects:[{id:'p',name:'Atualizada'}]}));h.w.Date=class extends Date{static now(){return Date.now()+60000}};h.callbacks.poll();await new Promise(r=>setImmediate(r));assert.match(h.requests.at(-1).url,/select=payload,revision|engefex_read_state/);assert.equal(h.accepted.at(-1).projects[0].name,'Atualizada')});
 test('consulta em andamento não duplica chamadas e não substitui edição salva nesse intervalo',async()=>{let h=await boot({delayHead:true});h.callbacks.poll();h.callbacks.poll();h.callbacks.focus();assert.equal(h.requests.filter(r=>r.url.includes('engefex_read_state') && r.body?.p_head).length,1);let next=h.current();next.activities[0].executed=10;await h.api.send(next);h.releaseHead();await new Promise(r=>setImmediate(r));assert.equal(h.accepted.length,1);assert.equal(h.server().activities[0].executed,10)});
 test('arquivo em outro aparelho continua disponível mesmo sem IndexedDB ou espaço para cache',async()=>{let h=await boot({cacheFailure:true}),files=await h.w.LocalFiles.load(['FILE-projeto']);assert.equal(files[0].name,'projeto.pdf');assert.equal(files[0].type,'application/pdf');assert.equal(files[0].dataURL,'data:application/pdf;base64,JVBERi10ZXN0ZQ==');assert.equal(h.requests.filter(r=>r.url.includes('/storage/v1/object/authenticated/')).length,1);assert.equal(h.api.ready,true)});
+
+test('erro no salvamento mantém a tela aberta, preserva rascunho e permite retomar sem duplicar',async()=>{
+ let h=await boot({fail:true}),next=h.current();next.activities[0].executed=77;
+ assert.equal(await h.api.send(next),false);
+ assert.equal(h.api.ready,true);
+ assert.equal(h.api.unsynced,true);
+ const saved=[...h.store.entries()].find(([key])=>key.includes(':draft:'));
+ assert.ok(saved,'rascunho não encontrado no armazenamento local');
+ assert.equal(JSON.parse(saved[1]).revision,5);
+ h.setFail(false);
+ assert.equal(await h.api.retryPending(),true);
+ assert.equal(h.server().activities[0].executed,77);
+ assert.equal(h.api.unsynced,false);
+ assert.equal([...h.store.keys()].some(key=>key.includes(':draft:')),false);
+ assert.equal(h.requests.filter(r=>r.url.includes('/rpc/engefex_patch_state')).length,2);
+});
+test('mudança simultânea em outro computador impede recuperação que sobrescreveria a equipe',async()=>{
+ let h=await boot({fail:true}),next=h.current();next.activities[0].executed=25;
+ assert.equal(await h.api.send(next),false);
+ h.setRemote(s=>({...s,activities:s.activities.map((a,i)=>i===0?{...a,executed:99}:a)}));
+ h.setFail(false);
+ assert.equal(await h.api.retryPending(),false);
+ assert.equal(h.server().activities[0].executed,99);
+ assert.equal(h.api.unsynced,true);
+ assert.match(h.el('engefex-cloud-status').textContent,/NÃO SALVO/);
+});
+test('depois de reabrir navegador o rascunho fica recuperável sem restaurar dados automaticamente',async()=>{
+ let first=await boot({fail:true}),next=first.current();next.activities[3].executed=55;
+ assert.equal(await first.api.send(next),false);
+ const second=await boot({savedStore:first.store});
+ assert.equal(second.api.ready,true);
+ assert.equal(second.api.unsynced,true);
+ assert.equal(second.server().activities[3].executed,0);
+ assert.equal(await second.api.retryPending(),true);
+ assert.equal(second.server().activities[3].executed,55);
+ assert.equal(second.api.unsynced,false);
+});
