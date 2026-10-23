@@ -22,7 +22,7 @@ function detail(r,kind){
  const table=labels.slice(1).map((label,i)=>{const key=String.fromCharCode(66+i);const val=r.values?.[key];return '<tr><td>'+h(label)+'</td><td class="num">'+(val==null||val===''?'—':format(val))+'</td></tr>'}).join('');
  return '<section class="entry"><h2>'+h(name(r))+'</h2><table><thead><tr><th>Descrição</th><th>Valor informado</th></tr></thead><tbody>'+table+
  (kind==='sal'?'<tr><th>Custo por hora estimado</th><th class="num">'+costText(r)+'</th></tr>':'')+'</tbody></table>'+
- '<p class="note">Status: '+h(r.status||'Rascunho')+(kind==='sal'?' · Horas mensais adotadas: '+h(r.monthlyHours||220)+' h · Encargos extras informados: '+format(number(r.employerCosts)):'')+'</p></section>';
+ '<p class="note">Status: '+h(r.status||'Rascunho')+(kind==='sal'?' · Horas mensais adotadas (44 h/semana por padrão): '+h(r.monthlyHours||220)+' h · Encargos extras informados: '+format(number(r.employerCosts)):'')+'</p></section>';
 }
 function individual(s,id,kind,month){
  const key=kind==='vale'?'hrPayrollVale':'hrPayroll',r=monthRows(s,month,key).find(x=>x.id===id);
@@ -67,7 +67,7 @@ function attach(s,persist,render,notify,view){
   function extras(){
    const box=document.getElementById('rhCostFields');if(!box)return;
    const id=document.getElementById('rhPayDialog')?.dataset.id||'',r=monthRows(s,getMonth(),'hrPayroll').find(x=>x.id===id);
-   box.innerHTML='<div class="form-grid"><label>Horas mensais para custo/h<input type="number" min="1" step="0.5" name="monthlyHours" form="rhPayForm" value="'+h(r?.monthlyHours||220)+'"></label><label>Encargos adicionais mensais (R$)<input type="number" min="0" step="0.01" name="employerCosts" form="rhPayForm" value="'+h(r?.employerCosts||0)+'"></label></div><p class="note">Estimativa: (salário-base + encargos adicionais) ÷ horas mensais.</p>';
+   box.innerHTML='<div class="form-grid"><label>Horas mensais (padrão 220 h · 44 h/semana)<input type="number" min="1" step="0.5" name="monthlyHours" form="rhPayForm" value="'+h(r?.monthlyHours||220)+'"></label><label>Encargos adicionais mensais (R$)<input type="number" min="0" step="0.01" name="employerCosts" form="rhPayForm" value="'+h(r?.employerCosts||0)+'"></label></div><p class="note">Jornada padrão: 44 h por semana (divisor de 220 h mensais). Estimativa: (salário-base + encargos adicionais) ÷ horas mensais.</p>';
   }
   [add,...buttons].forEach(b=>b?.addEventListener('click',extras));
   const form=document.getElementById('rhPayForm');
