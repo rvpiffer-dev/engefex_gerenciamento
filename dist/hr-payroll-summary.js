@@ -82,7 +82,8 @@ function attach(s,persist,render,notify,v){
    preview.addEventListener('close',()=>preview.remove(),{once:true});
    preview.showModal();
   };
-  rendered.querySelector('[data-action="view"]').onclick=()=>{
+  const viewButton=rendered.querySelector('[data-action="view"]');
+  if(viewButton)viewButton.onclick=()=>{
    const records=[['Salário',sal,labels],['Vale',vale,['Nome','SALÁRIO','VALE 40%']]];
    const sections=records.map(([title,item,fields])=>{
     if(!item)return '<h3>'+title+'</h3><p>Sem lançamento nessa aba para a competência.</p>';
