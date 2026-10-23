@@ -1,5 +1,5 @@
 /* Verifica a versão ao abrir/recarregar; somente a interface é renovada. */
-(function(root){'use strict';const BUILD_VERSION='4.18.13';let updating=false;const retryKey='engefex-update-retry:'+location.pathname.replace(/[^/]+$/,'');
+(function(root){'use strict';const BUILD_VERSION='4.18.14';let updating=false;const retryKey='engefex-update-retry:'+location.pathname.replace(/[^/]+$/,'');
 const displayVersion=typeof document.querySelector==='function'?document.querySelector('.brand-caption small'):null;if(displayVersion)displayVersion.textContent='v'+BUILD_VERSION+' · Obras, financeiro e fabricação';
 function recover(target){if(updating)return false;let last=null;try{last=JSON.parse(sessionStorage.getItem(retryKey)||'null')}catch{}if(last?.version===target&&Date.now()-last.time<60000)return true;try{sessionStorage.setItem(retryKey,JSON.stringify({version:target,time:Date.now()}))}catch{}updating=true;let label=document.getElementById('connectionStatus');if(label)label.textContent='Atualizando aplicativo…';location.replace('./recuperar-acesso.html?auto=1&target='+encodeURIComponent(target||BUILD_VERSION)+'&returnHash='+encodeURIComponent(location.hash||'#dashboard'));return false}
 function newer(a,b){let x=a.split('.').map(Number),y=b.split('.').map(Number);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i];return false}
