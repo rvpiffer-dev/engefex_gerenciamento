@@ -299,7 +299,7 @@
   if(!root.confirm(summary))return;
   busy=true;
   try{
-   if(root.EngefexAccess&&!root.EngefexAccess.canWrite('payables'))throw Error('Sem permissão para editar Contas a Pagar.');
+   if(root.EngefexAccess&&!root.EngefexAccess.canWrite('supplies'))throw Error('Sem permissão para editar Compras e Notas.');
    root.EngefexCloud?.requireWrite();
    const next=D.clone(s);next.fiscalImports=next.fiscalImports||[];
    const docsMap=new Map(),pdfMap=new Map();
