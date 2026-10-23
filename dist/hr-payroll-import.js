@@ -110,5 +110,6 @@ function attach(s,persist,render,notify,view){
   }catch(err){feedback.textContent='Erro: '+err.message;notify(err.message)}
  };
 }
+root.EngefexPayrollParse=parse;
 root.EngefexHRExtra={page,attach};
 })(window);
