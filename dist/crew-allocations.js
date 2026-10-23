@@ -9,7 +9,7 @@
  let pickedProject='',seenGlobalProject=null,day='',draftKey='',draft=new Map(),busy=false,keyword='';
  function active(e){return e.active!==false&&!/^(inativo|desligado)$/i.test(String(e.employmentStatus||''))}
  function employees(s){
-  const catalog=(s.hrEmployees||[]).filter(e=>(s.hrPayroll||[]).some(r=>String(r.employeeId||'')===String(e.id)||norm(r.employeeName||r.values?.A)===norm(e.name)));
+  const source=Array.isArray(s.crewEmployees)?s.crewEmployees:(s.hrEmployees||[]); const payroll=Array.isArray(s.crewHourlyRates)?s.crewHourlyRates:(s.hrPayroll||[]); const catalog=source.filter(e=>payroll.some(r=>String(r.employeeId||'')===String(e.id)||norm(r.employeeName||r.values?.A)===norm(e.name)));
   const list=catalog.filter(active).map(e=>({id:String(e.id),name:String(e.name||''),role:String(e.role||'')}));
   const ids=new Set(list.map(e=>e.id));
   for(const a of s.crewAllocations||[])if(a.project===pickedProject&&a.date===day&&!ids.has(String(a.employeeId))){list.push({id:String(a.employeeId),name:String(a.employeeName||'Funcionário histórico'),role:'Inativo / histórico'});ids.add(String(a.employeeId))}
