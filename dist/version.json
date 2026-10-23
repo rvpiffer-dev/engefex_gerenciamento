@@ -1,6 +1,6 @@
 {
-  "version": "4.18.13",
+  "version": "4.18.14",
   "date": "2026-10-23",
-  "name": "RH: resumo de pagamentos, custo/hora, ações e detalhe completo sem campo situação",
-  "previous_version": "4.18.12"
+  "name": "RH: cadastro completo de funcionários integrado a documentos férias e folha",
+  "previous_version": "4.18.13"
 }
