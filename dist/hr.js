@@ -97,7 +97,15 @@ function attach(s,persist,render,notify){
    field('Observações','<textarea name="spreadsheetNote">'+h(item?.spreadsheetNote||'')+'</textarea>')+
    (kind==='employee'?field('Situação','<select name="active">'+choice('true','Ativo',isActive(item)?'true':'false')+choice('false','Inativo',isActive(item)?'true':'false')+'</select>'):'');
   }
-  document.getElementById('hrEditorSave').textContent=kind.startsWith('new')?'Cadastrar':'Salvar alterações';editModal.showModal();
+  document.getElementById('hrEditorSave').textContent=kind.startsWith('new')?'Cadastrar':'Salvar alterações';
+  let links=document.getElementById('hrEmployeeLinks');
+  if(links)links.remove();
+  if(!docKind){links=document.createElement('div');links.id='hrEmployeeLinks';links.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:12px 0';
+   links.innerHTML='<span style="width:100%">Após salvar, use o cadastro em todos os módulos do RH.</span><a class="button secondary" href="#hr-documents">Documentos</a><a class="button secondary" href="#hr-vacations">Férias</a><a class="button secondary" href="#hr-payroll">Folha</a>';
+   links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{editModal.close();editModal.remove()}));
+   document.getElementById('hrEditorFields').after(links);
+  }
+  editModal.showModal();
  };
  document.querySelectorAll('[data-hr-edit]').forEach(b=>b.onclick=()=>launch('document',b.dataset.hrEdit));
  document.querySelectorAll('[data-hr-person]').forEach(b=>b.onclick=()=>launch('employee',b.dataset.hrPerson));
