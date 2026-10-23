@@ -67,7 +67,15 @@ function attach(s,persist,render,notify,v){
    preview.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px;background:#e9f1fc;color:#173b64"><div><strong>Demonstrativo de pagamento</strong><div>'+esc(rname)+' · '+esc(month)+'</div></div><button type="button" class="button secondary" id="rhHoleriteClose">Fechar</button></div><div id="rhHoleriteBody" style="padding:16px;overflow-x:hidden"><h3>Salário e descontos</h3>'+(sal?items:'<p>Sem lançamento de salário.</p>')+'<h3>Adiantamento</h3>'+valeSection+'<p style="font-size:12px;opacity:.75">Demonstrativo interno dos valores informados na planilha.</p></div><div style="display:flex;justify-content:flex-end;gap:10px;padding:12px 16px"><button type="button" class="button primary" id="rhHoleritePrint">Imprimir / Salvar PDF</button></div>';
    document.body.appendChild(preview);
    preview.querySelector('#rhHoleriteClose').onclick=()=>preview.close();
-   preview.querySelector('#rhHoleritePrint').onclick=()=>actions.print?.click();
+   preview.querySelector('#rhHoleritePrint').onclick=()=>{
+    const printable=window.open('','_blank');
+    if(!printable){alert('Permita abrir a janela do holerite.');return}
+    const content=preview.querySelector('#rhHoleriteBody').innerHTML;
+    const title=preview.querySelector('.hr-editor-header')?.textContent||'Demonstrativo de pagamento';
+    printable.document.open();
+    printable.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Holerite - '+esc(rname)+'</title><style>@page{size:A4 portrait;margin:15mm}body{font:12px Arial,sans-serif;color:#172b4d}h1{font-size:19px}h3{font-size:15px;background:#eaf2fb;padding:8px}#documento{max-width:750px;margin:auto}#documento>div{break-inside:avoid}strong{font-weight:700}@media print{body{margin:0}}</style></head><body><main id="documento"><h1>ENGEFEX · Demonstrativo de pagamento</h1><p>'+esc(rname)+' · Competência '+esc(month)+'</p>'+content+'</main></body></html>');
+    printable.document.close();printable.focus();
+   };
    preview.addEventListener('close',()=>preview.remove(),{once:true});
    preview.showModal();
   };
