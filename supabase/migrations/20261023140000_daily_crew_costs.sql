@@ -62,9 +62,20 @@ begin
          (case when coalesce(r->>'monthlyHours','') ~ '^[0-9]+([.,][0-9]+)?$'
                  and replace(r->>'monthlyHours',',','.')::numeric>0
            then replace(r->>'monthlyHours',',','.')::numeric else 220 end),6),
-         'chargesMissing',not (
-           coalesce(r->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?$' and
-           replace(coalesce(r->>'employerCosts','0'),',','.')::numeric>0)
+         'chargesMissing',(case when coalesce(r->>'employerCosts','') ~ '^[0-9]+([.,][0-9]+)?
+       ))
+       from jsonb_array_elements(
+         case when jsonb_typeof(s->'hrPayroll')='array' then s->'hrPayroll' else '[]'::jsonb end
+       ) r
+     ),'[]'::jsonb)
+   );
+ end if;
+ return result;
+$inject$);
+   execute d;
+ end if;
+end $migration$;
+           then replace(r->>'employerCosts',',','.')::numeric<=0 else true end)
        ))
        from jsonb_array_elements(
          case when jsonb_typeof(s->'hrPayroll')='array' then s->'hrPayroll' else '[]'::jsonb end
