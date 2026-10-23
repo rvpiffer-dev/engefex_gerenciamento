@@ -45,8 +45,8 @@ async function parse(file){
 function page(s,view){
  if(view!=='hr-payroll')return original.page(s,view);
  const all=(s.hrPayroll||[]).filter(r=>r.period===selectedPeriod),nameOf=r=>r.employeeName||r.values?.A||'';
- const check=r=>r.valeSheet!=null&&r.values?.E!==''&&Math.abs(num(r.values?.E)-num(r.valeSheet))>0.01?'divergent':!r.employeeId?'unmatched':'ok';
- let rows=all.filter(r=>(!search||norm(nameOf(r)).includes(norm(search)))&&(statusFilter==='all'||(r.status||'Rascunho')===statusFilter)&&(checkFilter==='all'||check(r)===checkFilter)&&(matchFilter==='all'||(matchFilter==='matched'?!!r.employeeId:!r.employeeId)));
+ const check=r=>'ok';
+ let rows=all.filter(r=>(!search||norm(nameOf(r)).includes(norm(search)))&&(statusFilter==='all'||(r.status||'Rascunho')===statusFilter)));
  rows.sort((a,b)=>sort==='name'?nameOf(a).localeCompare(nameOf(b),'pt-BR'):sort==='name-desc'?nameOf(b).localeCompare(nameOf(a),'pt-BR'):sort==='value-desc'?num(b.values?.N)-num(a.values?.N):num(a.values?.N)-num(b.values?.N));
  if(onlyPositive)rows=rows.filter(r=>tab==='salary'?num(r.values?.N)>0:num(r.valeSheet??r.values?.E)>0);
  const sumSalary=rows.reduce((a,r)=>a+num(r.values?.N),0),sumVale=rows.reduce((a,r)=>a+num(r.valeSheet??r.values?.E),0);
@@ -65,8 +65,8 @@ function page(s,view){
  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" role="tablist" aria-label="Tipo de folha"><button class="button '+(tab==='salary'?'primary':'secondary')+'" type="button" data-pay-tab="salary" role="tab" aria-selected="'+(tab==='salary')+'">Salário · dia 05 (60%)</button><button class="button '+(tab==='vale'?'primary':'secondary')+'" type="button" data-pay-tab="vale" role="tab" aria-selected="'+(tab==='vale')+'">Vale · dia 20 (40%)</button></div>'+
  '<div class="form-grid" style="margin-bottom:14px"><label>Buscar funcionário<input id="paySearch" placeholder="Nome do funcionário" value="'+esc(search)+'"></label>'+
  '<label>Situação'+select('payStatus',[['all','Todas'],['Rascunho','Rascunho'],['Conferido','Conferido'],['Pago','Pago']],statusFilter)+'</label>'+
- '<label>Conferência'+select('payCheck',[['all','Todas'],['ok','Sem divergência'],['divergent','Divergência entre abas'],['unmatched','Sem vínculo com cadastro']],checkFilter)+'</label>'+
- '<label>Vínculo RH'+select('payMatch',[['all','Todos'],['matched','Vinculados'],['unmatched','Não vinculados']],matchFilter)+'</label>'+
+ 
+ 
  '<label>Ordenar'+select('paySort',[['name','Nome A–Z'],['name-desc','Nome Z–A'],['value-desc','Total maior primeiro'],['value-asc','Total menor primeiro']],sort)+'</label>'+
  '<label style="display:flex;align-items:center;gap:8px"><input id="payPositive" type="checkbox" '+(onlyPositive?'checked':'')+'>Somente valores positivos</label></div>'+
  '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"><span class="tag">'+rows.length+' exibidos de '+all.length+'</span><span class="tag">Total salário: '+money(sumSalary)+'</span><span class="tag">Total vale: '+money(sumVale)+'</span><button class="button secondary" type="button" id="payClear">Limpar filtros</button></div>'+
