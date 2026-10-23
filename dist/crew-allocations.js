@@ -62,7 +62,7 @@
    return '<tr class="'+(checked?'crew-marked':'')+'"><td class="crew-check-cell"><input type="checkbox" id="crew-employee-'+esc(e.id)+'" data-crew-select="'+esc(e.id)+'" '+(checked?'checked':'')+' '+(!info&&!checked?'disabled title="Funcionário sem custo/hora disponível na folha"':'')+' aria-label="Incluir '+esc(e.name)+'"></td>'+
     '<td class="crew-name-cell"><label for="crew-employee-'+esc(e.id)+'"><strong>'+esc(e.name)+'</strong><small>'+esc(e.role||'Função não informada')+'</small></label></td>'+
     '<td>'+(info?'<strong>'+format(info.rate)+'</strong><small>Folha '+esc(info.period||'histórica')+(info.chargesMissing?' · Encargos zerados':'')+'</small>':'<span class="crew-missing">Custo/hora não encontrado</span>')+'</td>'+
-    '<td><input class="crew-hours" type="number" data-crew-hours="'+esc(e.id)+'" min="0.25" max="24" step="0.25" value="'+esc(item.hours??prior?.hours??8)+'" '+(checked?'':'disabled')+' aria-label="Horas de '+esc(e.name)+'"></td>'+
+    '<td class="crew-hours-cell"><div class="crew-hour-controls"><button type="button" class="crew-step" data-crew-step="-1" data-crew-employee="'+esc(e.id)+'" aria-label="Diminuir uma hora de '+esc(e.name)+'" '+(checked?'':'disabled')+'>−</button><input class="crew-hours" type="number" inputmode="decimal" data-crew-hours="'+esc(e.id)+'" min="0.25" max="24" step="0.25" value="'+esc(item.hours??prior?.hours??8)+'" '+(checked?'':'disabled')+' aria-label="Horas de '+esc(e.name)+'"><button type="button" class="crew-step" data-crew-step="1" data-crew-employee="'+esc(e.id)+'" aria-label="Adicionar uma hora para '+esc(e.name)+'" '+(checked?'':'disabled')+'>+</button></div></td>'+
     '<td class="num" data-crew-subtotal="'+esc(e.id)+'">'+(checked&&info?format(round(info.rate*num(item.hours??8))):'—')+'</td></tr>';
   }).join('');
   const history=[...new Map((s.crewAllocations||[]).filter(a=>a.project===pickedProject).map(a=>[a.date,a.date])).values()].sort().reverse().slice(0,35)
@@ -95,12 +95,21 @@
    for(const e of employees(s)){
     const checked=!!draft.get(e.id)?.checked;
     const input=document.querySelector('[data-crew-hours="'+CSS.escape(e.id)+'"]');if(input)input.disabled=!checked;
+    document.querySelectorAll('[data-crew-employee="'+CSS.escape(e.id)+'"]').forEach(button=>button.disabled=!checked);
     const cell=document.querySelector('[data-crew-subtotal="'+CSS.escape(e.id)+'"]');
     if(cell){const row=rows.find(r=>r.employee.id===e.id);cell.textContent=row?.rate?format(row.total):'—';cell.closest('tr')?.classList.toggle('crew-marked',checked)}
    }
   };
   document.querySelectorAll('[data-crew-select]').forEach(el=>el.onchange=e=>{const id=e.target.dataset.crewSelect,old=draft.get(id)||{hours:8};draft.set(id,{...old,checked:e.target.checked});draw()});
   document.querySelectorAll('[data-crew-hours]').forEach(el=>el.oninput=e=>{const id=e.target.dataset.crewHours,old=draft.get(id)||{checked:false};draft.set(id,{...old,hours:Number(e.target.value)});draw()});
+  document.querySelectorAll('[data-crew-step]').forEach(button=>button.onclick=()=>{
+   const id=button.dataset.crewEmployee,old=draft.get(id);if(!old?.checked)return;
+   const current=Number(old.hours)||0,next=Math.round((current+Number(button.dataset.crewStep))*4)/4;
+   if(next<0.25||next>24)return;
+   draft.set(id,{...old,hours:next});
+   const input=document.querySelector('[data-crew-hours="'+CSS.escape(id)+'"]');if(input)input.value=String(next);
+   draw();
+  });
   $('crewCopyPrevious').onclick=()=>{
    const previous=[...new Set((s.crewAllocations||[]).filter(a=>a.project===pickedProject&&a.date<day).map(a=>a.date))].sort().at(-1);
    if(!previous)return notify('Ainda não existe equipe anterior para esta obra.');
