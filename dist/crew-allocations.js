@@ -6,6 +6,7 @@
  const round=v=>Math.round((v+Number.EPSILON)*100)/100;
  const norm=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\([^)]*\)/g,'').replace(/\s+/g,' ').trim().toLocaleLowerCase('pt-BR');
  const dateBR=v=>v&&/^\d{4}-\d{2}-\d{2}$/.test(v)?v.slice(8,10)+'/'+v.slice(5,7)+'/'+v.slice(0,4):v;
+ const moveDate=(iso,delta)=>{const [y,m,d]=iso.split('-').map(Number),v=new Date(y,m-1,d+delta);return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0')};
  let pickedProject='',seenGlobalProject=null,day='',draftKey='',draft=new Map(),busy=false,keyword='';
  function active(e){return e.active!==false&&!/^(inativo|desligado)$/i.test(String(e.employmentStatus||''))}
  function employees(s){
@@ -49,6 +50,7 @@
   const people=employees(s),selected=selectedRows(s);
   const missing=selected.filter(x=>!x.rate);
   const historical=forDay(s,pickedProject,day);
+  const earlier=[...new Set((s.crewAllocations||[]).filter(a=>a.project===pickedProject&&a.date<day).map(a=>a.date))].sort().at(-1)||'';
   const month=day.slice(0,7);
   const monthRows=(s.crewAllocations||[]).filter(x=>x.project===pickedProject&&x.date?.slice(0,7)===month);
   const monthCost=0;
@@ -57,20 +59,20 @@
   const peopleHtml=people.filter(e=>norm(e.name+' '+e.role).includes(norm(keyword))).map(e=>{
    const item=draft.get(e.id)||{},checked=!!item.checked,prior=historical.find(a=>String(a.employeeId)===e.id);
    const info=prior?.hourlyRate>0?{rate:Number(prior.hourlyRate),period:prior.payrollPeriod||'',chargesMissing:false}:rateOf(s,e,day);
-   return '<tr class="'+(checked?'crew-marked':'')+'"><td><input type="checkbox" data-crew-select="'+esc(e.id)+'" '+(checked?'checked':'')+' '+(!info&&!checked?'disabled title="Funcionário sem custo/hora disponível na folha"':'')+' aria-label="Incluir '+esc(e.name)+'"></td>'+
-    '<td><strong>'+esc(e.name)+'</strong></td>'+
+   return '<tr class="'+(checked?'crew-marked':'')+'"><td class="crew-check-cell"><input id="crew-employee-'+esc(e.id)+'" type="checkbox" data-crew-select="'+esc(e.id)+'" '+(checked?'checked':'')+' '+(!info&&!checked?'disabled title="Funcionário sem custo/hora disponível na folha"':'')+' aria-label="Incluir '+esc(e.name)+'"></td>'+
+    '<td class="crew-name-cell"><label for="crew-employee-'+esc(e.id)+'"><strong>'+esc(e.name)+'</strong></label></td>'+
     
-    '<td><input class="crew-hours" type="number" data-crew-hours="'+esc(e.id)+'" min="0.25" max="24" step="0.25" value="'+esc(item.hours??prior?.hours??8)+'" '+(checked?'':'disabled')+' aria-label="Horas de '+esc(e.name)+'"></td>'+
+    '<td class="crew-hours-cell"><div class="crew-hour-controls"><button type="button" class="crew-step" data-crew-step="-1" data-crew-employee="'+esc(e.id)+'" aria-label="Diminuir uma hora de '+esc(e.name)+'" '+(checked?'':'disabled')+'>−</button><input class="crew-hours" type="number" inputmode="decimal" data-crew-hours="'+esc(e.id)+'" min="0.25" max="24" step="0.25" value="'+esc(item.hours??prior?.hours??8)+'" '+(checked?'':'disabled')+' aria-label="Horas de '+esc(e.name)+'"><button type="button" class="crew-step" data-crew-step="1" data-crew-employee="'+esc(e.id)+'" aria-label="Adicionar uma hora para '+esc(e.name)+'" '+(checked?'':'disabled')+'>+</button></div></td>'+
     '</tr>';
   }).join('');
   const history=[...new Map((s.crewAllocations||[]).filter(a=>a.project===pickedProject).map(a=>[a.date,a.date])).values()].sort().reverse().slice(0,35)
    .map(date=>{const rows=forDay(s,pickedProject,date),amount=round(rows.reduce((a,x)=>a+num(x.total),0));return '<tr><td><button type="button" class="text-btn" data-crew-day="'+esc(date)+'">'+esc(dateBR(date))+'</button></td><td>'+rows.length+'</td><td class="num">'+rows.reduce((a,x)=>a+num(x.hours),0).toLocaleString('pt-BR')+' h</td></tr>'}).join('');
   return '<div class="crew-screen"><section class="crew-hero"><div><p class="crew-overline">OBRAS · CENTRO DE CUSTOS</p><h2>Alocação diária de equipes</h2><p>Escolha a obra, toque nos funcionários e ajuste as horas. Valores financeiros não são mostrados aqui.</p></div><span class="crew-symbol">👷</span></section>'+
    (!options.length?'<div class="notice">Cadastre uma obra para iniciar os apontamentos.</div>':
-   '<section class="panel crew-panel"><div class="crew-fields"><label>Obra<select id="crewProject">'+optionsHtml+'</select></label><label>Data da alocação<input type="date" id="crewDate" value="'+esc(day)+'"></label><label>Jornada padrão (horas)<input type="number" id="crewDefaultHours" min="0.25" max="24" step="0.25" value="8"></label><div class="crew-actions"><button type="button" class="button secondary" id="crewApplyHours">Aplicar horas aos selecionados</button></div></div>'+
-   '<div class="crew-metrics"><div><span>Funcionários selecionados</span><strong id="crewPeople">'+selected.length+'</strong></div><div><span>Horas previstas</span><strong id="crewHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div></div>'+ '<div class="crew-toolbar"><input id="crewSearch" type="search" placeholder="Buscar funcionário..." value="'+esc(keyword)+'"><button type="button" class="button secondary" id="crewAll">Selecionar todos</button><button type="button" class="button secondary" id="crewClear">Desmarcar</button></div>'+
+   '<section class="panel crew-panel"><div class="crew-fields"><label>Obra<select id="crewProject">'+optionsHtml+'</select></label><div class="crew-date-field"><label for="crewDate">Data da alocação</label><div class="crew-date-buttons"><button type="button" id="crewPrevDate" class="button secondary" aria-label="Dia anterior">‹</button><input type="date" id="crewDate" value="'+esc(day)+'"><button type="button" id="crewNextDate" class="button secondary" aria-label="Dia seguinte">›</button></div></div><label>Jornada padrão (horas)<input type="number" id="crewDefaultHours" inputmode="decimal" min="0.25" max="24" step="0.25" value="8"></label><div class="crew-actions"><button type="button" class="button secondary" id="crewApplyHours">Aplicar horas aos selecionados</button></div></div>'+
+   '<div class="crew-metrics"><div><span>Funcionários selecionados</span><strong id="crewPeople">'+selected.length+'</strong></div><div><span>Horas previstas</span><strong id="crewHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div></div><div class="crew-toolbar"><input id="crewSearch" type="search" placeholder="Buscar funcionário..." value="'+esc(keyword)+'" aria-label="Buscar funcionários"><div class="crew-quick-actions"><button type="button" class="button secondary" id="crewCopyPrevious" '+(earlier?'':'disabled')+'>↻ Copiar última equipe</button><button type="button" class="button secondary" id="crewAll">✓ Selecionar todos</button><button type="button" class="button secondary" id="crewClear">Limpar</button></div></div>'+
    '<div class="crew-table-scroll"><table class="crew-table"><thead><tr><th>Selecionar</th><th>Funcionário</th><th>Tempo na obra</th></tr></thead><tbody>'+peopleHtml+'</tbody></table></div>'+
-   '<div class="crew-footer"><p id="crewHint">'+(missing.length?'Atenção: '+missing.length+' funcionário(s) sem custo/hora; confira a folha.':selected.some(x=>x.rate?.chargesMissing)?'Confira os encargos lançados na folha: há custos com encargos zerados.':'Valor gerencial: não cria contas a pagar nem pagamentos duplicados.')+'</p><button type="button" class="button primary" id="crewSave" '+(busy?'disabled':'')+'>'+(busy?'Salvando…':'Salvar alocação do dia')+'</button></div></section>'+
+   '<div class="crew-footer"><div class="crew-save-metrics"><strong id="crewSaveCount">'+selected.length+' funcionário(s)</strong><strong id="crewSaveHours">'+selected.reduce((a,x)=>a+x.hours,0).toLocaleString('pt-BR')+' h</strong></div><p id="crewHint">'+(missing.length?'Atenção: '+missing.length+' funcionário(s) sem custo/hora; confira a folha.':selected.some(x=>x.rate?.chargesMissing)?'Confira os encargos lançados na folha: há custos com encargos zerados.':'Valor gerencial: não cria contas a pagar nem pagamentos duplicados.')+'</p><button type="button" class="button primary" id="crewSave" '+(busy?'disabled':'')+'>'+(busy?'Salvando…':'Salvar alocação do dia')+'</button></div></section>'+
    '<div class="crew-split"><section class="panel"><div class="panel-head"><h2>Horas acumuladas</h2></div><div class="crew-totals"><p>Competência '+esc(month.split('-').reverse().join('/'))+'</p><strong>'+monthRows.length+' registros</strong><p>Total da obra</p><strong>'+total.hours.toLocaleString('pt-BR')+' h</strong></div></section>'+ '<section class="panel"><div class="panel-head"><h2>Histórico de alocações</h2></div><div class="crew-table-scroll"><table><thead><tr><th>Data</th><th>Pessoas</th><th>Horas</th></tr></thead><tbody>'+ (history||'<tr><td colspan="4" class="empty">Ainda não há equipes alocadas nesta obra.</td></tr>')+'</tbody></table></div></section></div>')+'</div>';
  }
  function attach(s,persist,render,notify){
@@ -78,21 +80,43 @@
   if(!$('crewProject'))return;
   $('crewProject').onchange=e=>{pickedProject=e.target.value;draftKey='';keyword='';refresh()};
   $('crewDate').onchange=e=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))return;day=e.target.value;draftKey='';refresh()};
+  for(const [id,delta] of [['crewPrevDate',-1],['crewNextDate',1]])$(id).onclick=()=>{day=moveDate(day,delta);draftKey='';keyword='';refresh()};
   $('crewSearch').oninput=e=>{keyword=e.target.value;const cursor=e.target.selectionStart;refresh();const input=$('crewSearch');input?.focus();input?.setSelectionRange(cursor,cursor)};
   const draw=()=>{
    const rows=selectedRows(s),sum=round(rows.reduce((a,r)=>a+r.total,0));
    $('crewPeople').textContent=String(rows.length);
    $('crewHours').textContent=rows.reduce((a,r)=>a+r.hours,0).toLocaleString('pt-BR')+' h';
+   $('crewSaveCount').textContent=rows.length+' funcionário(s)';
+   $('crewSaveHours').textContent=rows.reduce((a,r)=>a+r.hours,0).toLocaleString('pt-BR')+' h';
    
    $('crewHint').textContent=rows.some(x=>!x.rate)?'Há funcionário sem custo/hora na folha. Não será possível salvar até corrigir.':rows.some(x=>x.rate?.chargesMissing)?'Atenção: existem custos calculados com encargos zerados na folha.':'Valores gerenciais. Não criam lançamento de pagamento.';
    for(const e of employees(s)){
     const checked=!!draft.get(e.id)?.checked;
     const input=document.querySelector('[data-crew-hours="'+CSS.escape(e.id)+'"]');if(input)input.disabled=!checked;
+    document.querySelectorAll('[data-crew-employee="'+CSS.escape(e.id)+'"]').forEach(button=>button.disabled=!checked);
     const inputRow=input?.closest('tr');if(inputRow)inputRow.classList.toggle('crew-marked',checked);
    }
   };
   document.querySelectorAll('[data-crew-select]').forEach(el=>el.onchange=e=>{const id=e.target.dataset.crewSelect,old=draft.get(id)||{hours:8};draft.set(id,{...old,checked:e.target.checked});draw()});
   document.querySelectorAll('[data-crew-hours]').forEach(el=>el.oninput=e=>{const id=e.target.dataset.crewHours,old=draft.get(id)||{checked:false};draft.set(id,{...old,hours:Number(e.target.value)});draw()});
+  document.querySelectorAll('[data-crew-step]').forEach(button=>button.onclick=()=>{
+   const id=button.dataset.crewEmployee,old=draft.get(id);if(!old?.checked)return;
+   const next=Math.round(((Number(old.hours)||0)+Number(button.dataset.crewStep))*4)/4;
+   if(next<0.25||next>24)return;
+   draft.set(id,{...old,hours:next});
+   const input=document.querySelector('[data-crew-hours="'+CSS.escape(id)+'"]');if(input)input.value=String(next);
+   draw();
+  });
+  $('crewCopyPrevious').onclick=()=>{
+   const previous=[...new Set((s.crewAllocations||[]).filter(a=>a.project===pickedProject&&a.date<day).map(a=>a.date))].sort().at(-1);
+   if(!previous)return notify('Ainda não existe equipe anterior para esta obra.');
+   if(selectedRows(s).length&&!root.confirm('Substituir a seleção atual pela equipe salva em '+dateBR(previous)+'?'))return;
+   const eligible=new Set(employees(s).filter(e=>e.role!=='Inativo / histórico'&&rateOf(s,e,day)).map(e=>e.id));
+   const entries=forDay(s,pickedProject,previous).filter(a=>eligible.has(String(a.employeeId)));
+   if(!entries.length)return notify('A equipe anterior não possui funcionários ativos com custo/hora disponível.');
+   draft=new Map(entries.map(a=>[String(a.employeeId),{checked:true,hours:Number(a.hours)||8}]));
+   keyword='';refresh();notify('Equipe de '+dateBR(previous)+' copiada. Confira as horas e salve.');
+  };
   $('crewAll').onclick=()=>{for(const e of employees(s))if(rateOf(s,e,day)||forDay(s,pickedProject,day).some(x=>String(x.employeeId)===e.id)){draft.set(e.id,{checked:true,hours:draft.get(e.id)?.hours||8})}document.querySelectorAll('[data-crew-select]').forEach(el=>el.checked=!!draft.get(el.dataset.crewSelect)?.checked);draw()};
   $('crewClear').onclick=()=>{for(const x of draft.values())x.checked=false;document.querySelectorAll('[data-crew-select]').forEach(el=>el.checked=false);draw()};
   $('crewApplyHours').onclick=()=>{const hours=Number($('crewDefaultHours').value);if(!Number.isFinite(hours)||hours<=0||hours>24)return notify('Informe uma jornada entre 0,25 e 24 horas.');for(const x of draft.values())if(x.checked)x.hours=hours;document.querySelectorAll('[data-crew-hours]').forEach(el=>{if(draft.get(el.dataset.crewHours)?.checked)el.value=String(hours)});draw()};
