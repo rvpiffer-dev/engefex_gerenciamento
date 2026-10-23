@@ -16,6 +16,7 @@ function page(s,v){
 function attach(s,persist,render,notify,v){
  original.attach(s,persist,render,notify,v);
  if(v!=='hr-payroll')return;
+ const tabs=document.querySelectorAll('[data-rh-aba]');tabs.forEach(b=>b.remove());
  const table=document.querySelector('.hr-table-wrap table');
  if(!table)return;
  const month=document.getElementById('rhMonth')?.value||new Date().toISOString().slice(0,7);
@@ -64,7 +65,13 @@ function attach(s,persist,render,notify,v){
    }).join('');
    const extra=sal?'<h3>Custo por hora</h3><table class="hr-data-table"><tbody><tr><th>Jornada padrão</th><td>44 horas semanais</td></tr><tr><th>Horas mensais adotadas</th><td>'+hours(sal)+' h</td></tr><tr><th>Encargos extras informados</th><td>'+money(n(sal.employerCosts))+'</td></tr><tr><th>Custo/hora estimado</th><td>'+money(cost(sal))+'</td></tr></tbody></table>':'';
    details.querySelector('#payDetailsTitle').textContent=rname+' · '+month;
-   details.querySelector('#payDetailsContent').innerHTML=sections+extra;
+   const card=(label,value)=>'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:10px 12px;border-bottom:1px solid #e2e8f0"><span style="color:#475569;font-weight:600;flex:1;min-width:0;overflow-wrap:anywhere">'+esc(label)+'</span><strong style="text-align:right;white-space:normal;overflow-wrap:anywhere">'+value+'</strong></div>';
+   const group=(title,item,fields)=>'<section style="background:#fff;border:1px solid #dbe3ee;border-radius:12px;overflow:hidden;margin:0 0 14px"><h3 style="margin:0;padding:12px 14px;background:#eaf1fa;color:#173b64">'+esc(title)+'</h3>'+(item?fields.map((label,i)=>{const k=String.fromCharCode(65+i),val=k==='A'?esc(name(item)):money(item.values?.[k]);return card(label,val)}).join(''):'<p style="padding:12px">Sem lançamento registrado.</p>')+'</section>';
+   details.querySelector('#payDetailsContent').innerHTML=group('Salário · todos os campos',sal,labels)+group('Vale · todos os campos',vale,['Nome','Salário','Vale 40%'])+(sal?'<section style="background:#fff;border:1px solid #dbe3ee;border-radius:12px;overflow:hidden"><h3 style="margin:0;padding:12px 14px;background:#eaf1fa;color:#173b64">Custo por hora</h3>'+card('Jornada semanal','44 h')+card('Horas mensais',hours(sal)+' h')+card('Encargos adicionais',money(n(sal.employerCosts)))+card('Custo/hora estimado',money(cost(sal)))+'</section>':'');
+   details.style.width='min(760px, calc(100vw - 24px))';details.style.maxWidth='none';details.style.maxHeight='92vh';details.style.boxSizing='border-box';details.style.overflow='hidden';
+   details.querySelector('#payDetailsContent').style.cssText='max-height:calc(90vh - 115px);overflow-y:auto;overflow-x:hidden;padding:12px;background:#f7f9fc;box-sizing:border-box;width:100%';
+   const header=details.querySelector('.hr-editor-header');if(header){header.style.cssText='display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:18px';header.querySelector('h2').style.cssText='font-size:clamp(16px,2.5vw,22px);margin:0;overflow-wrap:anywhere;flex:1;min-width:0'}
+
    details.showModal();
   };
  }
