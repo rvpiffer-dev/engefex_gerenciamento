@@ -1,6 +1,6 @@
 {
-  "version": "4.18.14",
+  "version": "4.18.15",
   "date": "2026-10-23",
-  "name": "RH: cadastro completo de funcionários integrado a documentos férias e folha",
-  "previous_version": "4.18.13"
+  "name": "RH: tela única sem abas e visualização responsiva dos detalhes",
+  "previous_version": "4.18.14"
 }
