@@ -11,6 +11,7 @@
  const uid=()=>root.crypto?.randomUUID?.()||'batch-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);
  let api,documents=[],selection=new Set(),busy=false,filename='',associatedFiles=new Map(),search='',active=false,mode='archive';
  const field=(r,k)=>r?.[k]??'';
+ const financialCategories=s=>root.EngefexFinancialCategories?.list?.(s)||(Array.isArray(s?.costCategories)?s.costCategories.filter(c=>c&&c.active!==false&&c.code&&c.name).map(c=>c.code+'-'+c.name):D.CATEGORIES);
  const text=(r,k)=>String(field(r,k)).trim();
  function index(col){let n=0;for(const c of col)n=n*26+c.charCodeAt(0)-64;return n;}
  // Leitor independente para planilhas XLSX com ou sem prefixos XML (x:row, x:sheet etc.).
@@ -200,7 +201,7 @@
      '<td>'+h(text(r,'Emitente / fornecedor / prestador')||'Não informado')+'</td>'+
      '<td class="num">'+(val===null?'—':money(val))+'</td>'+
      '<td><select data-batch-project="'+h(d.id)+'">'+projectOptions(d.project,s)+'</select></td>'+
-     '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+ '<td><select data-batch-category="'+h(d.id)+'"><option value="">Conferir...</option>'+D.CATEGORIES.map(c=>'<option value="'+h(c)+'" '+(c===d.category?'selected':'')+'>'+h(c)+'</option>').join('')+'</select></td>'+ 
+     '<td><select data-batch-stage="'+h(d.id)+'" '+(!d.project||d.project==='Geral'?'disabled':'')+'>'+stageOptions(d,s)+'</select></td>'+ '<td><select data-batch-category="'+h(d.id)+'"><option value="">Conferir...</option>'+financialCategories(s).map(c=>'<option value="'+h(c)+'" '+(c===d.category?'selected':'')+'>'+h(c)+'</option>').join('')+'</select></td>'+ 
      '<td>'+ (issue?'<span class="tag amber">'+h(issue)+'</span>':(outgoing(r)?'<span class="tag green">Contas a pagar</span>':'<span class="tag">Conferir destino</span>'))+'</td></tr>';
     }).join('')+'</tbody></table></div>'+
     '<div class="batch-import-footer"><label class="batch-check-finance"><input type="checkbox" id="batchGenerateAccounts" '+(mode==='finance'?'checked':'')+'> Gerar Contas a Pagar dos documentos aptos (exige obra/etapa ou Geral, fornecedor, data, valor e vencimento)</label>'+
@@ -247,7 +248,7 @@
   if(related(raw)||doc.repeat)return {error:'Possível duplicidade ou conciliação'};
   if(!supplier||!issued||total===null||total<=0)return {error:'Fornecedor, emissão ou valor ausente'};
   if(!doc.project||doc.project!=='Geral'&&!doc.stage)return {error:'Escolha Geral ou a obra e a etapa'};
-  if(!D.CATEGORIES.includes(doc.category))return {error:'Selecione a categoria financeira'};
+  if(!financialCategories(s).includes(doc.category))return {error:'Selecione uma categoria cadastrada no Contas a Pagar'};
   if(doc.project!=='Geral'&&!s.projects.some(p=>p.id===doc.project))return {error:'Obra inexistente'};
   if(doc.stage&&!s.budgetStages.some(st=>st.id===doc.stage&&st.project===doc.project))return {error:'Etapa inválida'};
   const parts=schedule(doc,total);
@@ -356,7 +357,7 @@
    '<label>Valor total da nota (R$)<input required inputmode="decimal" id="reviewAmount" value="'+h(field(raw,'Valor total do documento / a pagar'))+'"></label>'+
    '<label>Obra / destino<select id="reviewProject" required>'+projectOptions(originalProject,source)+'</select></label>'+
    '<label>Etapa do orçamento<select id="reviewStage">'+stageOptions({project:originalProject,stage:originalStage},source)+'</select></label>'+
-   '<label>Categoria<select id="reviewCategory" required><option value="">Selecionar...</option>'+D.CATEGORIES.map(x=>'<option value="'+h(x)+'">'+h(x)+'</option>').join('')+'</select></label>'+
+   '<label>Categoria<select id="reviewCategory" required><option value="">Selecionar...</option>'+financialCategories(source).map(x=>'<option value="'+h(x)+'" '+(x===archive.category?'selected':'')+'>'+h(x)+'</option>').join('')+'</select></label>'+
    '<label>Vencimento único revisado<input type="date" id="reviewDue"></label>'+
    '<label class="batch-check-finance"><input type="checkbox" id="reviewOneInstallment"> Substituir as parcelas incompletas por um único vencimento que conferi</label>'+
    '</div>'+(related(raw)?'<label class="batch-check-finance"><input type="checkbox" id="reviewRelated"> Conferi os documentos relacionados e confirmei que não é uma duplicidade</label>':'')+
