@@ -61,7 +61,24 @@ function attach(s,persist,render,notify,v){
   const state=structuredClone(s),k=key();state[k]=(state[k]||[]).filter(r=>!(r.id===b.dataset.rhDel&&r.period===month));
   try{await save(state,'Lançamento excluído da folha.')}catch(err){notify(err.message)}
  });
- // Importação de Excel fica no módulo anterior até ser migrada.
+ const upload=document.getElementById('payImport');
+ upload.onclick=async()=>{
+  if(!writable())return notify('Sem permissão.');
+  const file=document.getElementById('payFile').files[0],feedback=document.getElementById('payFeedback');
+  if(!file)return notify('Selecione o arquivo XLSX.');
+  try{
+   const parsed=await w.EngefexPayrollParse(file);
+   const salaries=parsed.entries.map(e=>({id:crypto.randomUUID(),period:month,employeeName:e.name,values:e.values,status:'Rascunho'}));
+   const vales=parsed.advances.map(e=>({id:crypto.randomUUID(),period:month,employeeName:e.name,values:e.values,status:'Rascunho'}));
+   feedback.textContent=salaries.length+' salários e '+vales.length+' vales.';
+   if(!confirm('Importar '+month+'? Os lançamentos deste mês serão substituídos nas duas abas, preservando os outros meses.'))return;
+   const state=structuredClone(s);
+   state.hrPayroll=(state.hrPayroll||[]).filter(r=>r.period!==month).concat(salaries);
+   state.hrPayrollVale=(state.hrPayrollVale||[]).filter(r=>r.period!==month).concat(vales);
+   await save(state,'Folha importada.');
+  }catch(err){feedback.textContent=err.message;notify(err.message)}
+ };
+
 }
 w.EngefexHRExtra={page,attach};
 })(window);
