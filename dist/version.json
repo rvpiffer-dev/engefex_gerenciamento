@@ -1,6 +1,6 @@
 {
-  "version": "4.18.6",
+  "version": "4.18.7",
   "date": "2026-10-23",
-  "name": "Importação de notas em lote em Compras e Notas",
-  "previous_version": "4.18.5"
+  "name": "Categorias financeiras personalizadas no importador de notas",
+  "previous_version": "4.18.6"
 }
