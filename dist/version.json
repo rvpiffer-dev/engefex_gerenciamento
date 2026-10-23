@@ -1,6 +1,6 @@
 {
-  "version": "4.18.25",
+  "version": "4.18.26",
   "date": "2026-10-23",
-  "name": "Estoque Civil com visual renovado no padrão do Estoque de Tintas",
-  "previous_version": "4.18.24"
+  "name": "Estoque Civil refinado e permissões reconhecidas pelo Supabase",
+  "previous_version": "4.18.25"
 }
