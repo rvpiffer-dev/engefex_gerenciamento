@@ -47,7 +47,7 @@ function page(s,view){
  const rows=(s.hrPayroll||[]).filter(r=>r.period===selectedPeriod);
  const total=rows.reduce((a,r)=>a+num(r.values?.N),0);
  const advances=rows.reduce((a,r)=>a+num(r.valeSheet??r.values?.E),0);
- return '<section class="page-head hr-hero"><div><p class="hr-eyebrow">ENGEFEX · RECURSOS HUMANOS</p><h1>Folha de pagamento</h1><p>Importação mensal no mesmo modelo da planilha original, com histórico por competência.</p></div></section>'+
+ return '<section class="page-head hr-hero"><div><p class="hr-eyebrow">ENGEFEX · RECURSOS HUMANOS</p><h1>Folha de pagamento</h1><p>Importação mensal no mesmo modelo da planilha original, com histórico por competência. Pagamento salarial: dia 05 (60%); vale: dia 20 (40%).</p></div></section>'+
  '<section class="panel hr-panel"><div class="panel-head"><h2>Competência e importação</h2></div><div class="form-grid"><label>Competência (mês e ano)<input type="month" id="payPeriod" value="'+esc(selectedPeriod)+'"></label><label>Importar XLSX (abas Salario e Vale)<input id="payFile" type="file" accept=".xlsx"></label></div><p id="payFeedback" class="notice">Confira os dados antes de importar. Cada mês fica separado; uma nova importação do mesmo mês substituirá somente os registros correspondentes após confirmação.</p><div class="actions"><button class="button primary" id="payImport" type="button">Importar folha desta competência</button></div></section>'+
  '<section class="panel hr-panel"><div class="panel-head"><h2>Folha de '+esc(selectedPeriod)+'</h2><p>'+rows.length+' registros · total da coluna TOTAL '+money(total)+' · vales '+money(advances)+'</p></div><div class="table-wrap" style="overflow:auto"><table class="hr-data-table" style="min-width:1600px"><thead><tr>'+columnNames.map(h=>'<th>'+esc(h)+'</th>').join('')+'<th>Vale (aba Vale)</th><th>Conferência</th></tr></thead><tbody>'+
  rows.map(r=>{const v=r.values||{};const diff=r.valeSheet!==null&&r.valeSheet!==undefined&&Math.abs(num(v.E)-num(r.valeSheet))>.01;return '<tr>'+columnNames.map((_,i)=>{const key=String.fromCharCode(65+i);return '<td>'+esc(key==='A'?r.employeeName||v.A:v[key]===''?'':money(v[key]))+'</td>'}).join('')+'<td>'+esc(r.valeSheet==null?'Não informado':money(r.valeSheet))+'</td><td>'+esc(diff?'Divergência entre abas':r.employeeId?'Conferido pelo nome':'Verificar cadastro')+'</td></tr>'}).join('')+
@@ -66,7 +66,7 @@ function attach(s,persist,render,notify,view){
    const people=s.hrEmployees||[];
    const records=entries.map(e=>{
     let match=people.filter(p=>norm(p.name)===norm(e.name));
-    return {id:crypto.randomUUID(),period:selectedPeriod,employeeName:e.name,employeeId:match.length===1?match[0].id:'',values:e.values,valeSheet:e.valeSheet,status:'Rascunho',source:file.files[0].name,importedAt:new Date().toISOString()};
+    return {id:crypto.randomUUID(),period:selectedPeriod,employeeName:e.name,employeeId:match.length===1?match[0].id:'',values:e.values,valeSheet:e.valeSheet,salaryPaymentDay:5,valePaymentDay:20,salaryShare:60,valeShare:40,status:'Rascunho',source:file.files[0].name,importedAt:new Date().toISOString()};
    });
    const unmatched=records.filter(r=>!r.employeeId).length;
    const unmatchedVale=advances.filter(v=>!entries.some(e=>norm(e.name)===norm(v.name)));
