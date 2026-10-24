@@ -416,7 +416,7 @@
   const stillCurrent=()=>generation===authGeneration&&phase==='ready'&&!pending&&!ownDirty()&&revision===startRevision&&workspace===startWorkspace;
   try{
    if(force||Date.now()-lastReadCheck>=60000)await loadNotificationReads();
-   if(force||Date.now()-lastStockCheck>=60000)try{await loadStockAlerts()}catch(e){lastStockCheck=Date.now();console.warn('Avisos dos estoques indisponíveis',e)}
+   if(force||Date.now()-lastStockCheck>=60000){lastStockCheck=Date.now();loadStockAlerts().catch(e=>console.warn('Avisos dos estoques indisponíveis',e))}
    if(root.EngefexAccess&&(force||Date.now()-lastAccessCheck>=60000)&&await loadAccess()){sessionFiles.clear();knownFiles.clear();client.accessChanged?.();setPhase('loading');try{const rows=await readState();revision=Number(rows?.[0]?.revision);if(!rows?.[0]?.payload)throw Error('A base autorizada não foi encontrada.');acceptRemote(rows[0].payload)}catch(e){setPhase('error',e.message)}return}if(ownDirty())return;
    const heads=await readState(true);
    if(!stillCurrent())return;
