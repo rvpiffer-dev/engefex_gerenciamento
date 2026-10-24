@@ -10,7 +10,7 @@
  const SESSION_KEY=root.EngefexEnvironment?.storageKey('engefex-cloud-auth-v1')||'engefex-cloud-auth-v1';
  let session=null, workspace=null, revision=null, client=null, phase='login', pending=false, failed='', knownFiles=new Set(), remoteSnapshot=null, authGeneration=0;
  let accessVersion='',sessionFiles=new Set();
- let confirmedState=null,patchSupported=null,compactReadSupported=null,refreshing=false,tokenRefresh=null,lastSync=null,lastAccessCheck=0,lastReadCheck=0,notificationReadIds=new Set();
+ let confirmedState=null,patchSupported=null,compactReadSupported=null,refreshing=false,tokenRefresh=null,lastSync=null,lastAccessCheck=0,lastReadCheck=0,notificationReadIds=new Set(),stockAlerts=[],lastStockCheck=0;
  let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
  let lastRefreshAttempt=0, refreshFailures=0, unsavedPayload=null, activeDraft=null, recovering=false, draftPersisted=false;
  const $=id=>document.getElementById(id);
@@ -238,6 +238,25 @@
   notificationReadIds=found;lastReadCheck=Date.now();
   client?.notificationReadsChanged?.();
  }
+ async function loadStockAlerts(){
+  if(!workspace||!session?.user?.id)return;
+  const generation=authGeneration,w=workspace,uid=session.user.id;
+  // O banco aplica as permissões do usuário para cada um dos três estoques.
+  const rows=await raw('/rest/v1/engefex_stock_updates?select=id,stock_kind,actor_name,created_at&workspace_id=eq.'+
+    encodeURIComponent(w)+'&order=created_at.desc,id.desc&limit=100');
+  if(!Array.isArray(rows))throw Error('Histórico de atualizações do estoque indisponível.');
+  if(generation!==authGeneration||w!==workspace||uid!==session?.user?.id)return;
+  const names={nextarstock:'Nexus (Nextar)',paintstock:'Tintas',civilstock:'Civil'};
+  stockAlerts=rows.filter(row=>Object.hasOwn(names,row.stock_kind)).map(row=>({
+    id:'stock-update-'+row.id,stockKind:row.stock_kind,
+    title:'Estoque '+names[row.stock_kind]+' atualizado',
+    detail:'Base atualizada por '+String(row.actor_name||'Usuário da equipe'),
+    project:'Geral',priority:'Estoque',createdAt:row.created_at,
+    href:'#'+row.stock_kind
+  }));
+  lastStockCheck=Date.now();
+  client?.stockAlertsChanged?.();
+ }
  async function markNotificationsRead(ids){
   if(phase!=='ready'||!workspace||!session?.user?.id)throw Error('Conecte-se para marcar notificações.');
   const unique=[...new Set((ids||[]).filter(x=>typeof x==='string'&&x.length>0&&x.length<=300))];
@@ -262,7 +281,7 @@
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
   if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
-  workspace=memberships[0].workspace_id;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;notificationReadIds.clear();lastReadCheck=0;await loadAccess();await loadNotificationReads();
+  workspace=memberships[0].workspace_id;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;notificationReadIds.clear();lastReadCheck=0;await loadAccess();await loadNotificationReads();await loadStockAlerts();
   const rows=await readState();
   if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
@@ -377,6 +396,7 @@
    pending=false;failed='';clearDraft();
    paintStatus('Salvo no Supabase · revisão '+revision+' · '+new Date().toLocaleTimeString('pt-BR'));
    client.saved?.();
+   loadStockAlerts().catch(e=>console.warn('Avisos dos estoques indisponíveis',e));
    return true;
   })().catch(e=>{
    pending=false;
@@ -396,6 +416,7 @@
   const stillCurrent=()=>generation===authGeneration&&phase==='ready'&&!pending&&!ownDirty()&&revision===startRevision&&workspace===startWorkspace;
   try{
    if(force||Date.now()-lastReadCheck>=60000)await loadNotificationReads();
+   if(force||Date.now()-lastStockCheck>=60000)try{await loadStockAlerts()}catch(e){lastStockCheck=Date.now();console.warn('Avisos dos estoques indisponíveis',e)}
    if(root.EngefexAccess&&(force||Date.now()-lastAccessCheck>=60000)&&await loadAccess()){sessionFiles.clear();knownFiles.clear();client.accessChanged?.();setPhase('loading');try{const rows=await readState();revision=Number(rows?.[0]?.revision);if(!rows?.[0]?.payload)throw Error('A base autorizada não foi encontrada.');acceptRemote(rows[0].payload)}catch(e){setPhase('error',e.message)}return}if(ownDirty())return;
    const heads=await readState(true);
    if(!stillCurrent())return;
@@ -466,7 +487,7 @@
   const token=session?.access_token;
   const wasConnected=phase==='ready';
   authGeneration++;
-  saveSession(null);accessVersion='';sessionFiles.clear();root.EngefexAccess?.setContext({is_admin:false,permissions:{modules:{},views:{}},restricted:true});workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;lastReadCheck=0;notificationReadIds.clear();lastSync=null;knownFiles.clear();failed='';
+  saveSession(null);accessVersion='';sessionFiles.clear();root.EngefexAccess?.setContext({is_admin:false,permissions:{modules:{},views:{}},restricted:true});workspace=null;revision=null;remoteSnapshot=null;confirmedState=null;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;lastReadCheck=0;notificationReadIds.clear();stockAlerts=[];lastStockCheck=0;lastSync=null;knownFiles.clear();failed='';
   activeDraft=null;unsavedPayload=null;draftPersisted=false;setPhase('login');if(wasConnected)client?.clearState?.();paintStatus('Desconectado');
   if(token)fetch(URL_BASE+'/auth/v1/logout',{method:'POST',headers:{apikey:API_KEY,Authorization:'Bearer '+token}}).catch(()=>{});
  }
@@ -478,7 +499,7 @@
   setInterval(()=>{if(phase==='ready')refreshRemote().catch(e=>paintStatus('Falha ao atualizar: '+e.message))},60000);
   root.addEventListener('focus',()=>{if(phase==='ready')refreshRemote().catch(()=>{})});
  }
- root.EngefexCloud={fullSnapshot,prepareBackupImport,markNotificationsRead,hasNotificationBeenRead:id=>notificationReadIds.has(id),loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');return raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending||!!activeDraft},get unsynced(){return !!activeDraft||pending||!!failed},retryPending};
+ root.EngefexCloud={fullSnapshot,prepareBackupImport,markNotificationsRead,hasNotificationBeenRead:id=>notificationReadIds.has(id),get stockAlerts(){return stockAlerts.slice()},loadFullHistory:async()=>{const full=await fullSnapshot();return full.history||[]},get compact(){return compactReadSupported===true&&!root.EngefexAccess?.context?.restricted},async birthdaysToday(){if(phase!=='ready')return [];const result=await raw('/rest/v1/rpc/engefex_birthdays_today',{method:'POST',json:true,body:{}});return Array.isArray(result)?result.map(x=>String(x.employee_name||'').trim()).filter(Boolean):[];},async resetUserPassword(userId,password){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode redefinir senhas.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{action:'reset_password',workspace,userId,password}});if(generation!==authGeneration)throw Error('A sessão mudou. Entre novamente.');return result;},async createUser(details){if(phase!=='ready'||!workspace||!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode cadastrar usuários.');const generation=authGeneration;const result=await raw('/functions/v1/admin-create-user',{method:'POST',json:true,body:{workspace,name:details.name,email:details.email,password:details.password}});if(generation!==authGeneration)throw Error('A sessão mudou. Atualize a lista de usuários.');return result;},async loadNextar(){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const list=await raw('/rest/v1/engefex_nextar_inventory?select=snapshot&workspace_id=eq.'+encodeURIComponent(workspace)+'&limit=1');return list?.[0]?.snapshot||null;},async publishNextar(snapshot){if(phase!=='ready'||!workspace)throw Error('Entre no sistema.');const published=await raw('/rest/v1/rpc/engefex_nextar_publish',{method:'POST',json:true,body:{p_workspace:workspace,p_snapshot:snapshot}});await loadStockAlerts().catch(e=>console.warn('Avisos dos estoques indisponíveis',e));return published;},async listAccess(){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_list_access',{method:'POST',json:true,body:{p_workspace:workspace}})},async setAccess(user,version,permissions){if(!root.EngefexAccess?.isAdmin)throw Error('Somente o administrador pode gerenciar acessos.');return raw('/rest/v1/rpc/engefex_set_access',{method:'POST',json:true,body:{p_workspace:workspace,p_user:user,p_revision:version,p_permissions:permissions}})},boot,requireWrite,send,buildPatch,get lastSync(){return lastSync?{...lastSync}:null},get currentUser(){return phase==='ready'?{id:session?.user?.id||'',email:session?.user?.email||''}:null},get ready(){return phase==='ready'},get pending(){return pending},get dirty(){return ownDirty()||pending||!!activeDraft},get unsynced(){return !!activeDraft||pending||!!failed},retryPending};
 })(window);
 
 
