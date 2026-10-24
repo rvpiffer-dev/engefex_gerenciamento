@@ -281,7 +281,7 @@
   const memberships=await raw('/rest/v1/engefex_members?select=workspace_id&limit=2');
   if(generation!==authGeneration)return;
   if(!Array.isArray(memberships)||memberships.length!==1)throw Error('A conta precisa estar vinculada a exatamente uma área de trabalho. Peça ao administrador para executar o SQL de autorização dos usuários.');
-  workspace=memberships[0].workspace_id;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;notificationReadIds.clear();lastReadCheck=0;await loadAccess();await loadNotificationReads();await loadStockAlerts();
+  workspace=memberships[0].workspace_id;patchSupported=null;compactReadSupported=null;lastAccessCheck=0;notificationReadIds.clear();lastReadCheck=0;await loadAccess();await loadNotificationReads();loadStockAlerts().catch(e=>console.warn('Avisos dos estoques indisponíveis',e));
   const rows=await readState();
   if(generation!==authGeneration)return;
   if(!Array.isArray(rows)||rows.length!==1)throw Error('Banco não inicializado. Execute a migração SQL da pasta supabase/migrations.');
