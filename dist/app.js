@@ -30,6 +30,7 @@
   return [
    ...(window.EngefexVacationControl?.alerts(state)||[]).map(n=>({...n,project:'Geral'})),
    ...birthdayAlerts(),
+   ...(cloud?.stockAlerts||[]),
    ...(E?.inbox(state,identity())||[]),
    ...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>({...n,project:'Geral',priority:'Atenção',createdAt:new Date().toISOString()}))
   ];
@@ -51,10 +52,10 @@
  function drawAlerts(){
   const list=alerts(),remaining=list.filter(n=>!alertIsRead(n)).length;
   $('#alertsList').innerHTML=list.length?list.map(n=>{
-   const action=n.vacation?'Abrir férias':n.id.startsWith('rh-')?'Abrir RH':n.issueId?'Abrir pendência':'';
+   const action=n.stockKind?'Abrir estoque':n.vacation?'Abrir férias':n.id.startsWith('rh-')?'Abrir RH':n.issueId?'Abrir pendência':'';
    const read=alertIsRead(n),interactive=!read||!!action;
    return `<article class="alerts-item ${read?'read':'unread'}" ${interactive?`role="button" tabindex="0" data-alert-open="${h(n.id)}" aria-label="${h((read?'Abrir aviso: ':'Marcar como lida: ')+n.title)}"`:''}>
-     <div><strong>${h(n.title)}</strong><div>${h(n.detail||'')}</div><small>${h(projectLabel(n.project))} · ${h(n.priority||'Normal')} · ${fmt(n.due)}</small></div>
+     <div><strong>${h(n.title)}</strong><div>${h(n.detail||'')}</div><small>${h(projectLabel(n.project))} · ${h(n.priority||'Normal')} · ${n.stockKind?h(new Date(n.createdAt).toLocaleString('pt-BR')):fmt(n.due)}</small></div>
      <div class="alerts-item-actions">
        ${read?'<span class="alerts-read">✓ Lida</span>':`<button type="button" class="text-btn" data-alert-read="${h(n.id)}">✓ Marcar como lida</button>`}
        ${action?`<button type="button" class="text-btn" data-alert-open="${h(n.id)}">${h(action)}</button>`:''}
@@ -309,7 +310,7 @@
  window.EngefexMeasurementSheet?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},getProject:()=>project,save:next=>persist(next),render,toast});
  window.EngefexRetentions?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},getProject:()=>project,save:next=>persist(next),render,toast});
  window.EngefexSuppliers?.init({getState:()=>{try{return JSON.parse(readCache())||D.clone(state)}catch{return D.clone(state)}},save:next=>persist(next),render,toast});
- if(cloud)cloud.boot({getState:()=>D.clone(state),acceptState:next=>{D.onlineValid(next);fullHistory=null;state=window.EngefexManager.ensureProjectCodes(window.EngefexManager.separate(next));writeCache(serializeSaved(state));if(view==='nextarstock'){updateBell()}else{search='';filter='';render()}},isDirty:()=>A?.isDirty()||window.EngefexReceivableToggle?.busy()||diaryDirty||submitting||budgetImportDirty()||!!$('#editor')?.open||window.EngefexGrid?.isDirty()||window.EngefexRecordsGrid?.isDirty()||window.EngefexFactory?.isDirty()||window.EngefexSuppliers?.isDirty()||window.EngefexLaborContracts?.isDirty()||window.EngefexRetentions?.isDirty()||window.EngefexFixedExpenses?.isDirty()||window.EngefexReceivableInstallments?.isDirty()||window.EngefexMeasurementSheet?.isDirty()||window.EngefexPayables?.isDirty()||window.EngefexBatchNotes?.isDirty()||window.EngefexPurchases?.isDirty()||window.EngefexMeasurementForecast?.isDirty(),clearState:()=>{fullHistory=null;volatileCache=null;localStorage.removeItem(KEY);state=window.EngefexManager.separate(D.clone(window.OBRAS_SEED));render();updateBell()},identityChanged:()=>{render();updateBell()},notificationReadsChanged:()=>updateBell(),accessChanged:()=>{for(let el of document.querySelectorAll('dialog[open]'))el.close();diaryDirty=false;volatileCache=null;localStorage.removeItem(KEY);$('#main').innerHTML='<p>Atualizando permissões…</p>';},exportBackup,saved:()=>toast('Alteração confirmada no Supabase.'),saveError:msg=>toast('Falha ao salvar online: '+msg)});
+ if(cloud)cloud.boot({getState:()=>D.clone(state),acceptState:next=>{D.onlineValid(next);fullHistory=null;state=window.EngefexManager.ensureProjectCodes(window.EngefexManager.separate(next));writeCache(serializeSaved(state));if(view==='nextarstock'){updateBell()}else{search='';filter='';render()}},isDirty:()=>A?.isDirty()||window.EngefexReceivableToggle?.busy()||diaryDirty||submitting||budgetImportDirty()||!!$('#editor')?.open||window.EngefexGrid?.isDirty()||window.EngefexRecordsGrid?.isDirty()||window.EngefexFactory?.isDirty()||window.EngefexSuppliers?.isDirty()||window.EngefexLaborContracts?.isDirty()||window.EngefexRetentions?.isDirty()||window.EngefexFixedExpenses?.isDirty()||window.EngefexReceivableInstallments?.isDirty()||window.EngefexMeasurementSheet?.isDirty()||window.EngefexPayables?.isDirty()||window.EngefexBatchNotes?.isDirty()||window.EngefexPurchases?.isDirty()||window.EngefexMeasurementForecast?.isDirty(),clearState:()=>{fullHistory=null;volatileCache=null;localStorage.removeItem(KEY);state=window.EngefexManager.separate(D.clone(window.OBRAS_SEED));render();updateBell()},identityChanged:()=>{render();updateBell()},notificationReadsChanged:()=>updateBell(),stockAlertsChanged:()=>updateBell(),accessChanged:()=>{for(let el of document.querySelectorAll('dialog[open]'))el.close();diaryDirty=false;volatileCache=null;localStorage.removeItem(KEY);$('#main').innerHTML='<p>Atualizando permissões…</p>';},exportBackup,saved:()=>toast('Alteração confirmada no Supabase.'),saveError:msg=>toast('Falha ao salvar online: '+msg)});
 })();
 
 
