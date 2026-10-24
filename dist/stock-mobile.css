@@ -1,0 +1,66 @@
+/* Estoques: cartões compactos apenas em telas de celular.
+   A grade/tabela original permanece inalterada no desktop. */
+.stock-mobile-cards{display:none}
+
+@media screen and (max-width:760px){
+  .stock-mobile-cards{display:grid;gap:7px;margin:8px 0 12px;min-width:0}
+  .stock-mobile-card{background:#fff;border:1px solid #dbe5f0;border-radius:10px;padding:10px 11px;min-width:0;box-shadow:0 1px 5px rgba(27,54,88,.04);color:#263c55}
+  .stock-mobile-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .stock-mobile-title{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .stock-mobile-title strong{font-size:13px;line-height:1.3;font-weight:750;overflow-wrap:anywhere;color:#213e60}
+  .stock-mobile-title small{font-size:10px;font-family:ui-monospace,Consolas,monospace;color:#607b98}
+  .stock-mobile-quantity{flex:0 0 auto;min-width:64px;text-align:right;background:#eef6ff;border:1px solid #dce9fb;border-radius:7px;padding:4px 7px}
+  .stock-mobile-quantity small{display:block;font-size:9px;line-height:1.3;color:#5b7391}
+  .stock-mobile-quantity strong{font-size:16px;font-weight:800;color:#17528e;line-height:1.25;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .stock-mobile-summary{display:flex;flex-wrap:wrap;align-items:center;gap:5px 12px;font-size:11px;color:#5e7188;margin-top:6px}
+  .stock-mobile-summary>span{display:inline-flex;align-items:center;gap:4px;min-width:0}
+  .stock-mobile-summary strong{font-weight:700;color:#294b6b}
+  .stock-mobile-swatch{width:11px;height:11px;border:1px solid #a7b5c5;border-radius:3px;display:inline-block;flex-shrink:0}
+  .stock-mobile-details{border-top:1px solid #e9eef5;margin-top:7px;padding-top:4px}
+  .stock-mobile-details summary{font-size:11px;min-height:28px;display:flex;align-items:center;gap:5px;color:#265d97;font-weight:650;cursor:pointer;list-style:none}
+  .stock-mobile-details summary::-webkit-details-marker{display:none}
+  .stock-mobile-details summary::before{content:'▸';font-size:12px}
+  .stock-mobile-details[open] summary::before{content:'▾'}
+  .stock-mobile-details dl{margin:3px 0 6px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+  .stock-mobile-details dl>div{min-width:0;overflow-wrap:anywhere}
+  .stock-mobile-details dt{font-size:10px;color:#74869c}
+  .stock-mobile-details dd{font-size:11px;color:#2e445d;font-weight:600;margin:2px 0 0}
+  .stock-mobile-actions{display:flex;gap:7px;justify-content:flex-end;margin-top:5px}
+  .stock-mobile-actions .button{min-height:34px;padding:6px 12px;font-size:11px;border-radius:7px;flex:1}
+  .stock-mobile-actions .stock-mobile-danger{color:#a33434;border-color:#f0caca}
+  .stock-mobile-empty{font-size:12px;padding:18px;text-align:center;color:#6d7b8b}
+
+  /* Tintas e Civil: renderizações separadas, com a tabela desktop preservada. */
+  .paint-table,.civil-stock .civil-table-panel .hr-table-wrap{display:none!important}
+  .paint-controls{margin:8px 0!important;gap:6px!important}
+  .paint-controls input,.paint-controls select{max-width:100%;min-width:0;font-size:13px}
+  .civil-stock .civil-head{padding:12px 14px;margin-bottom:10px}
+  .civil-stock .civil-head h1{font-size:20px}
+  .civil-stock .civil-metrics{gap:7px;margin-bottom:11px}
+  .civil-stock .civil-metrics>div{padding:10px;gap:3px}
+  .civil-stock .civil-metrics strong{font-size:16px}
+  .civil-stock .civil-filters{padding:11px}
+  .civil-stock .civil-table-panel .panel-head{gap:6px;flex-wrap:wrap}
+  .civil-stock .civil-table-panel .panel-head>span{font-size:10px;padding:4px 7px}
+
+  /* Nextar: transformar as linhas existentes em cartões, sem duplicar milhares de itens. */
+  .nextar-table-wrap{overflow:visible!important;scrollbar-gutter:auto!important;padding:0 8px 10px}
+  .nextar-stock-table{display:block!important;width:100%!important;min-width:0!important;table-layout:auto!important;border-spacing:0!important}
+  .nextar-stock-table thead{display:none!important}
+  .nextar-stock-table tbody{display:grid;gap:6px}
+  .nextar-stock-table tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto auto;gap:3px 8px;border:1px solid #dbe5f0;border-radius:9px;background:#fff!important;padding:9px 10px;min-width:0;box-shadow:0 1px 4px rgba(27,54,88,.04)}
+  .nextar-stock-table tbody tr:hover{background:#fff!important}
+  .nextar-stock-table tbody td{display:block;border:0!important;padding:0!important;min-width:0;line-height:1.3}
+  .nextar-stock-table tbody td:nth-child(1){grid-area:1/1;color:#47729a;font-size:11px}
+  .nextar-stock-table tbody td:nth-child(2){grid-area:2/1/3/3;font-size:13px;font-weight:720;overflow-wrap:anywhere;color:#223e5a}
+  .nextar-stock-table tbody td:nth-child(3){grid-area:3/1;align-self:center;font-size:11px;color:#708397}
+  .nextar-stock-table tbody td:nth-child(3)::before{content:'Unid. ';font-weight:650}
+  .nextar-stock-table tbody td.nextar-qty{grid-area:1/2;text-align:right;font-size:15px;font-weight:800;color:#17528e;align-self:center}
+  .nextar-stock-table tbody td.nextar-qty::before{content:'Saldo ';font-size:10px;color:#74879b;font-weight:500}
+  .nextar-stock-table tbody td:nth-child(5){grid-area:3/2;text-align:right}
+  .nextar-stock-table .nextar-code{padding:1px 5px;font-size:10px}
+  .nextar-stock-table .nextar-obs-open{min-height:28px;max-height:none;font-size:11px;padding:3px 7px}
+  .nextar-stock-table .nextar-empty-table{grid-column:1/-1!important;padding:16px 6px!important;text-align:center!important}
+  .nextar-panel-header{gap:10px}
+  .nextar-list-caption{gap:3px}
+}
