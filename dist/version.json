@@ -1,6 +1,6 @@
 {
-  "version": "4.18.34",
+  "version": "4.18.35",
   "date": "2026-10-26",
-  "name": "Fechamento de fornecedor confirma notas em Rascunho somente após definir os boletos",
-  "previous_version": "4.18.33"
+  "name": "Exportar Pedidos e Compras por obra e período em Excel (XLSX) e PDF",
+  "previous_version": "4.18.34"
 }
