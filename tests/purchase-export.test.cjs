@@ -74,7 +74,7 @@ test('Excel possui planilha de documentos e itens com valores numéricos, perío
  assert.ok(generated.files['[Content_Types].xml']);
 });
 test('PDF é arquivo real, com múltiplas páginas para muitas notas',async()=>{
- const {w,s,P,R}=setup();
+ let {w,s,P,R}=setup();
  vm.runInContext(fs.readFileSync(path.join(dist,'vendor/pdf-lib.min.js'),'utf8'),w,{filename:'pdf-lib'});
  for(let i=0;i<34;i++){let p=P.fresh('p');Object.assign(p,{id:'bulk-'+i,kind:'Compra',number:'PED-'+i,supplier:'MARSON',date:'2026-10-17',status:'Rascunho',items:[{...P.newItem(),description:'Material',quantity:1,unitPrice:2,total:2,allocations:[{project:'p',stage:'sp',share:100}]}]});s=P.save(s,p)}
  const report=R.snapshot(s,'p',{dateFrom:'2026-10-01',dateTo:'2026-10-31'});
