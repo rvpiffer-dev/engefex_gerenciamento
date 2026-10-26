@@ -1,6 +1,6 @@
 {
-  "version": "4.18.32",
-  "date": "2026-10-24",
-  "name": "Cards compactos para os estoques Nextar, Tintas e Civil no celular",
-  "previous_version": "4.18.31"
+  "version": "4.18.33",
+  "date": "2026-10-26",
+  "name": "Fechamento de fornecedor com agrupamento de notas em Pedidos e Compras",
+  "previous_version": "4.18.32"
 }
