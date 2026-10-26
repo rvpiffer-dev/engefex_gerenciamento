@@ -78,7 +78,7 @@ async function generatePDF(report){
  const W=841.89,H=595.28,L=29,R=W-29,blue=rgb(.07,.24,.52),ink=rgb(.14,.19,.24),muted=rgb(.42,.46,.52),edge=rgb(.83,.86,.9),pale=rgb(.94,.96,.98),white=rgb(1,1,1);
  let page,y,pages=0;
  const safe=v=>String(v??'—').replace(/[\r\n\t]/g,' ').replace(/[\u2010-\u2027]/g,'-').replace(/[\u20ac\u2190-\u21ff]/g,'').replace(/[^\x20-\x7e\xa0-\xff]/g,'?');
- function line(v,x,at,size=8,isBold=false,color=ink,maxWidth){const font=isBold?bold:normal;let s=safe(v);if(maxWidth){while(s.length>3&&font.widthOfTextAtSize(s,size)>maxWidth)s=s.slice(0,-2).trimEnd()+'…';s=s.replace(/…/g,'.')}page.drawText(s,{x,y:at,size,font,color})}
+ function line(v,x,at,size=8,isBold=false,color=ink,maxWidth){const font=isBold?bold:normal;let s=safe(v);if(maxWidth){while(s.length>3&&font.widthOfTextAtSize(s,size)>maxWidth)s=s.slice(0,-2).trimEnd()+'.'}page.drawText(s,{x,y:at,size,font,color})}
  const cols=[['Emissão',64],['Documento',85],['Fornecedor',154],['Situação',72],['Destinação',99],['Nota (R$)',84],['Na obra (R$)',93],['Fechamento',72],['Vencimentos',60]];
  const colWidthSum=cols.reduce((n,c)=>n+c[1],0),factor=(R-L)/colWidthSum,widths=cols.map(c=>c[1]*factor);
  function rowHeader(){page.drawRectangle({x:L,y:y-19,width:R-L,height:25,color:blue});let x=L+5;cols.forEach((c,i)=>{line(c[0],x,y-11,7,true,white,widths[i]-8);x+=widths[i]});y-=27}
