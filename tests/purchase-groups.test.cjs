@@ -52,7 +52,7 @@ test('Agrupar notas gera boletos únicos e preserva custos por obra',()=>{
  assert.equal(grouped.purchases.filter(p=>p.paymentGroupId===meta.id).length,3);
  const groupedRows=F.groups(grouped).filter(p=>p.paymentGroupId===meta.id);
  assert.equal(groupedRows.length,3);
- assert.deepEqual(groupedRows.map(p=>Math.round(p.amount*100)),boletos.map(p=>Math.round(p.amount*100)));
+ assert.deepEqual(Array.from(groupedRows,p=>Math.round(p.amount*100)),boletos.map(p=>Math.round(p.amount*100)));
  assert.equal(F.groups(grouped).length,4,'a nota de outro fornecedor fica individual');
  for(const [id,amt] of [['N1',1250],['N2',875],['N3',2150]]){
   const sum=grouped.costs.filter(c=>c.purchase===id).reduce((n,c)=>n+c.amount,0);
