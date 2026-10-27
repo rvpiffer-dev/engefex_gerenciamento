@@ -47,8 +47,14 @@ function plan(state,items,dest){
   const keys=identifiers(p);
   if(keys.some(key=>current.has(key)||batchSeen.has(key)))throw Error('A nota '+(p.number||row.name)+' já existe ou está repetida. Atualize a lista.');
   for(const key of keys)batchSeen.add(key);
-  try{next=P().save(next,p)}catch(e){throw Error(row.name+': '+e.message)}
+  try{
+   P().validate(next,p);
+   p.total=p.items.length?P().totals(p):null;
+   p.updatedAt=new Date().toISOString();
+   next.purchases.push(p);
+  }catch(e){throw Error(row.name+': '+e.message)}
  }
+ next.history.unshift({id:root.crypto?.randomUUID?.()||'XML-'+Date.now(),time:new Date().toISOString(),kind:'purchaseXMLBatch',record:'xml-batch',action:'Importação de '+selected.length+' XMLs como rascunho',before:null,after:{purchaseIds:selected.map(r=>r.purchase.id),files:selected.map(r=>r.name),createdPayables:0}});
  if(D.onlineValid)D.onlineValid(next);
  return next;
 }
