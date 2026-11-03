@@ -46,7 +46,7 @@ function page(s,view){
  if(view!=='hr-payroll')return original.page(s,view);
  const all=(s.hrPayroll||[]).filter(r=>r.period===selectedPeriod),nameOf=r=>r.employeeName||r.values?.A||'';
  const check=r=>'ok';
- let rows=all.filter(r=>(!search||norm(nameOf(r)).includes(norm(search)))&&(statusFilter==='all'||(r.status||'Rascunho')===statusFilter)));
+ let rows=all.filter(r=>(!search||norm(nameOf(r)).includes(norm(search)))&&(statusFilter==='all'||(r.status||'Rascunho')===statusFilter));
  rows.sort((a,b)=>sort==='name'?nameOf(a).localeCompare(nameOf(b),'pt-BR'):sort==='name-desc'?nameOf(b).localeCompare(nameOf(a),'pt-BR'):sort==='value-desc'?num(b.values?.N)-num(a.values?.N):num(a.values?.N)-num(b.values?.N));
  if(onlyPositive)rows=rows.filter(r=>tab==='salary'?num(r.values?.N)>0:num(r.valeSheet??r.values?.E)>0);
  const sumSalary=rows.reduce((a,r)=>a+num(r.values?.N),0),sumVale=rows.reduce((a,r)=>a+num(r.valeSheet??r.values?.E),0);
