@@ -307,8 +307,28 @@
    }else changes.push({key,value});
   }return changes;
  }
+ function validateFinancialIds(payload){
+  for(const key of ['purchases','costs','fiscalImports']){
+   const entries=payload?.[key];if(!Array.isArray(entries))continue;
+   const ids=new Set();
+   for(const row of entries){const id=row?.id;if(!id)continue;if(ids.has(id))throw Error('IDs duplicados na lista '+key+'. Nenhum dado foi confirmado. Atualize a base e revise os registros antes de tentar novamente.');ids.add(id)}
+  }
+ }
+ function isSupplierClosing(payload){
+  const previousIds=new Set((confirmedState?.history||[]).map(event=>event.id));
+  return (payload.history||[]).some(event=>event.kind==='purchasePaymentGroups'&&!previousIds.has(event.id));
+ }
  async function writeState(payload){
-  const changes=confirmedState?buildPatch(confirmedState,payload):null,full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
+  validateFinancialIds(payload);
+  let changes=confirmedState?buildPatch(confirmedState,payload):null;
+  if(changes&&isSupplierClosing(payload)){
+   // Fechamentos editam muitas notas: substituir as listas financeiras por inteiro
+   // evita divergências de índices no patch, sem alterar os valores ou os registros.
+   const financialKeys=['purchases','costs','fiscalImports'];
+   changes=changes.filter(change=>!financialKeys.includes(change.key));
+   for(const key of financialKeys)if(JSON.stringify(confirmedState[key])!==JSON.stringify(payload[key]))changes.push({key,value:payload[key]});
+  }
+  const full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
   const compact=compactReadSupported===true&&!root.EngefexAccess?.context?.restricted;
   if(compact){
    // Histórico compacto é apenas uma janela da sequência real. Nunca substituí-la.

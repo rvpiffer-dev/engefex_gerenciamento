@@ -1,8 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../dist/cloud.js'),'utf8'),clone=x=>JSON.parse(JSON.stringify(x));
 function apply(before,changes){let next=clone(before);for(let c of changes){if(c.remove)delete next[c.key];else if('value'in c)next[c.key]=clone(c.value);else next[c.key].splice(c.start,c.deleteCount,...clone(c.items))}return next}
-async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false,savedStore=null}={}){
+async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false,savedStore=null,financials=false}={}){
  let shouldFail=fail;let payload={version:1,dataModel:2,projects:[{id:'p',name:'Obra'}],activities:Array.from({length:1000},(_,i)=>({id:'a'+i,name:'Atividade '+i,quantity:100,executed:0})),history:Array.from({length:1000},(_,i)=>({id:'h'+i,before:{name:'Antes '+i},after:{name:'Depois '+i}}))},revision=5,requests=[],accepted=[],callbacks={},nodes=new Map(),headResolve=null;
+ if(financials){payload.purchases=[{id:'N1',status:'Rascunho'},{id:'N2',status:'Rascunho'}];payload.costs=[{id:'C1',amount:10},{id:'C2',amount:20}];payload.fiscalImports=[{id:'F1',status:'Rascunho'},{id:'F2',status:'Rascunho'}]}
+
  const node=()=>({innerHTML:'',textContent:'',hidden:false,setAttribute(){},append(){},addEventListener(n,f){this[n]=f},querySelectorAll(){return []}}),el=id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},document={hidden:false,createElement:node,getElementById:el,head:{append(){}},body:{append(){}},querySelector:()=>null,documentElement:{classList:{toggle(){}}}},session={access_token:'token',refresh_token:'refresh',expires_at:Date.now()+3600000,user:{id:'u'}},store=savedStore||new Map([['engefex-cloud-auth-v1',JSON.stringify(session)]]),w={structuredClone,document,AbortController,FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload()})}},navigator:{onLine:true},setTimeout,clearTimeout,setInterval:f=>{callbacks.poll=f;return 1},addEventListener:(n,f)=>callbacks[n]=f,localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},Obras:{backupValid:s=>{if(!s?.projects)throw Error('Inválido')}},LocalFiles:{refs:()=>[],metadata:()=>({name:'projeto.pdf'}),load:async()=>{if(cacheFailure)throw Error('Armazenamento indisponível');return []},put:async()=>{if(cacheFailure)throw Error('quota exceeded')}},fetch:async(url,options)=>{
   const body=options.body?JSON.parse(options.body):null;requests.push({url,body});let data,status=200;
   if(url.includes('/rpc/engefex_read_state_compact'))return missing?{ok:false,status:404,text:async()=>JSON.stringify({code:'PGRST202',message:'Função ausente'})}:{ok:true,status:200,text:async()=>JSON.stringify([{payload:clone(payload),revision}])};if(url.includes('engefex_notification_reads?'))return {ok:true,status:200,text:async()=>JSON.stringify([])};if(url.includes('/storage/v1/object/authenticated/'))return {ok:true,blob:async()=>new Blob(['%PDF-teste'],{type:'application/pdf'})};if(url.includes('engefex_members'))data=[{workspace_id:'work'}];
@@ -60,4 +62,30 @@ test('depois de reabrir navegador o rascunho fica recuperável sem restaurar dad
  assert.equal(await second.api.retryPending(),true);
  assert.equal(second.server().activities[3].executed,55);
  assert.equal(second.api.unsynced,false);
+});
+
+test('fechamento de fornecedor envia listas financeiras completas e IDs únicos',async()=>{
+ const h=await boot({financials:true}),next=h.current();
+ next.purchases=[{id:'N2',status:'Confirmada',paymentGroupId:'G1'},{id:'N1',status:'Confirmada',paymentGroupId:'G1'}];
+ next.costs.push({id:'C3',amount:30});
+ next.fiscalImports[0].status='Lançado em Contas a Pagar';
+ next.history.unshift({id:'group-event',kind:'purchasePaymentGroups',action:'Fechamento de fornecedor criado'});
+ assert.equal(await h.api.send(next),true);
+ const request=h.requests.find(r=>r.url.includes('/rpc/engefex_patch_state'));
+ assert.ok(request,'fechamento deve permanecer incremental');
+ for(const key of ['purchases','costs','fiscalImports']){
+  const entries=request.body.p_changes.filter(c=>c.key===key);
+  assert.equal(entries.length,1,'lista '+key+' deve ser substituída uma única vez');
+  assert.deepEqual(entries[0].value,next[key]);
+ }
+ assert.deepEqual(h.server().purchases,next.purchases);
+ assert.deepEqual(h.server().costs,next.costs);
+});
+test('IDs repetidos no navegador impedem o envio e não alteram o banco',async()=>{
+ const h=await boot({financials:true}),next=h.current();
+ next.purchases.push({...next.purchases[0]});
+ assert.equal(await h.api.send(next),false);
+ assert.match(h.el('engefex-cloud-status').textContent,/IDs duplicados na lista purchases/);
+ assert.equal(h.requests.some(r=>r.url.includes('/rpc/engefex_patch_state')),false);
+ assert.equal(h.server().purchases.length,2);
 });

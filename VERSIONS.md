@@ -1,3 +1,10 @@
+## v4.18.37 — Fechamentos de fornecedor e integridade de IDs
+
+- Agrupamentos de compras e notas enviam listas financeiras completas no patch, evitando divergência por índices em operações com várias notas.
+- O salvamento identifica e bloqueia IDs internos duplicados antes de enviar dados ao Supabase, preservando a base e exibindo orientação para atualizar a sessão.
+- Notas sem etapa/rateio são identificadas antes de abrir o fechamento. Boletos, parcelas, valores e baixa financeira não são alterados automaticamente.
+- Testes de regressão para agrupamento e sincronização financeira.
+
 ## v4.18.30 — Faturamento direto no Resultado da obra
 
 - O painel de Receitas × Despesas exibe faturamento direto de medições aprovadas, contrato bruto, líquido e resultado revisado.
