@@ -1,23 +1,33 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../dist/cloud.js'),'utf8'),clone=x=>JSON.parse(JSON.stringify(x));
 function apply(before,changes){let next=clone(before);for(let c of changes){if(c.remove)delete next[c.key];else if('value'in c)next[c.key]=clone(c.value);else next[c.key].splice(c.start,c.deleteCount,...clone(c.items))}return next}
-async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false,savedStore=null,financials=false}={}){
+async function boot({missing=false,fail=false,delayHead=false,cacheFailure=false,savedStore=null,financials=false,scopedFullRead=false}={}){
  let shouldFail=fail;let payload={version:1,dataModel:2,projects:[{id:'p',name:'Obra'}],activities:Array.from({length:1000},(_,i)=>({id:'a'+i,name:'Atividade '+i,quantity:100,executed:0})),history:Array.from({length:1000},(_,i)=>({id:'h'+i,before:{name:'Antes '+i},after:{name:'Depois '+i}}))},revision=5,requests=[],accepted=[],callbacks={},nodes=new Map(),headResolve=null;
  if(financials){payload.purchases=[{id:'N1',status:'Rascunho'},{id:'N2',status:'Rascunho'}];payload.costs=[{id:'C1',amount:10},{id:'C2',amount:20}];payload.fiscalImports=[{id:'F1',status:'Rascunho'},{id:'F2',status:'Rascunho'}]}
 
  const node=()=>({innerHTML:'',textContent:'',hidden:false,setAttribute(){},append(){},addEventListener(n,f){this[n]=f},querySelectorAll(){return []}}),el=id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},document={hidden:false,createElement:node,getElementById:el,head:{append(){}},body:{append(){}},querySelector:()=>null,documentElement:{classList:{toggle(){}}}},session={access_token:'token',refresh_token:'refresh',expires_at:Date.now()+3600000,user:{id:'u'}},store=savedStore||new Map([['engefex-cloud-auth-v1',JSON.stringify(session)]]),w={structuredClone,document,AbortController,FileReader:class{readAsDataURL(blob){blob.arrayBuffer().then(bytes=>{this.result='data:'+blob.type+';base64,'+Buffer.from(bytes).toString('base64');this.onload()})}},navigator:{onLine:true},setTimeout,clearTimeout,setInterval:f=>{callbacks.poll=f;return 1},addEventListener:(n,f)=>callbacks[n]=f,localStorage:{getItem:key=>store.get(key)||null,setItem:(key,value)=>store.set(key,value),removeItem:key=>store.delete(key)},Obras:{backupValid:s=>{if(!s?.projects)throw Error('Inválido')}},LocalFiles:{refs:()=>[],metadata:()=>({name:'projeto.pdf'}),load:async()=>{if(cacheFailure)throw Error('Armazenamento indisponível');return []},put:async()=>{if(cacheFailure)throw Error('quota exceeded')}},fetch:async(url,options)=>{
   const body=options.body?JSON.parse(options.body):null;requests.push({url,body});let data,status=200;
-  if(url.includes('/rpc/engefex_read_state_compact'))return missing?{ok:false,status:404,text:async()=>JSON.stringify({code:'PGRST202',message:'Função ausente'})}:{ok:true,status:200,text:async()=>JSON.stringify([{payload:clone(payload),revision}])};if(url.includes('engefex_notification_reads?'))return {ok:true,status:200,text:async()=>JSON.stringify([])};if(url.includes('/storage/v1/object/authenticated/'))return {ok:true,blob:async()=>new Blob(['%PDF-teste'],{type:'application/pdf'})};if(url.includes('engefex_members'))data=[{workspace_id:'work'}];
+  if(url.includes('/rpc/engefex_access_context'))return {ok:true,status:200,text:async()=>JSON.stringify({is_admin:false,restricted:false})};if(url.includes('/rpc/engefex_read_state_compact'))return missing?{ok:false,status:404,text:async()=>JSON.stringify({code:'PGRST202',message:'Função ausente'})}:{ok:true,status:200,text:async()=>JSON.stringify([{payload:clone(payload),revision}])};if(url.includes('engefex_notification_reads?'))return {ok:true,status:200,text:async()=>JSON.stringify([])};if(url.includes('/storage/v1/object/authenticated/'))return {ok:true,blob:async()=>new Blob(['%PDF-teste'],{type:'application/pdf'})};if(url.includes('engefex_members'))data=[{workspace_id:'work'}];
   else if(url.includes('/rpc/')){
    if(url.includes('engefex_read_state')&&body?.p_head){if(delayHead)await new Promise(r=>headResolve=r);return {ok:true,status:200,text:async()=>JSON.stringify([{revision,payload:null}])}}
    if(url.includes('engefex_read_state'))return {ok:true,status:200,text:async()=>JSON.stringify([{revision,payload:clone(payload)}])};
    if(url.includes('engefex_patch_state')&&missing){data={code:'PGRST202',message:'Função ausente'};status=404}
    else if(shouldFail||body.p_revision!==revision){data={code:'40001',message:'A base mudou'};status=409}
-   else{payload=url.includes('patch_state')?apply(payload,body.p_changes):clone(body.p_payload);revision++;data=[{revision}]}
+   else{let next=url.includes('patch_state')?apply(payload,body.p_changes):clone(body.p_payload);
+    if(scopedFullRead){
+     for(const key of ['purchases','costs'])if(next[key]){
+      const ids=next[key].map(row=>row.id);
+      if(new Set(ids).size!==ids.length)return {ok:false,status:400,text:async()=>JSON.stringify({code:'22023',message:'IDs duplicados'})};
+      const incoming=new Map(next[key].map(row=>[row.id,row]));
+      next[key]=[...(payload[key]||[]).filter(row=>incoming.has(row.id)).map(row=>incoming.get(row.id)),...next[key].filter(row=>!(payload[key]||[]).some(old=>old.id===row.id))];
+     }
+     next.history=[{id:'audit-'+revision},...(next.history||[])];
+    }
+    payload=next;revision++;data=[{revision}]}
   }else if(url.includes('select=revision&')){if(delayHead)await new Promise(r=>headResolve=r);data=[{revision}]}
   else data=[{payload:clone(payload),revision}];
   return {ok:status===200,status,text:async()=>JSON.stringify(data)};
- }};w.window=w;vm.createContext(w);vm.runInContext(source,w);let current=clone(payload);w.EngefexCloud.boot({getState:()=>current,acceptState:s=>{current=s;accepted.push(s)},isDirty:()=>false});await new Promise(r=>setImmediate(r));return {w,api:w.EngefexCloud,requests,accepted,callbacks,el,current:()=>clone(current),server:()=>clone(payload),setRemote(fn){payload=fn(payload);revision++},releaseHead(){headResolve?.()},setFail(value){shouldFail=!!value},store};
+ }};if(scopedFullRead)w.EngefexAccess={context:{is_admin:false,restricted:false},canWrite:()=>true,currentView:()=>'supplies',setContext(){}};w.window=w;vm.createContext(w);vm.runInContext(source,w);let current=clone(payload);w.EngefexCloud.boot({getState:()=>current,acceptState:s=>{current=s;accepted.push(s)},isDirty:()=>false});await new Promise(r=>setImmediate(r));return {w,api:w.EngefexCloud,requests,accepted,callbacks,el,current:()=>clone(current),server:()=>clone(payload),setRemote(fn){payload=fn(payload);revision++},releaseHead(){headResolve?.()},setFail(value){shouldFail=!!value},store};
 }
 test('salvar uma atividade envia só a edição e o histórico novo, com economia superior a 95%',async()=>{let h=await boot(),next=h.current();next.activities[500].executed=40;next.history.unshift({id:'new',after:{executed:40}});assert.equal(await h.api.send(next),true);let request=h.requests.find(r=>r.url.includes('/rpc/engefex_patch_state'));assert.match(request.url,/patch_state/);assert.equal(request.body.p_changes.length,2);assert.deepEqual(h.server(),next);assert.ok(h.api.lastSync.characters<h.api.lastSync.fullCharacters*.05);let again=clone(next);again.activities[1].executed=20;assert.equal(await h.api.send(again),true);assert.equal(h.server().history.length,1001)});
 test('patch mantém campos omitidos, exclusões, inclusões e ordem para alterações variadas',async()=>{let h=await boot(),before=h.current();for(let transform of [s=>{s.activities.splice(3,1)},s=>{s.activities.push({id:'novo'})},s=>{s.activities.reverse()},s=>{s.history.unshift({id:'h-new'});delete s.dataModel},s=>{s.projects[0].name='Renomeada';s.extra={a:1}}]){let next=clone(before);transform(next);assert.deepEqual(apply(before,h.api.buildPatch(before,next)),next);assert.equal(before.activities.length,1000)}});
@@ -86,5 +96,39 @@ test('IDs repetidos no navegador impedem o envio e não alteram o banco',async()
  assert.equal(await h.api.send(next),false);
  assert.match(h.el('engefex-cloud-status').textContent,/IDs duplicados na lista purchases/);
  assert.equal(h.requests.some(r=>r.url.includes('/rpc/engefex_patch_state')),false);
+ assert.equal(h.server().purchases.length,2);
+});
+
+test('editor com leitura integral edita a mesma compra duas vezes sem duplicar IDs após mesclagem do servidor',async()=>{
+ const h=await boot({financials:true,scopedFullRead:true});
+ let next=h.current();next.purchases=[{...next.purchases[1]},{...next.purchases[0],note:'Primeira edição'}];
+ assert.equal(await h.api.send(next),true);
+ assert.equal(h.server().purchases[0].id,'N1','o servidor preserva sua ordem original');
+ next=clone(next);next.purchases[1].note='Segunda edição';
+ assert.equal(await h.api.send(next),true,h.el('engefex-cloud-status').textContent);
+ assert.equal(h.server().purchases.find(p=>p.id==='N1').note,'Segunda edição');
+ assert.equal(new Set(h.server().purchases.map(p=>p.id)).size,2);
+ const writes=h.requests.filter(r=>r.url.includes('/rpc/engefex_patch_state'));
+ assert.equal(writes.length,2);
+ assert.ok(writes.every(r=>r.body.p_changes.filter(c=>c.key==='purchases').every(c=>Array.isArray(c.value)&&c.start===undefined)));
+ assert.equal(h.requests.some(r=>r.url.includes('/rpc/engefex_save_state')),false);
+ assert.equal(h.api.lastSync.mode,'patch');
+});
+
+test('rascunho antigo com índice divergente recupera edição pela identidade da nota',async()=>{
+ const h=await boot({financials:true,scopedFullRead:true});
+ const session=JSON.parse(h.store.get('engefex-cloud-auth-v1'));
+ h.store.set('engefex-cloud-auth-v1:draft:'+session.user.id+':work',JSON.stringify({revision:5,changes:[{key:'purchases',start:1,deleteCount:1,items:[{id:'N1',status:'Rascunho',note:'Edição preservada'}]}]}));
+ assert.equal(await h.api.retryPending(),true,h.el('engefex-cloud-status').textContent);
+ assert.equal(h.server().purchases.find(p=>p.id==='N1').note,'Edição preservada');
+ assert.equal(h.server().purchases.find(p=>p.id==='N2').note,undefined);
+ assert.equal(h.server().purchases.length,2);
+});
+test('recuperação de rascunho não interpreta substituição de ID desconhecido como edição',async()=>{
+ const h=await boot({financials:true,scopedFullRead:true});
+ const session=JSON.parse(h.store.get('engefex-cloud-auth-v1'));
+ h.store.set('engefex-cloud-auth-v1:draft:'+session.user.id+':work',JSON.stringify({revision:5,changes:[{key:'purchases',start:1,deleteCount:1,items:[{id:'desconhecido',status:'Rascunho'}]}]}));
+ assert.equal(await h.api.retryPending(),false);
+ assert.equal(h.requests.some(r=>r.url.includes('/rpc/engefex_save_state')),false);
  assert.equal(h.server().purchases.length,2);
 });

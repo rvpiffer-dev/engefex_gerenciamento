@@ -14,6 +14,10 @@
  let cover, messageEl, statusEl, loadingNote=null, originalLoad=null, originalPut=null;
  let lastRefreshAttempt=0, refreshFailures=0, unsavedPayload=null, activeDraft=null, recovering=false, draftPersisted=false;
  const $=id=>document.getElementById(id);
+ // Apenas o administrador salva o payload literalmente. A mesclagem por permissões
+ // preserva a ordem do servidor e acrescenta auditoria, mesmo com leitura integral.
+ // Seus índices deixam de representar os índices da cópia local após salvar.
+ const literalState=()=>!root.EngefexAccess||root.EngefexAccess.context?.is_admin===true;
  const current=()=>client?.getState();
  const ownDirty=()=>!!client?.isDirty?.();
  const setMessage=value=>{if(messageEl)messageEl.textContent=value||''};
@@ -353,6 +357,14 @@
    changes=changes.filter(change=>!financialKeys.includes(change.key));
    for(const key of financialKeys)if(JSON.stringify(confirmedState[key])!==JSON.stringify(payload[key]))changes.push({key,value:payload[key]});
   }
+  if(changes&&!literalState()){
+   // A mesclagem SQL conserva a ordem anterior, não a ordem enviada pelo editor.
+   // Substituir somente as listas alteradas permite ao servidor mesclar por ID,
+   // sem baixar/enviar a base inteira nem aplicar índices de outra ordenação.
+   const lists=new Set(changes.filter(c=>Array.isArray(payload[c.key])).map(c=>c.key));
+   changes=changes.filter(c=>!lists.has(c.key));
+   for(const key of lists)changes.push({key,value:payload[key]});
+  }
   const full={p_workspace:workspace,p_revision:revision,p_payload:payload},patch={p_workspace:workspace,p_revision:revision,p_changes:changes};
   const compact=compactReadSupported===true&&!root.EngefexAccess?.context?.restricted;
   if(compact){
@@ -381,8 +393,17 @@
    if(typeof c.key!=='string')throw Error('Rascunho inválido.');
    if(c.remove)delete next[c.key];
    else if(Object.prototype.hasOwnProperty.call(c,'value'))next[c.key]=structuredClone(c.value);
-   else if(Array.isArray(next[c.key])&&Number.isInteger(c.start)&&Number.isInteger(c.deleteCount)&&Array.isArray(c.items))
-    next[c.key].splice(c.start,c.deleteCount,...structuredClone(c.items));
+   else if(Array.isArray(next[c.key])&&Number.isInteger(c.start)&&Number.isInteger(c.deleteCount)&&Array.isArray(c.items)){
+    // Rascunhos antigos de editores integrais usavam índices de uma ordem local
+    // que a mesclagem SQL não preservou. Atualizações de IDs existentes são
+    // recuperáveis por identidade; exclusões/novos IDs continuam sem inferência.
+    if(!literalState()&&['purchases','costs','fiscalImports'].includes(c.key)&&c.deleteCount===c.items.length&&c.items.length){
+     const positions=new Map(next[c.key].map((row,index)=>[row.id,index]));
+     if(c.items.some(row=>!row?.id||!positions.has(row.id))||new Set(c.items.map(row=>row.id)).size!==c.items.length)
+      throw Error('O rascunho contém substituições sem identificação segura. Baixe o rascunho para conferir.');
+     for(const row of c.items)next[c.key][positions.get(row.id)]=structuredClone(row);
+    }else next[c.key].splice(c.start,c.deleteCount,...structuredClone(c.items));
+   }
    else throw Error('Não foi possível aplicar o rascunho com segurança.');
   }
   return next;
