@@ -48,3 +48,9 @@ A migração consolidada foi exercitada em testes antes da produção. `scripts/
 - Rascunhos antigos de atualização financeira com índices divergentes são recuperados pelo ID existente. Substituições de IDs desconhecidos não são inferidas; o rascunho continua disponível para conferência. A revisão do banco continua obrigatória e conflitos da equipe não são sobrescritos.
 - Verificação: 424 testes automatizados aprovados, incluindo reprodução do erro antes da correção, duas edições consecutivas, preservação de outra nota e recuperação de rascunhos. Também foram exercitadas as RPCs reais com duas gravações por lista em transação integralmente revertida; nenhuma compra, conta ou revisão de produção foi alterada pelo teste.
 - Banco conferido na revisão 511: 38 compras e 13 custos, sem IDs repetidos nas listas de registros. Não foi necessária migração de esquema nem alteração de permissões.
+
+## Organização das colunas — v4.18.44 (11/11/2026)
+
+Em Contas a pagar, a opção **Organizar colunas** permite mostrar/ocultar colunas, alterar sua ordem pelas setas e restaurar o padrão. A largura continua ajustável pela borda do cabeçalho ou pelo teclado. As preferências são mantidas neste navegador e compartilhadas entre as abas Em aberto/Pagos; produção e testes usam chaves separadas. A personalização também fica disponível para perfis somente de consulta. Não grava nem altera lançamentos financeiros.
+
+Verificação visual com dados sintéticos: reordenação de cabeçalhos e células, ocultação, persistência após recarregar, redimensionamento e restauração do padrão.

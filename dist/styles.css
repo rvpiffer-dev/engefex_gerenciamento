@@ -473,3 +473,15 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .purchase-row-more>div{display:flex;flex-direction:column;gap:2px;position:absolute;right:0;top:100%;z-index:20;min-width:110px;background:var(--surface,#fff);border:1px solid var(--border,#dbe2ea);border-radius:8px;padding:5px;box-shadow:0 8px 20px rgba(15,23,42,.12)}
 .purchase-row-more>div .text-btn{text-align:left;white-space:nowrap}
 @media(max-width:740px){.purchase-list-toolbar{align-items:stretch}.purchase-sort-controls{width:100%}.purchase-sort-controls select{flex:1;min-width:140px}.purchase-sort-direction{min-width:auto}}
+
+/* Organização pessoal da tabela de Contas a pagar. */
+.table-column-panel{position:relative;width:fit-content;margin:0 0 12px auto;font-size:13px}
+.table-column-panel>summary{padding:9px 13px;border:1px solid #d4dce8;border-radius:8px;background:#fff;color:#25436b;font-weight:600;cursor:pointer;list-style:none}
+.table-column-panel>summary::after{content:' ▾';margin-left:8px}.table-column-panel[open]>summary{border-color:#1557ff;color:#1557ff}
+.table-column-options{position:relative;margin-top:6px;width:min(380px,80vw);padding:16px;background:#fff;border:1px solid #d4dce8;border-radius:12px;box-shadow:0 12px 32px #17305224}
+.table-column-options>p{margin:0 0 12px;color:#53647b}.table-column-list{max-height:340px;overflow-y:auto;margin-bottom:12px}
+.table-column-option{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;padding:5px 0;border-bottom:1px solid #edf0f5}
+.table-column-option label{display:flex;flex-direction:row;align-items:center;gap:9px;margin:0;font-size:13px;font-weight:400}.table-column-option input[type=checkbox]{width:16px;height:16px;min-height:16px;margin:0;flex:none;accent-color:#1557ff}
+.table-column-option>div{display:flex;flex:none}.table-column-option button{padding:6px 10px;min-height:32px;font-size:17px}.table-column-option button:disabled{opacity:.3}
+.table-column-options>small{display:block;margin-top:10px;color:#69778c}table [hidden]{display:none!important}
+@media print{.table-column-panel{display:none}}
