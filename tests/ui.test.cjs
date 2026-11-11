@@ -183,8 +183,8 @@ test('Visão Geral pessoal troca de usuário sem calcular nem mostrar valores fi
 });
 test('Visão Geral respeita módulos sem acesso e remove atalhos e botão de criação sem permissão',()=>{
  let bridge;const h=harness(null,{access:{is_admin:false,restricted:false,permissions:{modules:{core:'view',works:'none',activities:'none'},views:{dashboard:'view',issues:'none',agenda:'none',board:'none',sharedcalendar:'none'}}},cloud:{currentUser:{id:'U1',email:'ramon@example.com'},boot:b=>bridge=b,requireWrite(){},send:async()=>true}});
- const s=bridge.getState();s.responsibles=[{id:'C1',name:'Ramon Piffer',email:'ramon@example.com'}];
- s.issues=[{id:'I',title:'Providência restrita',responsibleId:'C1'}];s.tasks=[{id:'T',title:'Tarefa restrita',responsible:'Ramon Piffer'}];s.boardTasks=[{id:'B',title:'Lousa restrita',createdById:'U1'}];s.calendarEvents=[{id:'E',title:'Reunião restrita',startDate:h.context.Obras.today(),participants:[]}];
+ const s=bridge.getState();s.projects=[{id:'p',name:'Obra'}];s.responsibles=[{id:'C1',name:'Ramon Piffer',email:'ramon@example.com'}];
+ s.issues=[{id:'I',project:'p',title:'Providência restrita',responsibleId:'C1'}];s.tasks=[{id:'T',project:'p',title:'Tarefa restrita',responsible:'Ramon Piffer'}];s.boardTasks=[{id:'B',project:'p',title:'Lousa restrita',createdById:'U1'}];s.calendarEvents=[{id:'E',project:'p',title:'Reunião restrita',startDate:h.context.Obras.today(),participants:[]}];
  bridge.acceptState(s);const html=h.el('#main').innerHTML;assert.match(html,/Olá, Ramon/);
  assert.doesNotMatch(html,/Providência restrita|Tarefa restrita|Lousa restrita|Reunião restrita|href="#issues"|href="#agenda"|href="#board"|href="#sharedcalendar"|data-action="new:issues"/);
 });
