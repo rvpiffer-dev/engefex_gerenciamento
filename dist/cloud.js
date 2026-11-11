@@ -308,10 +308,20 @@
   }return changes;
  }
  function validateFinancialIds(payload){
-  for(const key of ['purchases','costs','fiscalImports']){
-   const entries=payload?.[key];if(!Array.isArray(entries))continue;
+  // A rotina SQL verifica IDs em qualquer lista de objetos, não apenas compras.
+  // Localizar a coleção e o registro antes do envio evita uma rejeição genérica.
+  for(const [key,entries] of Object.entries(payload||{})){
+   if(!Array.isArray(entries)||!entries.length)continue;
+   const financial=['purchases','costs','fiscalImports'].includes(key);
+   const identifiable=entries.every(row=>row&&typeof row==='object'&&!Array.isArray(row)&&typeof row.id==='string'&&row.id.length>0);
+   if(!financial&&!identifiable)continue;
    const ids=new Set();
-   for(const row of entries){const id=row?.id;if(!id)continue;if(ids.has(id))throw Error('IDs duplicados na lista '+key+'. Nenhum dado foi confirmado. Atualize a base e revise os registros antes de tentar novamente.');ids.add(id)}
+   for(const row of entries){
+    const id=row?.id;
+    if(!id)continue;
+    if(ids.has(id))throw Error('IDs duplicados em '+key+' (registro '+String(id).slice(0,100)+'). Nenhum dado foi confirmado. Atualize o sistema antes de tentar novamente.');
+    ids.add(id);
+   }
   }
  }
  function isSupplierClosing(payload){
