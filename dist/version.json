@@ -1,6 +1,6 @@
 {
-  "version": "4.18.37",
-  "date": "2026-11-03",
-  "name": "Fechamento de fornecedores: patch financeiro seguro e diagnóstico de IDs",
-  "previous_version": "4.18.36"
+  "version": "4.18.38",
+  "date": "2026-11-11",
+  "name": "Correção de IDs duplicados no histórico e validação de sincronização",
+  "previous_version": "4.18.37"
 }
