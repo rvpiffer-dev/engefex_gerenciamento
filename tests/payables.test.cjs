@@ -14,3 +14,22 @@ test('pagamento, desconto e reversão de uma parcela não alteram a seguinte',()
 test('acréscimo, desconto integral e erros mantêm a operação atômica por parcela',()=>{let {s,P,D}=invoiceSetup(),key='invoice:note:part1',before=JSON.stringify(s);let next=P.registerGroupPayment(s,key,{amount:110,date:'2026-10-17',mode:'settle'});assert.equal(D.sum(next.costs,c=>c.paid),110);assert.equal(D.sum(next.costs,c=>c.paymentAddition||0),10);assert.equal(D.costBalance(P.groups(next).find(g=>g.id==='invoice:note:part1')),0);assert.equal(D.costBalance(P.groups(next).find(g=>g.id==='invoice:note:part2')),100);next=P.registerGroupPayment(s,key,{amount:0,date:'2026-10-17',mode:'settle'});assert.equal(D.sum(next.costs,c=>c.paymentDiscount||0),100);for(let input of [{amount:-1,mode:'settle'},{amount:0,mode:'partial'},{amount:101,mode:'partial'},{amount:.001,mode:'settle'},{amount:10,mode:'other'},{amount:10,mode:'settle',date:'2026-02-31'}])assert.throws(()=>P.registerGroupPayment(s,key,{date:'2026-10-17',...input}));assert.equal(JSON.stringify(s),before)});
 test('botão Pago desfaz a baixa completa, preserva origem/incorrido e recalcula caixa',()=>{let {s,D,P}=setup(),before=JSON.stringify(s);let paid=P.togglePaid(s,'c','2026-10-18');assert.equal(paid.costs[0].paid,9);assert.equal(D.costBalance(paid.costs[0]),0);assert.equal(D.stats(paid,'p').cash,91);let reopened=P.togglePaid(paid,'c');assert.equal(reopened.costs[0].paid,0);assert.equal(reopened.costs[0].paidDate,'');assert.equal(D.costBalance(reopened.costs[0]),9);assert.equal(D.stats(reopened,'p').cash,100);assert.equal(reopened.history[0].before[0].paid,9);assert.equal(reopened.costs[0].description,s.costs[0].description);assert.equal(JSON.stringify(s),before);paid=D.registerCostPayment(s,'c',payment(10));paid.costs[0].incurred=2;reopened=P.togglePaid(paid,'c');assert.equal(reopened.costs[0].paymentAddition,0);assert.equal(reopened.costs[0].paymentDiscount,0);assert.equal(reopened.costs[0].incurred,2);assert.equal(reopened.costs[0].amount,9)});
 
+
+test('ordenação por vencimento, documento e fornecedor usa números e acentos sem alterar os lançamentos',()=>{
+ const {s,P}=setup();s.costs=[
+  {...s.costs[0],id:'c10',description:'Nota fiscal 10',supplier:'Zinco',due:'2026-11-20',amount:25},
+  {...s.costs[0],id:'c2',description:'Nota fiscal 2',supplier:'Águas',due:'2026-11-15',amount:200},
+  {...s.costs[0],id:'c1',description:'Nota fiscal 1',supplier:'Beta',due:'',amount:10}
+ ];const rows=P.groups(s),before=JSON.stringify(s),order=key=>P.sortRows(s,rows,key).map(c=>c.id).join(',');
+ assert.equal(order('due'),'c2,c10,c1');assert.equal(order('number'),'c1,c2,c10');assert.equal(order('supplier'),'c2,c1,c10');assert.equal(order('amount'),'c1,c10,c2');
+ assert.equal(P.sortRows(s,rows,'due','desc').map(c=>c.id).join(','),'c10,c2,c1');
+ assert.equal(JSON.stringify(s),before);assert.equal(rows[0].id,'c10');
+});
+test('ordenação respeita número fiscal real e saldo da parcela inteira rateada entre obras',()=>{
+ const {s,P,D}=invoiceSetup();s.purchases[0].number='00009';const groups=P.groups(s);groups[0].paid=90;
+ const manual={id:'manual',description:'Documento 10',supplier:'Outro',amount:50,paid:0,incurred:0,records:[]};
+ assert.equal(P.documentNumber(s,groups[0]),'00009');
+ assert.equal(P.sortRows(s,[manual,...groups],'number')[0].purchase,'note');
+ assert.equal(D.costBalance(P.sortRows(s,[manual,...groups],'balance')[0]),10);
+ assert.equal(P.sortRows(s,[manual,...groups],'balance','desc')[0].id,groups[1].id);
+});

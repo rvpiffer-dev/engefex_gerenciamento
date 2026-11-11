@@ -60,3 +60,11 @@ Verificação visual com dados sintéticos: reordenação de cabeçalhos e célu
 O botão **Confirmar** aparece nas ações das compras em rascunho que não pertencem a um fechamento. Confirma o documento sem abrir o editor, usando as mesmas validações de fornecedor, data, itens, rateio e parcelas do formulário; as contas são geradas pela rotina financeira existente. Bloqueia cliques simultâneos e exibe sucesso somente após o servidor confirmar o salvamento. Compras confirmadas/canceladas não exibem o botão. A ação respeita a permissão de edição de Compras e notas.
 
 Verificação: fluxo visual com nota sintética, confirmação sem abrir formulário, três testes adicionais para integridade das parcelas, rascunho incompleto, duplo clique e resposta do servidor. Nenhuma nota real foi confirmada durante os testes.
+
+## Contas a pagar — v4.18.46 (11/11/2026)
+
+- Ordenação explícita por vencimento, número do documento, fornecedor, valor original, saldo, emissão, pagamento, obra e categoria; crescente/decrescente, com preferência no navegador e números em ordem natural. Datas ausentes ficam no final em ambas as direções. Número fiscal usa o documento de origem; contas manuais usam número/documento ou identificação extraída da descrição.
+- Lista e CSV seguem a mesma ordenação e busca; a consulta inclui fornecedor, documento e obra. A ordenação trabalha em cópias dos agrupamentos e não altera registros ou rateios.
+- Interface com resumo compacto, abas Em aberto/Pagos, busca e ordenação junto da tabela, vencimentos e saldos destacados. Ações secundárias ficam em Mais; categorias, edição em planilha e explicações ficam em Configurações e ajuda.
+- Novos padrões de colunas mostram os dados essenciais; preferências anteriores continuam preservadas e todas as colunas permanecem disponíveis em Organizar colunas. Em Pagos, o padrão destaca Pago em vez do saldo zerado. Os cartões móveis seguem a ordenação selecionada.
+- Verificação visual com lançamentos sintéticos em desktop e largura de 390 px: vencimento/número/fornecedor, inversão, preferência após recarregar, abas, colunas e acesso às ações. Testes de ordenação verificam acentos, números, datas ausentes, parcelas rateadas e ausência de mutação dos dados.

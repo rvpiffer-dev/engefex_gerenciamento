@@ -487,3 +487,54 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 @media print{.table-column-panel{display:none}}
 
 .purchase-row-actions .purchase-confirm-button{padding:6px 10px;min-height:30px;font-size:12px;margin-right:5px}
+
+/* Contas a pagar: resumo compacto, consulta e lançamentos em primeiro plano. */
+.payable-workspace{--payable-ink:#172b4d;--payable-muted:#6b7b91;--payable-border:#e6ebf2;color:var(--payable-ink)}
+.payable-workspace .page-head{margin-bottom:22px}.payable-workspace h1{font-size:29px;font-weight:700;letter-spacing:-.8px}.payable-workspace .subtitle{font-size:13px;color:var(--payable-muted)}
+.payable-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:24px}
+.payable-metric{display:flex;flex-direction:column;gap:9px;min-width:0;padding:20px 22px;border:1px solid var(--payable-border);border-radius:14px;background:#fff;box-shadow:0 3px 12px #17305203}
+.payable-metric-label{font-size:12px;font-weight:600;color:#65758c}.payable-metric>strong{font-size:25px;font-weight:700;letter-spacing:-.7px;font-variant-numeric:tabular-nums}.payable-metric-caption{font-size:11px;color:var(--payable-muted)}
+.payable-metric.is-outstanding{background:linear-gradient(120deg,#eff4ff,#f9fbff);border-color:#d5e2ff}.payable-metric.is-outstanding>strong,.payable-metric.is-outstanding .payable-metric-label{color:#2358d5}
+.payable-metric.is-overdue>strong{color:#ba3543}.payable-metric.is-paid>strong{color:#19734f}
+.payable-ledger{background:#fff;border:1px solid var(--payable-border);border-radius:16px;box-shadow:0 4px 22px #17305204;overflow:hidden}
+.payable-ledger-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--payable-border)}
+.payable-ledger-head .tabs{margin:0;border:0;gap:20px}.payable-ledger-head .tabs button{padding:18px 2px 16px;font-size:13px;border-bottom:3px solid transparent}.payable-ledger-head .tabs button.active{color:#2358d5;border-bottom-color:#2358d5}
+.payable-results{font-size:11px;color:var(--payable-muted);white-space:nowrap;background:#f3f6fa;border:1px solid #edf1f6;border-radius:20px;padding:5px 10px}
+.payable-toolbar{display:flex;align-items:end;gap:12px;padding:20px 22px 8px;flex-wrap:wrap}
+.payable-search.tools{display:flex;position:relative;align-items:center;flex:1 1 240px;margin:0;min-width:170px;gap:0}.payable-search svg{position:absolute;left:13px;width:17px;height:17px;fill:none;stroke:#8c9bb0;stroke-width:1.7;pointer-events:none}
+.payable-search input{width:100%;min-width:0;min-height:41px;padding:10px 12px 10px 39px;border:1px solid #dfe6ef;border-radius:9px;background:#f9fbfd;font-size:12px;color:var(--payable-ink)}
+.payable-sort-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.payable-sort-controls label{font-size:11px;color:var(--payable-muted)}
+.payable-sort-controls select{max-width:210px;min-height:41px;border:1px solid #dfe6ef;border-radius:9px;background:#fff;padding:9px 30px 9px 11px;font-size:12px;color:#273c5a}
+.payable-sort-controls .button{min-height:41px;border-radius:9px;font-weight:500;color:#52657e;font-size:11px}
+.payable-column-slot .table-column-panel{margin:0}.payable-column-slot .table-column-panel>summary{min-height:41px;border-radius:9px;padding:11px 12px;font-size:11px;font-weight:500;white-space:nowrap;border-color:#dfe6ef}
+.payable-column-slot .table-column-options{width:min(360px,74vw)}.payable-column-slot:has(details[open]){flex-basis:100%;display:flex;justify-content:flex-end}
+.payable-filter-row{padding:0 22px 14px}.payable-filter-row .payable-filter-panel{margin:0}.payable-filter-row .payable-filter-panel>summary{border:0;padding:6px 0;color:#60738b;font-size:11px;font-weight:500;min-height:0}.payable-filter-row .payable-filter-panel[open]>summary{color:#2358d5}
+.payable-filter-row .payable-filters{border-color:#e6ecf3;background:#f9fbfd;margin-bottom:4px;border-radius:12px;gap:12px;padding:16px}.payable-filter-row .payable-filters label{font-size:11px;color:#62758d}.payable-filter-row .payable-filters input,.payable-filter-row .payable-filters select{border-color:#dce4ee;border-radius:7px;min-height:38px;background:#fff}
+.payable-ledger .panel{border:0;border-radius:0;margin:0;box-shadow:none;overflow:visible}.payable-ledger .table-wrap{border:0;border-radius:0;max-height:64vh}.payable-ledger .table-scroll-tip{display:none}
+.payable-ledger table{font-size:12px;min-width:820px;line-height:1.45}
+.payable-ledger table th{border:0;border-block:1px solid #edf1f6;background:#f8fafc;padding:12px 18px!important;font-size:10px;font-weight:600;color:#7a8aa0;letter-spacing:.3px;white-space:nowrap}
+.payable-ledger table td{padding:17px 18px;border:0;border-bottom:1px solid #edf1f6;vertical-align:middle;line-height:1.45;white-space:normal}
+.payable-ledger table tr:last-child td{border-bottom:0}.payable-ledger table tr:hover td{background:#f9fbff}
+.payable-supplier-cell{min-width:210px;max-width:320px}.payable-supplier-cell>strong{display:block;font-size:12px;font-weight:600;color:#253953}.payable-supplier-cell>span{display:block;margin-top:5px;font-size:11px;color:#8592a5}
+.payable-work-cell{min-width:145px;max-width:240px;font-size:11px;color:#65758c}.payable-work-cell small{font-size:10px;color:#8a98ab}
+.payable-original{color:#5f7189;white-space:nowrap!important}.payable-original .payable-amount{font-size:12px;padding:0;font-weight:500;min-height:0;color:#456ca8}
+.payable-balance{font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap!important}.payable-balance.is-overdue{color:#ba3543}
+.payable-due-cell{min-width:135px}.payable-due-cell>strong{display:block;font-size:12px;font-weight:600}.payable-due-cell small{display:block;font-size:10px;color:#8795a8;margin-top:5px}
+.payable-status{display:inline-flex;align-items:center;gap:5px;padding:3px 7px;background:#f1f4f8;color:#7b899d;font-size:10px;font-weight:500;border-radius:5px;white-space:nowrap;margin-top:5px}.payable-status:before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.payable-status.is-overdue{background:#fff0f1;color:#c24554}.payable-status.is-paid{background:#eaf8f1;color:#24825a}.payable-status.is-today{background:#fff7e8;color:#ac7a29}.payable-status.is-partial{background:#eef4ff;color:#3b6cbd}
+.payable-row-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:128px}.payable-row-actions>.button{min-width:62px;min-height:31px;padding:6px 12px;font-size:11px;border-radius:7px}.payable-row-actions>.primary{background:#edf3ff;color:#2358d5;border:1px solid #dce6ff}.payable-row-actions>.primary:hover{background:#dce8ff}
+.payable-row-actions>.payment-paid{background:#eaf8f1;border-color:#d8efe4;color:#24825a}
+.payable-row-more{border:0;min-width:0}.payable-row-more>summary{list-style:none;font-size:11px;color:#8a97a9;padding:7px 5px;cursor:pointer;white-space:nowrap}.payable-row-more>summary:after{content:' ···';font-weight:700}.payable-row-more>summary::-webkit-details-marker{display:none}
+.payable-row-more[open]{flex-basis:100%}.payable-secondary-actions{display:grid;gap:5px;padding:9px;border:1px solid #e7edf4;border-radius:9px;background:#f8fafc;margin-top:5px;min-width:150px}
+.payable-secondary-actions .record-actions{display:grid;gap:4px;min-width:0}.payable-secondary-actions .button,.payable-secondary-actions .text-btn{text-align:left;justify-content:flex-start;font-size:11px;min-height:28px;padding:5px 7px;background:white;border:1px solid #e7edf4;border-radius:5px;white-space:normal}
+.payable-list-footer{display:flex;justify-content:space-between;gap:12px;padding:14px 22px;border-top:1px solid #edf1f6;font-size:10px;color:#92a0b2}
+.payable-page-options{margin-top:18px;color:#7c8b9f;font-size:11px}.payable-page-options>summary{cursor:pointer;width:fit-content;padding:6px 0}.payable-page-options-body{margin-top:10px;padding:20px;border:1px solid #e2e8f1;border-radius:12px;background:#fff}.payable-page-options-body .section-note{margin-bottom:0}.payable-page-options-body h3{font-size:12px;color:#53667e}
+@media(max-width:1120px){.payable-toolbar{gap:10px}.payable-search.tools{flex-basis:100%}.payable-sort-controls{flex:1}.payable-metric{padding:17px}.payable-metric>strong{font-size:22px}}
+@media(max-width:760px){
+ .payable-workspace .page-head{align-items:flex-start;gap:14px;flex-wrap:wrap}.payable-workspace h1{font-size:25px}.payable-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}.payable-metric{padding:14px;gap:7px;border-radius:11px}.payable-metric>strong{font-size:20px}.payable-metric-label{font-size:11px}.payable-metric-caption{font-size:10px}
+ .payable-ledger{border-radius:12px}.payable-ledger-head{padding:0 14px}.payable-ledger-head .tabs{gap:18px}.payable-ledger-head .tabs button{padding-block:15px}.payable-results{font-size:10px;padding:4px 7px}
+ .payable-toolbar{padding:15px 14px 8px;gap:10px}.payable-sort-controls{width:100%;gap:7px}.payable-sort-controls select{max-width:none;min-width:0;flex:1;font-size:12px}.payable-sort-controls label{font-size:10px}.payable-sort-controls .button{padding:8px;font-size:10px}.payable-column-slot{display:none}
+ .payable-filter-row{padding:0 14px 10px}.payable-filter-row .payable-filters{padding:12px;gap:10px}.payable-filter-row .payable-filters input,.payable-filter-row .payable-filters select{font-size:16px;min-height:44px}
+ .payable-ledger .payable-mobile{padding:0 12px 12px;gap:10px}.payable-ledger .payable-card{border-color:#e7edf4;border-radius:10px;padding:14px}.payable-card .payable-status{margin:0}.payable-card-head>strong{font-size:13px}.payable-card>p{font-size:11px;color:#74869d}.payable-card .payable-row-actions{justify-content:space-between}.payable-card .payable-row-actions>.button{flex:1;min-height:38px}.payable-card .payable-row-more>summary{padding:10px}.payable-card .payable-secondary-actions{min-width:0}.payable-card .payable-card-details{margin-top:14px;font-size:11px;color:#7c8c9f}.payable-list-footer{padding:12px 14px;flex-wrap:wrap;font-size:9px}
+}
+@media print{.payable-toolbar,.payable-filter-row,.payable-page-options,.payable-row-more{display:none!important}.payable-ledger{box-shadow:none}.payable-metrics{break-inside:avoid}.payable-ledger table{min-width:0}}

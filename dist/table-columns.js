@@ -19,7 +19,8 @@ function bind(){for(let [index,table]of [...document.querySelectorAll('table')].
  table.dataset.columnsReady='1';
  const names=headers.map(h=>h.textContent.trim()),key=location.hash+'|'+index+'|'+names.join('|');
  const layoutId=table.dataset.columnLayout;
- let layout=normalizeLayout(layouts[layoutId],headers.length),cols=null,values=null,panel=null;
+ const defaults=normalizeLayout({order:(table.dataset.columnOrder||'').split(',').filter(Boolean).map(Number),hidden:(table.dataset.columnHidden||'').split(',').filter(Boolean).map(Number)},headers.length);
+ let layout=normalizeLayout(layouts[layoutId]||defaults,headers.length),cols=null,values=null,panel=null;
  const rows=layoutId?[...table.querySelectorAll('tr')].map(row=>({row,cells:[...row.children],spanning:row.children.length===1&&row.children[0].colSpan>1})):[];
  function size(){
   if(!cols)return;
@@ -57,7 +58,8 @@ function bind(){for(let [index,table]of [...document.querySelectorAll('table')].
  if(layoutId){
   panel=document.createElement('details');panel.className='table-column-panel';
   panel.innerHTML='<summary>Organizar colunas</summary><div class="table-column-options"></div>';
-  table.closest('.table-wrap').before(panel);
+  const slot=table.closest('.payable-workspace')?.querySelector('.payable-column-slot');
+  if(slot)slot.appendChild(panel);else table.closest('.table-wrap').before(panel);
   panel.addEventListener('change',event=>{
    const control=event.target.closest('[data-column-visible]');if(!control)return;
    const id=Number(control.dataset.columnVisible);
@@ -73,7 +75,7 @@ function bind(){for(let [index,table]of [...document.querySelectorAll('table')].
     [layout.order[from],layout.order[to]]=[layout.order[to],layout.order[from]];
     saveLayout();panel.querySelector('[data-column-move="'+id+'"][data-direction="'+move.dataset.direction+'"]').focus();
    }else if(event.target.closest('[data-column-reset]')){
-    layout=normalizeLayout(null,headers.length);delete widths[key];store(KEY,widths);
+    layout=normalizeLayout(defaults,headers.length);delete widths[key];store(KEY,widths);
     if(cols)cols[0].parentNode.remove();cols=null;values=null;
     table.style.width='';table.style.tableLayout='';table.classList.remove('column-sized');saveLayout();
     panel.querySelector('[data-column-reset]').focus();
