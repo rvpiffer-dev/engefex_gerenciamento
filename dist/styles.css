@@ -485,3 +485,5 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .table-column-option>div{display:flex;flex:none}.table-column-option button{padding:6px 10px;min-height:32px;font-size:17px}.table-column-option button:disabled{opacity:.3}
 .table-column-options>small{display:block;margin-top:10px;color:#69778c}table [hidden]{display:none!important}
 @media print{.table-column-panel{display:none}}
+
+.purchase-row-actions .purchase-confirm-button{padding:6px 10px;min-height:30px;font-size:12px;margin-right:5px}

@@ -54,3 +54,9 @@ A migração consolidada foi exercitada em testes antes da produção. `scripts/
 Em Contas a pagar, a opção **Organizar colunas** permite mostrar/ocultar colunas, alterar sua ordem pelas setas e restaurar o padrão. A largura continua ajustável pela borda do cabeçalho ou pelo teclado. As preferências são mantidas neste navegador e compartilhadas entre as abas Em aberto/Pagos; produção e testes usam chaves separadas. A personalização também fica disponível para perfis somente de consulta. Não grava nem altera lançamentos financeiros.
 
 Verificação visual com dados sintéticos: reordenação de cabeçalhos e células, ocultação, persistência após recarregar, redimensionamento e restauração do padrão.
+
+## Confirmação pela lista — v4.18.45 (11/11/2026)
+
+O botão **Confirmar** aparece nas ações das compras em rascunho que não pertencem a um fechamento. Confirma o documento sem abrir o editor, usando as mesmas validações de fornecedor, data, itens, rateio e parcelas do formulário; as contas são geradas pela rotina financeira existente. Bloqueia cliques simultâneos e exibe sucesso somente após o servidor confirmar o salvamento. Compras confirmadas/canceladas não exibem o botão. A ação respeita a permissão de edição de Compras e notas.
+
+Verificação: fluxo visual com nota sintética, confirmação sem abrir formulário, três testes adicionais para integridade das parcelas, rascunho incompleto, duplo clique e resposta do servidor. Nenhuma nota real foi confirmada durante os testes.

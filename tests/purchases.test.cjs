@@ -27,3 +27,36 @@ test('Rateio de estoque já pago preserva parcelas, baixa com desconto, anexos e
 test('Rateio permite transferir toda a compra paga para obra sem alterar documento, e rejeita mudanças financeiras',()=>{let {s,p,P,D}=stockPurchase();s=P.save(s,p);s=D.registerCostPayment(s,s.costs[0].id,{amount:50,date:'2026-10-18',mode:'partial'});let draft=D.clone(s.purchases[0]);draft.destination='work';draft.project='p';draft=P.applyGroup(draft,s,'s1');let next=P.reallocate(s,draft);assert.ok(next.costs.every(c=>c.project==='p'&&c.stage==='s1'));assert.equal(D.sum(next.costs,c=>c.paid),50);assert.equal(D.sum(next.costs,c=>D.costBalance(c)),450);assert.equal(D.sum(next.costs.filter(c=>c.purchaseInstallment==='part2'),c=>c.paid),0);for(let mutate of [p=>p.number='999',p=>p.supplier='Outro',p=>p.installments[0].due='2027-01-01',p=>p.installments[0].amount=249,p=>p.items[0].quantity=3,p=>p.attachments.push({id:'x'}),p=>p.status='Cancelada']){let bad=D.clone(draft);mutate(bad);assert.throws(()=>P.reallocate(s,bad),/somente os destinos|cancelada/)}let again=P.reallocate(next,D.clone(next.purchases[0]));assert.equal(JSON.stringify(again),JSON.stringify(next));});
 test('Rateio conserva centavos e quitação em muitos destinos com desconto integral, juros e parcelas pequenas',()=>{for(let paid of [0,.01,.02,.04,.07]){let {s,p,P,D,M}=stockPurchase();p.items=[{...p.items[0],quantity:1,unitPrice:.03,total:.03}];p.installments=[{id:'tiny',number:'1',due:'2026-11-10',amount:.03}];s.budgetStages.push({...M.defaults('budgetStages','q'),id:'sq',name:'Outra'});s=P.save(s,p);s=D.registerCostPayment(s,s.costs[0].id,{amount:paid,date:'2026-10-18',mode:'settle'});let draft=D.clone(s.purchases[0]);draft.items[0].allocations=[{project:'p',stage:'s1',share:33.33},{project:'q',stage:'sq',share:33.33},{destination:'general',project:'Geral',stage:'',share:33.34}];let next=P.reallocate(s,draft);assert.equal(Math.round(D.sum(next.costs,c=>c.amount)*100),3);assert.equal(Math.round(D.sum(next.costs,c=>c.paid)*100),Math.round(paid*100));assert.equal(D.sum(next.costs,c=>D.costBalance(c)),0);next.costs.forEach(c=>D.validateRecord(next,'costs',c));}});
 test('destinos mistos validam 100%, não aceitam etapa em estoque e protegem alterações pagas na edição comum',()=>{let {s,p,P,D}=stockPurchase();p.items[0].allocations=[{destination:'stock',project:'Geral',stage:'',share:100}];p.items[1].allocations=[{destination:'general',project:'Geral',stage:'',share:100}];let next=P.save(s,p);assert.equal(next.costs.length,4);assert.equal(P.projectSummary(next,p).includes('Estoque:'),true);assert.equal(P.projectSummary(next,p).includes('Geral:'),true);for(let bad of [[{destination:'stock',project:'Geral',stage:'s1',share:100}],[{destination:'stock',project:'p',stage:'',share:100}],[{destination:'bogus',project:'Geral',stage:'',share:100}],[{destination:'stock',project:'Geral',stage:'',share:50}],[{destination:'stock',project:'Geral',stage:'',share:50},{destination:'stock',project:'Geral',stage:'',share:50}]]){let copy=D.clone(p);copy.items[0].allocations=bad;assert.throws(()=>P.save(s,copy))}next=D.registerCostPayment(next,next.costs[0].id,{amount:next.costs[0].amount,date:'2026-10-18',mode:'settle'});let copy=D.clone(next.purchases[0]);copy.items[0].allocations=[{project:'p',stage:'s1',share:100}];assert.throws(()=>P.save(next,copy),/pagas/);});
+
+test('confirmar rascunho pela lista valida o documento e gera as parcelas uma única vez',()=>{
+ const {s,p,P,D}=setup();p.status='Rascunho';const before=P.save(s,p),original=JSON.stringify(before);
+ assert.match(P.render(before,'all'),new RegExp('data-action="purchase-confirm:'+p.id+'"'));
+ const next=P.confirmDraft(before,p.id);
+ assert.equal(next.purchases[0].status,'Confirmada');assert.equal(next.costs.length,4);
+ assert.equal(D.sum(next.costs,c=>c.amount),500);assert.equal(JSON.stringify(before),original);
+ assert.doesNotMatch(P.render(next,'all'),/data-action="purchase-confirm:/);
+ assert.throws(()=>P.confirmDraft(next,p.id),/não está mais em rascunho/);
+ assert.throws(()=>P.confirmDraft(before,'missing'),/não encontrada/);
+ const grouped=D.clone(before);grouped.purchases[0].paymentGroupId='G1';
+ assert.throws(()=>P.confirmDraft(grouped,p.id),/fechamento/);
+});
+test('confirmação rápida não permite documento sem rateio ou vencimento e preserva o rascunho',()=>{
+ const {s,p,P,D}=setup();p.status='Rascunho';p.installments[0].due='';let before=P.save(s,p),original=JSON.stringify(before);
+ assert.throws(()=>P.confirmDraft(before,p.id),/parcelas precisam/);assert.equal(JSON.stringify(before),original);
+ before=D.clone(before);before.purchases[0].installments[0].due='2026-11-10';before.purchases[0].items[0].budgetItem='';
+ assert.throws(()=>P.confirmDraft(before,p.id),/rateio|orçamento/);assert.equal(before.costs.length,0);
+});
+test('botão Confirmar bloqueia duplo clique e só exibe sucesso após confirmação do servidor',async()=>{
+ const {s,p,P,w}=setup();p.status='Rascunho';let state=P.save(s,p),calls=0,renders=0,resolveSave;const notices=[];
+ const button={dataset:{action:'purchase-confirm:'+p.id},disabled:false,textContent:'Confirmar'};
+ w.document={querySelectorAll:()=>[button]};
+ P.init({getState:()=>state,getProject:()=> 'all',save:next=>{calls++;return new Promise(resolve=>{resolveSave=ok=>{if(ok)state=next;resolve(ok)}})},render:()=>renders++,toast:text=>notices.push(text)});
+ assert.equal(P.handle('purchase-confirm:'+p.id),true);assert.equal(P.busy(),true);assert.equal(button.disabled,true);
+ P.handle('purchase-confirm:'+p.id);assert.equal(calls,1);assert.equal(renders,0);
+ resolveSave(false);await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.purchases[0].status,'Rascunho');assert.equal(renders,0);assert.equal(P.busy(),false);
+ assert.equal(button.disabled,false);assert.match(notices.at(-1),/não confirmou/);
+ P.handle('purchase-confirm:'+p.id);resolveSave(true);await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.purchases[0].status,'Confirmada');assert.equal(calls,2);assert.equal(renders,1);
+ assert.match(notices.at(-1),/Compra confirmada/);
+});
