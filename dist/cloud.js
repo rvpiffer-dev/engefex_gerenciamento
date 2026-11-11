@@ -198,7 +198,19 @@
    for(const id of root.LocalFiles.refs(snapshot))knownFiles.add(id);
    remoteSnapshot=null;confirmedState=structuredClone(snapshot);
    pending=false;failed='';setPhase('ready');paintStatus('Conectado ao Supabase · revisão '+revision);client?.identityChanged?.();
-   activeDraft=loadDraft();if(activeDraft){failed='Rascunho não confirmado: recupere ou baixe antes de continuar.';paintStatus('RASCUNHO PENDENTE · Recupere ou baixe para sua segurança.');updateRecoveryUI()}
+   activeDraft=loadDraft();
+   if(activeDraft){
+    const sameRevision=Number(activeDraft.revision)===Number(revision);
+    const alreadySaved=!sameRevision&&draftApplied(snapshot,activeDraft.changes);
+    if(activeDraft.changes.length===0||alreadySaved){
+     clearDraft();
+     paintStatus('Dados sincronizados · nenhum rascunho pendente · revisão '+revision);
+    }else{
+     failed='Rascunho não confirmado. Use "Recuperar salvamento" ou "Baixar rascunho" no cabeçalho.';
+     paintStatus('RASCUNHO PENDENTE · Clique em Recuperar salvamento ou Baixar rascunho.');
+     updateRecoveryUI();
+    }
+   }
   }catch(e){setPhase('error',e.message)}
  }
  async function loadAccess(){if(!root.EngefexAccess)return false;let next=await raw('/rest/v1/rpc/engefex_access_context',{method:'POST',json:true,body:{p_workspace:workspace}}),fingerprint=JSON.stringify(next),changed=!!accessVersion&&fingerprint!==accessVersion;accessVersion=fingerprint;lastAccessCheck=Date.now();root.EngefexAccess.setContext(next);return changed}
@@ -399,6 +411,19 @@
     throw Error('A equipe alterou a base desde este rascunho. Baixe o rascunho para conferir; nenhuma alteração será sobrescrita.');
    }
    const next=unsavedPayload||applyDraft(confirmedState,draft.changes);
+   // Somente eventos de histórico: preservar IDs de compras, parcelas e pagamentos.
+   if(Array.isArray(next.history)){
+    const seen=new Set();
+    for(const event of next.history){
+     if(!event||typeof event!=='object')continue;
+     let id=event.id;
+     if(typeof id!=='string'||!id||seen.has(id)){
+      do{id='H-'+(root.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,14))}while(seen.has(id));
+      event.id=id;
+     }
+     seen.add(id);
+    }
+   }
    (root.Obras.onlineValid||root.Obras.backupValid)(next);
    failed='';
    const ok=await send(next);
