@@ -1,6 +1,6 @@
 {
-  "version": "4.18.39",
+  "version": "4.18.40",
   "date": "2026-11-11",
-  "name": "Recuperação segura de rascunhos não confirmados",
-  "previous_version": "4.18.38"
+  "name": "Recuperação automática de rascunhos e desbloqueio de edição",
+  "previous_version": "4.18.39"
 }
