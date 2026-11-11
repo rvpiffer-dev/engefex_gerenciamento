@@ -147,3 +147,12 @@ Os checklists não são preenchidos automaticamente por avanços de produção. 
 Em Peças e quantidades, use a grade com TAB entre os campos e ENTER para avançar à próxima linha. É possível colar células do Excel diretamente na grade. Para incluir uma lista inteira com prévia, use Colar várias peças do Excel, nesta ordem: Marca, Nome, Grupo, Unidade, Quantidade, Perfil / dimensões, Observações. Marque as peças para aplicar grupo, unidade ou operações em lote.
 
 O botão Gerar ordem de fabricação em PDF fica ao final da lista. As alterações são salvas antes da emissão. O PDF contém logo, obra, cliente, projeto, responsável, revisão, prazos, materiais, lista de peças, quantidade prevista, saldo por peça, operações e totais por unidade. A opção Somente saldo a fabricar exclui peças já concluídas. O gerador usa pdf-lib, sob licença MIT em dist/vendor/PDF-LIB-LICENSE.txt, sem serviços externos de geração.
+
+
+## Visão Geral pessoal — v4.18.48
+
+A página inicial reúne providências e tarefas atribuídas ou criadas pelo usuário conectado, além dos compromissos dos próximos sete dias destinados a ele ou a toda a equipe. O filtro de obra do topo também se aplica ao painel. Itens concluídos e cancelados saem das pendências abertas.
+
+O vínculo com Responsáveis usa o e-mail de login ou o ID de usuário vinculado ao contato. Atribuições antigas por nome só são reconhecidas quando o nome completo cadastrado é único. Sem identificação, o painel não lista registros pessoais. Novas tarefas e atividades da lousa registram autoria; itens antigos sem autor não são atribuídos automaticamente.
+
+Valores de contratos, custos, pagamentos, recebimentos e saldo deixam a Visão Geral e continuam nos respectivos módulos. A personalização respeita as permissões de visualização de cada módulo. Ela não altera as políticas de acesso no servidor nem a base financeira.

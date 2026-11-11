@@ -64,7 +64,7 @@ test('o aplicativo oferece o sininho, cadastro e escopo pessoal no dashboard',()
  assert.match(html,/id="alertsBell"/);
  assert.match(html,/id="alertsPanel"/);
  assert.match(html,/alerts\.js/);
- assert.match(app,/personalIssues\(\)\.filter\(x=>x.status!=='Resolvida'\)/);
+ assert.match(app,/EngefexPersonalDashboard\.build\(state,identity\(\),project/);
  assert.match(app,/function responsibles\(\)/);
  assert.match(app,/E\.prepare\(state,E\.ensure\(next\),cloud\?\.currentUser\)/);
 });

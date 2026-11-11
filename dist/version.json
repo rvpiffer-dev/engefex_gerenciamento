@@ -1,6 +1,6 @@
 {
-  "version": "4.18.47",
+  "version": "4.18.48",
   "date": "2026-11-11",
-  "name": "Financeiro: novo estilo em recebimentos e despesas gerais",
-  "previous_version": "4.18.46"
+  "name": "Visão Geral pessoal: providências, tarefas e agenda",
+  "previous_version": "4.18.47"
 }
