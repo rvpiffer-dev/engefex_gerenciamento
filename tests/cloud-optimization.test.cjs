@@ -52,14 +52,13 @@ test('mudança simultânea em outro computador impede recuperação que sobrescr
  assert.equal(h.api.unsynced,true);
  assert.match(h.el('engefex-cloud-status').textContent,/NÃO SALVO/);
 });
-test('depois de reabrir navegador o rascunho fica recuperável sem restaurar dados automaticamente',async()=>{
+test('depois de reabrir navegador rascunho com revisão inalterada é recuperado automaticamente',async()=>{
  let first=await boot({fail:true}),next=first.current();next.activities[3].executed=55;
  assert.equal(await first.api.send(next),false);
  const second=await boot({savedStore:first.store});
  assert.equal(second.api.ready,true);
- assert.equal(second.api.unsynced,true);
- assert.equal(second.server().activities[3].executed,0);
- assert.equal(await second.api.retryPending(),true);
+ // Repetir apenas com revisão idêntica; nunca sobrescrever mudanças de outra sessão.
+ for(let i=0;i<10&&second.api.unsynced;i++)await new Promise(resolve=>setImmediate(resolve));
  assert.equal(second.server().activities[3].executed,55);
  assert.equal(second.api.unsynced,false);
 });
