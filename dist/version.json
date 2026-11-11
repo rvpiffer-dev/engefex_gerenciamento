@@ -1,6 +1,6 @@
 {
-  "version": "4.18.46",
+  "version": "4.18.47",
   "date": "2026-11-11",
-  "name": "Contas a pagar: nova interface e ordenação de lançamentos",
-  "previous_version": "4.18.45"
+  "name": "Financeiro: novo estilo em recebimentos e despesas gerais",
+  "previous_version": "4.18.46"
 }

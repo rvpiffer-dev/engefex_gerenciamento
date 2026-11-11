@@ -68,3 +68,11 @@ Verificação: fluxo visual com nota sintética, confirmação sem abrir formul�
 - Interface com resumo compacto, abas Em aberto/Pagos, busca e ordenação junto da tabela, vencimentos e saldos destacados. Ações secundárias ficam em Mais; categorias, edição em planilha e explicações ficam em Configurações e ajuda.
 - Novos padrões de colunas mostram os dados essenciais; preferências anteriores continuam preservadas e todas as colunas permanecem disponíveis em Organizar colunas. Em Pagos, o padrão destaca Pago em vez do saldo zerado. Os cartões móveis seguem a ordenação selecionada.
 - Verificação visual com lançamentos sintéticos em desktop e largura de 390 px: vencimento/número/fornecedor, inversão, preferência após recarregar, abas, colunas e acesso às ações. Testes de ordenação verificam acentos, números, datas ausentes, parcelas rateadas e ausência de mutação dos dados.
+
+## Financeiro unificado — v4.18.47 (11/11/2026)
+
+- Contas a receber e Despesas gerais adotam o mesmo padrão de Contas a pagar: resumo compacto, busca/ordenação/colunas na área da lista, ações secundárias em Mais e cartões responsivos no celular.
+- Recebimentos: ordenação por vencimento, número, cliente, valores, saldo, obra e tipo; preferência no navegador e CSV na mesma ordem. Mantidas as rotinas de recebimento/estorno, parcelamento, comprovantes, retenções e exclusão. Recebidos destaca a coluna de valor recebido; parcelas e entrada conservam identificação em destaque.
+- Despesas: abas Todas/Recorrentes/Únicas, busca por descrição/fornecedor/destino, ordenação, colunas personalizáveis e exportação CSV dos cadastros exibidos. A competência e a geração mensal ficam em uma faixa própria; o resumo informa as contas dessa competência. A geração, o ajuste de meses curtos, a proteção contra duplicação e a preservação de pagamentos continuam nas rotinas existentes.
+- As preferências de consulta permanecem disponíveis a usuários com visualização, enquanto geração, recebimentos e alterações continuam sujeitos às permissões das respectivas telas.
+- Verificação visual em desktop e 390 px: as duas telas, ordenação, abas, busca e valores recebidos. Testes adicionais verificam ordenação sem mutação e consulta das recorrências sem gerar contas.
