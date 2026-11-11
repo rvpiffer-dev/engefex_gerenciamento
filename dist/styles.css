@@ -455,3 +455,21 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 .purchase-workspace table td:last-child{white-space:nowrap}
 .purchase-workspace table td:last-child .text-btn{padding:5px 6px}
 @media(max-width:740px){.purchase-main-actions{width:100%}.purchase-main-actions .button{flex:1 1 auto}.purchase-batch-bar .purchase-group-actions{align-items:flex-start!important}.purchase-workspace table td:last-child{white-space:normal}}
+
+/* Compras e Notas: lista documental compacta e classificação */
+.purchase-list-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:4px 0}
+.purchase-sort-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.purchase-sort-controls label{font-size:13px;font-weight:600;color:var(--muted,#64748b)}
+.purchase-sort-controls select{min-width:185px;max-width:245px;height:38px;padding:6px 10px;border:1px solid var(--border,#dbe2ea);border-radius:8px;background:var(--surface,#fff);color:inherit}
+.purchase-sort-direction{min-height:38px;white-space:nowrap}
+.purchase-clean-table th,.purchase-clean-table td{vertical-align:middle;padding:10px 12px}
+.purchase-clean-table .purchase-value{font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+.purchase-clean-table .purchase-row-actions{white-space:nowrap}
+.purchase-row-more{display:inline-block;position:relative;vertical-align:middle;margin-left:3px}
+.purchase-row-more>summary{list-style:none;cursor:pointer;border-radius:6px;padding:5px 7px;font-size:13px;color:var(--muted,#64748b)}
+.purchase-row-more>summary::-webkit-details-marker{display:none}
+.purchase-row-more>summary:after{content:" ▾"}
+.purchase-row-more[open]>summary{background:var(--surface-alt,#f1f5f9)}
+.purchase-row-more>div{display:flex;flex-direction:column;gap:2px;position:absolute;right:0;top:100%;z-index:20;min-width:110px;background:var(--surface,#fff);border:1px solid var(--border,#dbe2ea);border-radius:8px;padding:5px;box-shadow:0 8px 20px rgba(15,23,42,.12)}
+.purchase-row-more>div .text-btn{text-align:left;white-space:nowrap}
+@media(max-width:740px){.purchase-list-toolbar{align-items:stretch}.purchase-sort-controls{width:100%}.purchase-sort-controls select{flex:1;min-width:140px}.purchase-sort-direction{min-width:auto}}
