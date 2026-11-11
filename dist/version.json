@@ -1,6 +1,6 @@
 {
-  "version": "4.18.38",
+  "version": "4.18.39",
   "date": "2026-11-11",
-  "name": "Correção de IDs duplicados no histórico e validação de sincronização",
-  "previous_version": "4.18.37"
+  "name": "Recuperação segura de rascunhos não confirmados",
+  "previous_version": "4.18.38"
 }
