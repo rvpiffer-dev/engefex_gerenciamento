@@ -1,6 +1,6 @@
 {
-  "version": "4.18.41",
+  "version": "4.18.42",
   "date": "2026-11-11",
-  "name": "Compras e Notas reorganizado com ações essenciais e painel inferior oculto",
-  "previous_version": "4.18.40"
+  "name": "Compras e Notas: ordenação de documentos e visualização compacta",
+  "previous_version": "4.18.41"
 }
