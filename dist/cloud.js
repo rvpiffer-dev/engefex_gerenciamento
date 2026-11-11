@@ -207,8 +207,11 @@
      paintStatus('Dados sincronizados · nenhum rascunho pendente · revisão '+revision);
     }else{
      failed='Rascunho não confirmado. Use "Recuperar salvamento" ou "Baixar rascunho" no cabeçalho.';
-     paintStatus('RASCUNHO PENDENTE · Clique em Recuperar salvamento ou Baixar rascunho.');
+     paintStatus('RASCUNHO PENDENTE · Tentando recuperar salvamento preservado…');
      updateRecoveryUI();
+     // Só repetir automaticamente quando a revisão da base não mudou.
+     // Em caso de conflito, preservar o rascunho e exigir revisão manual.
+     if(sameRevision)Promise.resolve().then(()=>{if(activeDraft&&phase==='ready'&&!pending&&Number(activeDraft.revision)===Number(revision))return retryPending()}).catch(e=>console.warn('Recuperação automática indisponível',e));
     }
    }
   }catch(e){setPhase('error',e.message)}
@@ -331,7 +334,7 @@
    for(const row of entries){
     const id=row?.id;
     if(!id)continue;
-    if(ids.has(id))throw Error('IDs duplicados em '+key+' (registro '+String(id).slice(0,100)+'). Nenhum dado foi confirmado. Atualize o sistema antes de tentar novamente.');
+    if(ids.has(id))throw Error('IDs duplicados na lista '+key+' (registro '+String(id).slice(0,100)+'). Nenhum dado foi confirmado. Atualize o sistema antes de tentar novamente.');
     ids.add(id);
    }
   }
