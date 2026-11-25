@@ -132,3 +132,23 @@ test('recuperação de rascunho não interpreta substituição de ID desconhecid
  assert.equal(h.requests.some(r=>r.url.includes('/rpc/engefex_save_state')),false);
  assert.equal(h.server().purchases.length,2);
 });
+
+test('visita offline confirma a revisão atual e pode repetir o envio com o mesmo ID',async()=>{
+ const h=await boot({scopedFullRead:true});
+ const account={user:'u',workspace:'work'},visit={id:'visit-offline-test',project:'p'};
+ const build=(base,record)=>({...base,visitReports:[...(base.visitReports||[]),record],
+  issues:[...(base.issues||[]),{id:record.id+'-item',responsibleId:'r'}]});
+ await assert.rejects(h.api.sendOfflineVisit({...account,user:'outra-conta'},visit,build),/não tem acesso/);
+ h.setFail(true);
+ await assert.rejects(h.api.sendOfflineVisit(account,visit,build),/A base mudou/);
+ assert.equal(h.api.unsynced,false);
+ h.setRemote(base=>({...base,activities:base.activities.map((row,index)=>index===0?{...row,executed:20}:row)}));
+ h.setFail(false);
+ await h.api.sendOfflineVisit(account,visit,build);
+ const count=h.requests.filter(r=>r.url.includes('patch_state')).length;
+ await h.api.sendOfflineVisit(account,visit,()=>{throw Error('Visita duplicada')});
+ assert.equal(h.requests.filter(r=>r.url.includes('patch_state')).length,count);
+ assert.deepEqual(h.server().visitReports,[visit]);
+ assert.equal(h.server().issues.length,1);
+ assert.equal(h.server().activities[0].executed,20);
+});
