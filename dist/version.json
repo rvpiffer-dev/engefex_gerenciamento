@@ -1,6 +1,6 @@
 {
-  "version": "4.18.52",
+  "version": "4.18.53",
   "date": "2026-11-25",
-  "name": "Engefex Visitas, aplicativo de campo offline",
-  "previous_version": "4.18.51"
+  "name": "Correção na sincronização das fotos de visitas",
+  "previous_version": "4.18.52"
 }
