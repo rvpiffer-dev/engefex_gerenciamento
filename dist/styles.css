@@ -617,3 +617,16 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
  #editor:has(.visit-wizard) {width:100%; max-width:none; max-height:100dvh; margin-bottom:0}
  #editor.visit-in-progress button[type="submit"] {display:none}
 }
+
+.visit-check-main {display:grid; gap:14px; padding:clamp(16px,5vw,30px); background:#eef3f7; border-radius:8px}
+.visit-check-group {margin:0; color:#455767; font-size:13px; font-weight:600}
+.visit-check-main h3 {font-size:clamp(24px,6vw,36px); line-height:1.17; color:#172e42; overflow-wrap:anywhere}
+.visit-check-main .visit-check label {width:fit-content; padding-inline:14px; background:#fff}
+.visit-extras {display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start}
+.visit-extras details {min-width:0; max-width:100%}
+.visit-extras details[open] {flex-basis:100%}
+.visit-extras summary {display:flex; align-items:center; gap:8px; min-height:44px; width:fit-content; padding:6px 12px; border:1px solid #cbd4dc; border-radius:6px; background:#fff; color:#344a5d; font-size:14px; font-weight:600; cursor:pointer; list-style:none}
+.visit-extras summary::-webkit-details-marker {display:none}
+.visit-extras summary::after {content:'+'; font-size:16px}
+.visit-extras details[open] > summary::after {content:'−'}
+.visit-extra-body {display:grid; gap:10px; padding:12px 0 4px}

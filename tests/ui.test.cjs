@@ -207,6 +207,12 @@ test('relatório de visitas salva checklist por obra e permite consultar, editar
  assert.match(h.el('#nav').innerHTML,/href="#visitreports"/);
  assert.match(h.el('#main').innerHTML,/Nenhuma visita registrada/);
  h.click({action:'new:visitReports'});
+ const markup=h.el('#fields').innerHTML;
+ assert.match(markup,/<h3 id="visit-title-tilesCovered">Conferir se as telhas armazenadas estão cobertas\.<\/h3>/);
+ assert.match(markup,/aria-describedby="visit-title-tilesCovered"/);
+ for(const label of ['Comentário','Fotos','Responsável']){
+  assert.match(markup,new RegExp('<details[^>]*><summary>'+label+'</summary>'));
+ }
  const fields=Object.fromEntries(Obras.visitChecks.flatMap(([key])=>[[key,false],[key+'Note',''],[key+'Action',''],[key+'Owner','']]));
  const record={...fields,project:'obra-a',date:'2026-11-25',visitor:'Ramon',subject:'Montagem',tilesCovered:true,observations:'<Inspeção>',actions:''};
  for(const [key,value] of Object.entries(record)){
