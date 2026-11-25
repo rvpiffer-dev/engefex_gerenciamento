@@ -1,4 +1,4 @@
-const CACHE='engefex-visitas:'+self.registration.scope+':1';
+const CACHE='engefex-visitas:'+self.registration.scope+':2';
 const ASSETS=['./','index.html','visitas.css','visitas.js','manifest.webmanifest','icon-192.png','icon-512.png','../environment.js','../domain.js','../files.js'];
 const urls=ASSETS.map(path=>new URL(path,self.registration.scope).href);
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(urls.map(url=>new Request(url,{cache:'reload'})))).then(()=>self.skipWaiting())));
