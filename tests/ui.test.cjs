@@ -198,7 +198,7 @@ test('atalho da providência abre o item pessoal por nome completo e mantém pro
 });
 
 test('relatório de visitas salva checklist por obra e permite consultar, editar e excluir',async()=>{
- const h=harness({version:1,projects:[{id:'obra-a',name:'Obra A'},{id:'obra-b',name:'Obra B'}]});
+ const h=harness({version:1,projects:[{id:'obra-a',name:'Obra A'},{id:'obra-b',name:'Obra B'}],stages:[],activities:[],stockMoves:[],responsibles:[{id:'encarregado',name:'Encarregado',email:'e@example.com'}]});
  const {Obras}=h.context;
  const saved=()=>JSON.parse(h.local.get('engefex-gerenciamento-v2'));
  const submit=()=>h.el('#editForm').submit({preventDefault(){}});
@@ -207,16 +207,23 @@ test('relatório de visitas salva checklist por obra e permite consultar, editar
  assert.match(h.el('#nav').innerHTML,/href="#visitreports"/);
  assert.match(h.el('#main').innerHTML,/Nenhuma visita registrada/);
  h.click({action:'new:visitReports'});
- const fields=Object.fromEntries(Obras.visitChecks.flatMap(([key])=>[[key,false],[key+'Note','']]));
+ const fields=Object.fromEntries(Obras.visitChecks.flatMap(([key])=>[[key,false],[key+'Note',''],[key+'Action',''],[key+'Owner','']]));
  const record={...fields,project:'obra-a',date:'2026-11-25',visitor:'Ramon',subject:'Montagem',tilesCovered:true,observations:'<Inspeção>',actions:''};
  for(const [key,value] of Object.entries(record)){
   h.el('#field-'+key)[typeof value==='boolean'?'checked':'value']=value;
  }
- h.el('#field-tilesCoveredNote').value='Cobrir as telhas ao lado do portão';
+ h.el('#field-tilesCoveredNote').value='Telhas descobertas ao lado do portão';
+ h.el('#field-tilesCoveredAction').value='Cobrir as telhas ao lado do portão';
+ await submit();
+ assert.match(h.el('#formError').textContent,/Informe o que falta fazer e o responsável/);
+ h.el('#field-tilesCoveredOwner').value='encarregado';
  await submit();
  const [report]=saved().visitReports;
  assert.equal(report.tilesCovered,true);
  assert.equal(report.tilesLeft,false);
+ assert.equal(saved().issues[0].responsibleId,'encarregado');
+ assert.equal(saved().issues[0].visitReportId,report.id);
+ assert.equal(saved().issues[0].title,'Cobrir as telhas ao lado do portão');
  assert.equal(saved().diary.length,0);
  assert.equal(Obras.backupValid(saved()),true);
  assert.equal(Obras.removeRecord(saved(),'projects','obra-a').visitReports.length,0);
@@ -231,6 +238,7 @@ test('relatório de visitas salva checklist por obra e permite consultar, editar
  h.el('#field-tilesCovered').checked=false;
  await submit();
  assert.equal(saved().visitReports[0].tilesCovered,false);
+ assert.equal(saved().issues.length,1);
  await h.click({remove:'visitReports',id:report.id});
  assert.equal(saved().visitReports.length,0);
 });

@@ -69,6 +69,7 @@
   if(typeof report.visitor!=='string'||!report.visitor.trim())throw Error('Informe o responsável pela visita.');
   for(const [key,label] of visitChecks){
    if(typeof report[key]!=='boolean'||typeof report[key+'Note']!=='string')throw Error('Verificação inválida em '+label);
+   validatePhotoMetadata(report.itemPhotos?.[key]?.photos);
   }
  }
  function validateVisitReports(state){

@@ -240,9 +240,11 @@
   if(kind==='visitReports')return [
    projectField(),field('date','Data da visita','date',{required:true}),
    field('visitor','Responsável pela visita','text',{required:true}),field('subject','Etapa / local vistoriado'),
-   ...D.visitChecks.flatMap(([key,label,group],index)=>[
-    field(key,label,'checkbox',{group:D.visitChecks[index-1]?.[2]===group?'':group}),
-    field(key+'Note','Observação','text',{full:true,visitNote:label})
+   ...D.visitChecks.flatMap(([key,label])=>[
+    field(key,label,'checkbox'),
+    field(key+'Note','Observação','textarea',{full:true,visitNote:label}),
+    area(key+'Action','O que falta fazer'),
+    field(key+'Owner','Responsável','select',{options:(state.responsibles||[]).filter(person=>person.email).map(person=>[person.id,person.name]),full:true})
    ]),
    area('observations','Observações gerais'),
    area('actions','Encaminhamentos, responsáveis e prazos')
@@ -263,10 +265,116 @@ if(kind==='receivableEntries')return [field('project','Obra (opcional)','select'
  if(kind==='receipts')return [projectField(),field('number','Número da medição aprovada'),field('receiptType','Tipo de recebimento','select',{options:options(['Medição','Retenção']),hint:'Medição recebe o líquido aprovado. Retenção recebe apenas o valor previamente liberado.'}),dateField('date','Data do recebimento'),numberField('amount','Recebido (R$)'),area('note','NF / retenções / documento bancário / observações')];
  if(kind==='diary')return [projectField(),field('number','Número do diário'),field('morning','Clima da manhã','select',{options:options(['Sol','Chuva','Nublado','Não informado'])}),field('afternoon','Clima da tarde','select',{options:options(['Sol','Chuva','Nublado','Não informado'])}),field('author','Execução do diário'),field('engineer','Engenheiro responsável de obras'),field('inspector','Fiscal / cliente'),area('staffText','Efetivo: função | quantidade | empresa | horas (uma linha por função)'),area('observations','Observações relevantes'),dateField('date','Data'),field('conditions','Condições do dia'),field('team','Equipes presentes'),numberField('hours','Horas-pessoa deste serviço (opcional)',true),activityField(),numberField('quantity','Quantidade adicional executada neste registro'),area('description','Serviços executados / local / ocorrências'),area('materials','Materiais recebidos / consumidos (registre estoque também em Materiais)'),area('equipment','Equipamentos utilizados'),area('inspections','Inspeções / liberações'),area('evidence','Referências complementares das evidências (opcional)'),area('interference','Interferências / paralisações / pendências'),area('instructions','Orientações recebidas / emissor / referência'),area('nextDay','Planejamento para o próximo dia')];
  if(kind==='teams')return [projectField(),field('name','Nome da equipe'),field('specialty','Especialidade'),numberField('people','Número de pessoas'),field('responsible','Responsável'),field('contact','Contato'),area('equipment','Equipamentos e ferramentas disponíveis')];return []}
- function openEditor(kind,id,preset){if(!id&&kind!=='receivableEntries'&&!(kind==='receipts'&&preset?.receivableId)&&kind!=='projects'&&kind!=='facts'&&kind!=='responsibles'&&!state.projects.length){toast('Cadastre uma obra primeiro.');return openEditor('projects')}let record=preset||(['budgets','budgetSchedule'].includes(kind)?getBS(id):kind==='schedule'?getS(id):kind==='projects'?(id?getP(id):defaults(kind)):id?state[kind].find(x=>x.id===id):defaults(kind));if(!record)return toast('Registro não encontrado.');if(photoEditor){photoEditor.dispose();photoEditor=null}record=D.clone(record);if(kind==='issues')record.responsibleIds=E?.assignedIds(record)||record.responsibleIds||(record.responsibleId?[record.responsibleId]:[]);if(kind==='activities')record.stage=D.planningStage(state,record)||record.stage;if(kind==='diary')record.staffText=(record.staff||[]).map(r=>[r.role,r.quantity,r.company,r.hours].join(' | ')).join('\n');if(kind==='budgets')D.CATEGORIES.forEach((c,i)=>record['budget'+i]=record.budgets[c]);if(kind==='schedule'){record.monthlyMode=record.monthlyMode||'auto';record.months=D.stageDistribution(state,record.id).months}if(kind==='schedule'||kind==='budgetSchedule')record.months.forEach((x,i)=>record['month'+i]=x*100);let specs=schema(kind,record);editContext={kind,id:record.id,record,specs};$('#removeRecord').hidden=!state[kind]?.some(r=>r.id===record.id);$('#dialogTitle').textContent={activities:'Planejar / atualizar serviço',budgets:'Definir verbas da etapa',schedule:'Reprogramar distribuição mensal',budgetItems:'Editar item do orçamento',budgetStages:'Editar etapa do orçamento',budgetSchedule:'Distribuição financeira mensal',projects:'Configurar '+record.name,tasks:'Tarefa do engenheiro',issues:'Pendência / risco',responsibles:'Cadastro de responsável',checklists:'Conferência de execução',costs:'Contratação / pagamento',quotes:'Cotação',materials:'Insumo e necessidade',stockMoves:'Movimentação de estoque',measurements:'Item de medição',receivableEntries:'Conta a receber avulsa',receipts:'Recebimento efetivo',diary:'Registro diário interno',visitReports:id?'Editar visita':'Nova visita',teams:'Equipe'}[kind]||'Editar';$('#dialogEyebrow').textContent=kind==='projects'?projectLabel(record):(record.project?projectLabel(record.project):'Cadastro');$('#fields').innerHTML=specs.map(f=>{let val=record[f.key]??(f.key==='receivableInstallmentCount'?1:['entryRetentionRate','measurementRetentionRate'].includes(f.key)?0:f.key==='measurementType'||f.key==='receiptType'?'Medição':''),attrs=`name="${h(f.key)}" id="field-${h(f.key)}" ${f.currency?'data-money inputmode="decimal"':''} ${f.required?'required':''} ${f.readonly?'readonly':''} ${f.visitNote?'aria-label="Observação · '+h(f.visitNote)+'"':''}`,control;if(f.type==='checkbox')return `${f.group?'<h3 class="visit-group field full">'+h(f.group)+'</h3>':''}<div class="field full visit-check"><label><input ${attrs} type="checkbox" ${val?'checked':''}><span>${h(f.label)}</span></label></div>`;if(f.key==='responsibleIds')control=`<fieldset id="field-responsibleIds" class="issue-responsibles"><legend>Selecione os responsáveis</legend>${(f.options||[]).map(([v,t])=>`<label><input type="checkbox" name="responsibleIds" value="${h(v)}" ${(val||[]).includes(v)?'checked':''}>${h(t)}</label>`).join('')||'<small>Cadastre pessoas em Responsáveis para atribuir a pendência.</small>'}</fieldset>`;else if(f.type==='textarea')control=`<textarea ${attrs}>${h(val)}</textarea>`;else if(f.type==='select'||f.type==='multi')control=`<select ${attrs} ${f.type==='multi'?'multiple size="7"':''}>${f.type==='multi'?'':'<option value="">Selecionar…</option>'}${(f.options||[]).map(([v,t])=>`<option value="${h(v)}" ${(Array.isArray(val)?val.includes(v):String(val)===String(v))?'selected':''}>${h(t)}</option>`).join('')}</select>`;else control=`<input ${attrs} type="${h(f.currency?'text':f.type)}" value="${h(val)}" ${f.type==='number'?`min="${f.min??0}" step="${f.step||'any'}"`:''}>`;return `<div class="field ${f.full?'full':''}${f.visitNote?' visit-note':''}"><label for="field-${h(f.key)}">${h(f.label)}</label>${control}${f.hint?`<small>${h(f.hint)}</small>`:''}</div>`}).join('');$('#formError').textContent='';if(kind==='projects'&&!id)$('#fields').innerHTML+='<label class="field full inline-check"><input type="checkbox" id="projectImportBudget"> Importar orçamento após salvar a obra (Matheus ou Orlando)</label>';if(kind==='documents'||kind==='receipts')documentEditor(record,kind==='receipts');if(kind==='diary'&&window.ObrasPhotos){$('#fields').innerHTML+='<section id="diaryPhotos" class="diary-photo-editor field full"></section>';photoEditor=window.ObrasPhotos.attachEditor($('#diaryPhotos'),record.photos||[])}if(kind==='schedule'){let mode=$('#field-monthlyMode'),sync=()=>{for(let f of specs.filter(f=>/^month[0-9]+$/.test(f.key))){let input=$('#field-'+f.key);if(input)input.readOnly=mode.value==='auto'}};mode.addEventListener('change',sync);sync()}$('#editor').showModal();window.EngefexCurrency?.scan();let pf=$('#field-project');if(pf){pf.addEventListener('change',()=>filterRelated(pf.value));filterRelated(pf.value)}}
+ function visitEditorMarkup(fields){
+  const intro=fields.slice(0,4).join('');
+  const items=D.visitChecks.map(([key,label,group],index)=>{
+   const first=4+4*index;
+   return `<section class="visit-step visit-item field full" data-visit-step>
+    <h3>${h(group)} · ${index+1} de ${D.visitChecks.length}</h3>
+    ${fields.slice(first,first+4).join('')}
+    <div class="visit-photos" id="visit-photos-${h(key)}"></div>
+   </section>`;
+  }).join('');
+  return `<div class="visit-wizard field full">
+   <section class="visit-step visit-intro" data-visit-step><h3>Dados da visita</h3>${intro}</section>
+   ${items}
+   <section class="visit-step" data-visit-step><h3>Revisão da visita</h3>${fields.slice(-2).join('')}</section>
+   <div class="visit-step-nav">
+    <button type="button" class="button secondary" data-visit-prev>Voltar</button>
+    <span data-visit-progress aria-live="polite"></span>
+    <button type="button" class="button primary" data-visit-next>Avançar</button>
+   </div>
+  </div>`;
+ }
+ function attachVisitEditor(record){
+  const wizard=$('#fields .visit-wizard'),steps=[...$$('#fields [data-visit-step]')];
+  if(!wizard||!steps.length)return;
+  const mobile=window.matchMedia('(max-width: 760px)');
+  const previous=wizard.querySelector('[data-visit-prev]'),next=wizard.querySelector('[data-visit-next]');
+  const progress=wizard.querySelector('[data-visit-progress]'),editor=$('#editor');
+  const photos=new Map();
+  let current=0;
+  function show(index,focus=false){
+   current=index;
+   steps.forEach((step,i)=>{step.hidden=mobile.matches&&i!==current});
+   editor.classList.toggle('visit-in-progress',mobile.matches&&current<steps.length-1);
+   previous.disabled=current===0;
+   next.hidden=current===steps.length-1;
+   progress.textContent=(current+1)+' de '+steps.length;
+   if(focus){
+    const heading=steps[current].querySelector('h3');
+    heading.tabIndex=-1;
+    heading.focus();
+    steps[current].scrollIntoView({block:'start'});
+   }
+  }
+  previous.onclick=()=>show(current-1,true);
+  next.onclick=()=>{
+   const invalid=[...steps[current].querySelectorAll('input, select, textarea')].find(field=>!field.checkValidity());
+   if(invalid){invalid.reportValidity();return}
+   show(current+1,true);
+  };
+  const resize=()=>show(current);
+  const invalid=event=>{
+   const index=steps.findIndex(step=>step.contains(event.target));
+   if(mobile.matches&&index>=0&&steps[index].hidden)show(index);
+  };
+  mobile.addEventListener('change',resize);
+  editor.addEventListener('invalid',invalid,true);
+  function dispose(){
+   mobile.removeEventListener('change',resize);
+   editor.removeEventListener('invalid',invalid,true);
+   editor.classList.remove('visit-in-progress');
+   for(const controller of photos.values())controller.dispose();
+  }
+  editor.addEventListener('close',dispose,{once:true});
+  if(window.ObrasPhotos)for(const [key] of D.visitChecks){
+   photos.set(key,window.ObrasPhotos.attachEditor($('#visit-photos-'+key),record.itemPhotos?.[key]?.photos||[]));
+  }
+  if(cloud&&A&&!A.canWrite('issues'))for(const [key] of D.visitChecks){
+   for(const suffix of ['Action','Owner']){
+    const field=$('#field-'+key+suffix);
+    field.readOnly=true;
+    if(field.tagName==='SELECT')field.disabled=true;
+   }
+  }
+  editContext.photoControls=photos;
+  editContext.showVisitItem=key=>show(1+D.visitChecks.findIndex(([id])=>id===key));
+  show(0);
+ }
+ function saveVisitReport(base,record,previous,showItem){
+  let next=D.saveRecord(base,'visitReports',record);
+  for(const [key,label] of D.visitChecks){
+   const action=record[key+'Action']||'', owner=record[key+'Owner']||'';
+   const changed=action!==(previous[key+'Action']||'')||owner!==(previous[key+'Owner']||'');
+   if(!changed&&record.project===previous.project)continue;
+   if(!action&&!owner&&!previous[key+'Action'])continue;
+   const fail=message=>{showItem?.(key);throw Error(message)};
+   if(!action||!owner)fail('Informe o que falta fazer e o responsável em “'+label+'”.');
+   if(cloud&&A&&!A.canWrite('issues'))fail('Seu perfil precisa de edição em Pendências e riscos para atribuir esta ação.');
+   const person=base.responsibles?.find(entry=>entry.id===owner&&entry.email);
+   if(!person)fail('Selecione um responsável cadastrado para “'+label+'”.');
+   const id=record.id+'-'+key;
+   const issue=base.issues.find(entry=>entry.id===id);
+   next=D.saveRecord(next,'issues',{
+    ...issue,id,project:record.project,title:action,action,
+    identified:issue?.identified||record.date,status:issue?.status||'Aberta',
+    priority:issue?.priority||'Normal',responsibleId:owner,responsibleIds:[owner],
+    responsible:person.name,visitReportId:record.id,visitItem:key
+   });
+  }
+  return next;
+ }
+ function openEditor(kind,id,preset){if(!id&&kind!=='receivableEntries'&&!(kind==='receipts'&&preset?.receivableId)&&kind!=='projects'&&kind!=='facts'&&kind!=='responsibles'&&!state.projects.length){toast('Cadastre uma obra primeiro.');return openEditor('projects')}let record=preset||(['budgets','budgetSchedule'].includes(kind)?getBS(id):kind==='schedule'?getS(id):kind==='projects'?(id?getP(id):defaults(kind)):id?state[kind].find(x=>x.id===id):defaults(kind));if(!record)return toast('Registro não encontrado.');if(photoEditor){photoEditor.dispose();photoEditor=null}record=D.clone(record);if(kind==='issues')record.responsibleIds=E?.assignedIds(record)||record.responsibleIds||(record.responsibleId?[record.responsibleId]:[]);if(kind==='activities')record.stage=D.planningStage(state,record)||record.stage;if(kind==='diary')record.staffText=(record.staff||[]).map(r=>[r.role,r.quantity,r.company,r.hours].join(' | ')).join('\n');if(kind==='budgets')D.CATEGORIES.forEach((c,i)=>record['budget'+i]=record.budgets[c]);if(kind==='schedule'){record.monthlyMode=record.monthlyMode||'auto';record.months=D.stageDistribution(state,record.id).months}if(kind==='schedule'||kind==='budgetSchedule')record.months.forEach((x,i)=>record['month'+i]=x*100);let specs=schema(kind,record);editContext={kind,id:record.id,record,specs};$('#removeRecord').hidden=!state[kind]?.some(r=>r.id===record.id);$('#dialogTitle').textContent={activities:'Planejar / atualizar serviço',budgets:'Definir verbas da etapa',schedule:'Reprogramar distribuição mensal',budgetItems:'Editar item do orçamento',budgetStages:'Editar etapa do orçamento',budgetSchedule:'Distribuição financeira mensal',projects:'Configurar '+record.name,tasks:'Tarefa do engenheiro',issues:'Pendência / risco',responsibles:'Cadastro de responsável',checklists:'Conferência de execução',costs:'Contratação / pagamento',quotes:'Cotação',materials:'Insumo e necessidade',stockMoves:'Movimentação de estoque',measurements:'Item de medição',receivableEntries:'Conta a receber avulsa',receipts:'Recebimento efetivo',diary:'Registro diário interno',visitReports:id?'Editar visita':'Nova visita',teams:'Equipe'}[kind]||'Editar';$('#dialogEyebrow').textContent=kind==='projects'?projectLabel(record):(record.project?projectLabel(record.project):'Cadastro');const renderedFields=specs.map(f=>{let val=record[f.key]??(f.key==='receivableInstallmentCount'?1:['entryRetentionRate','measurementRetentionRate'].includes(f.key)?0:f.key==='measurementType'||f.key==='receiptType'?'Medição':''),attrs=`name="${h(f.key)}" id="field-${h(f.key)}" ${f.currency?'data-money inputmode="decimal"':''} ${f.required?'required':''} ${f.readonly?'readonly':''} ${f.visitNote?'aria-label="Observação · '+h(f.visitNote)+'"':''}`,control;if(f.type==='checkbox')return `<div class="field full visit-check"><label><input ${attrs} type="checkbox" ${val?'checked':''}><span>${h(f.label)}</span></label></div>`;if(f.key==='responsibleIds')control=`<fieldset id="field-responsibleIds" class="issue-responsibles"><legend>Selecione os responsáveis</legend>${(f.options||[]).map(([v,t])=>`<label><input type="checkbox" name="responsibleIds" value="${h(v)}" ${(val||[]).includes(v)?'checked':''}>${h(t)}</label>`).join('')||'<small>Cadastre pessoas em Responsáveis para atribuir a pendência.</small>'}</fieldset>`;else if(f.type==='textarea')control=`<textarea ${attrs}>${h(val)}</textarea>`;else if(f.type==='select'||f.type==='multi')control=`<select ${attrs} ${f.type==='multi'?'multiple size="7"':''}>${f.type==='multi'?'':'<option value="">Selecionar…</option>'}${(f.options||[]).map(([v,t])=>`<option value="${h(v)}" ${(Array.isArray(val)?val.includes(v):String(val)===String(v))?'selected':''}>${h(t)}</option>`).join('')}</select>`;else control=`<input ${attrs} type="${h(f.currency?'text':f.type)}" value="${h(val)}" ${f.type==='number'?`min="${f.min??0}" step="${f.step||'any'}"`:''}>`;return `<div class="field ${f.full?'full':''}${f.visitNote?' visit-note':''}"><label for="field-${h(f.key)}">${h(f.label)}</label>${control}${f.hint?`<small>${h(f.hint)}</small>`:''}</div>`});$('#fields').innerHTML=kind==='visitReports'?visitEditorMarkup(renderedFields):renderedFields.join('');if(kind==='visitReports')attachVisitEditor(record);$('#formError').textContent='';if(kind==='projects'&&!id)$('#fields').innerHTML+='<label class="field full inline-check"><input type="checkbox" id="projectImportBudget"> Importar orçamento após salvar a obra (Matheus ou Orlando)</label>';if(kind==='documents'||kind==='receipts')documentEditor(record,kind==='receipts');if(kind==='diary'&&window.ObrasPhotos){$('#fields').innerHTML+='<section id="diaryPhotos" class="diary-photo-editor field full"></section>';photoEditor=window.ObrasPhotos.attachEditor($('#diaryPhotos'),record.photos||[])}if(kind==='schedule'){let mode=$('#field-monthlyMode'),sync=()=>{for(let f of specs.filter(f=>/^month[0-9]+$/.test(f.key))){let input=$('#field-'+f.key);if(input)input.readOnly=mode.value==='auto'}};mode.addEventListener('change',sync);sync()}$('#editor').showModal();window.EngefexCurrency?.scan();let pf=$('#field-project');if(pf){pf.addEventListener('change',()=>filterRelated(pf.value));filterRelated(pf.value)}}
  function filterRelated(p){if(['measurements','materials','stockMoves'].includes(editContext?.kind)){let sel=$('#field-activity');if(sel){let previous=sel.value;sel.innerHTML='<option value="">'+(budgetItemOptions(p).length?'Selecionar item do orçamento…':'Esta obra ainda não tem itens no orçamento')+'</option>'+budgetItemOptions(p).map(([value,label])=>'<option value="'+h(value)+'">'+h(label)+'</option>').join('');sel.value=state.budgetItems.some(a=>a.id===previous&&a.project===p)?previous:''}}let financial=['budgetItems','budgetStages','budgets','budgetSchedule','costs','quotes','measurements','materials','stockMoves'].includes(editContext?.kind);for(let key of ['stage','activity','material','parent']){let sel=$('#field-'+key);if(!sel)continue;for(let option of [...sel.options]){if(!option.value)continue;let rec=(key==='stage'||key==='parent')?(financial?getBS(option.value):getS(option.value)):key==='activity'?(financial?getB(option.value):getA(option.value)):state.materials.find(m=>m.id===option.value);option.hidden=rec?.project!==p;option.disabled=rec?.project!==p}if(sel.selectedOptions[0]?.disabled)sel.value=''}}
  $('#editForm').addEventListener('submit',async e=>{e.preventDefault();if(submitting)return;submitting=true;let saving=editContext,controller=photoEditor,submitButton=$('#editForm button[type="submit"]');if(submitButton)submitButton.disabled=true;try{let {kind,record,specs}=editContext,x=D.clone(record);for(let f of specs){if(f.readonly)continue;let el=$('#field-'+f.key);let v=f.type==='checkbox'?el.checked:f.key==='responsibleIds'?$$('#field-responsibleIds input:checked').map(o=>o.value):f.type==='multi'?[...el.selectedOptions].map(o=>o.value):(f.currency?window.EngefexCurrency.read(el):el.value).trim();if(f.type==='number'){v=v===''?(f.key==='receivableInstallmentCount'?1:f.nullable?null:0):f.currency?Number(window.EngefexCurrency.parse(v)):Number(v);if(f.currency&&v!==null&&v<0)throw Error('Valor deve ser não negativo: '+f.label);if(v!==null&&!Number.isFinite(v))throw Error('Número inválido: '+f.label)}x[f.key]=v}if(kind==='diary'){x.staff=(x.staffText||'').split('\n').filter(r=>r.trim()).map(line=>{let [role,quantity,company,hours]=line.split('|').map(x=>x.trim());return {role,quantity,company,hours}});if(controller)x.photos=controller.getMetadata()}let next;
-  if(kind==='budgets'){next=D.clone(state);let target=next.budgetStages.find(s=>s.id===record.id);D.CATEGORIES.forEach((c,i)=>target.budgets[c]=x['budget'+i]);target.remainingCost=x.remainingCost;if(D.CATEGORIES.some(c=>target.budgets[c]!==null&&target.budgets[c]<0)||x.remainingCost!==null&&x.remainingCost<0)throw Error('Custos devem ser não negativos.');audited(next,'budgetStages',record.id,record,{...target,note:x.note})}
+  if(kind==='visitReports'){
+   const controls=editContext.photoControls||new Map();
+   if(controls.size)x.itemPhotos=Object.fromEntries([...controls].map(([key,editor])=>[key,{photos:editor.getMetadata()}]));
+   next=saveVisitReport(state,x,record,editContext.showVisitItem);
+   for(const editor of controls.values())await editor.commit();
+   if(editContext!==saving)throw Error('O formulário mudou. Salve novamente o registro aberto.');
+  }else if(kind==='budgets'){next=D.clone(state);let target=next.budgetStages.find(s=>s.id===record.id);D.CATEGORIES.forEach((c,i)=>target.budgets[c]=x['budget'+i]);target.remainingCost=x.remainingCost;if(D.CATEGORIES.some(c=>target.budgets[c]!==null&&target.budgets[c]<0)||x.remainingCost!==null&&x.remainingCost<0)throw Error('Custos devem ser não negativos.');audited(next,'budgetStages',record.id,record,{...target,note:x.note})}
   else if(kind==='schedule'||kind==='budgetSchedule'){let automatic=kind==='schedule'&&x.monthlyMode==='auto';let months=Array.from({length:kind==='schedule'?Math.max(12,record.months.length):12},(_,i)=>x['month'+i]/100);if(!automatic&&(months.some(v=>v<0||v>1)||Math.abs(D.sum(months,v=>v)-1)>.00001))throw Error('A distribuição deve somar 100%, com percentuais entre zero e 100.');if(!automatic&&!x.note)throw Error('Registre o motivo / aprovação da reprogramação.');next=D.clone(state);let target=next[kind==='schedule'?'stages':'budgetStages'].find(s=>s.id===record.id);if(kind==='schedule'){target.monthlyMode=automatic?'auto':'manual';if(!automatic){target.manualMonths=months;target.months=months}}else target.months=months;audited(next,'schedule',record.id,record.months,{monthlyMode:automatic?'auto':'manual',months:automatic?D.stageDistribution(next,record.id).months:months,note:x.note})}
   else if(kind==='budgetItems'){if(x.sale!==record.sale)x.unitPrice=x.quantity?x.sale/x.quantity:0;else if(x.quantity!==record.quantity||x.unitPrice!==record.unitPrice)x.sale=x.quantity*x.unitPrice;next=D.saveRecord(state,kind,x)}
   else if(kind==='projects'){if(!x.name.trim())throw Error('Informe o nome da obra.');x.code=x.code.trim()||window.EngefexManager.nextProjectCode(state.projects);if(state.projects.some(p=>p.id!==x.id&&String(p.code||'').toUpperCase()===x.code.toUpperCase()))throw Error('Já existe uma obra com esse código. Escolha outro.');if(x.initialCash!==null&&x.initialCash<0)throw Error('Saldo inicial deve ser não negativo.');next=D.clone(state);next.projects=next.projects.filter(p=>p.id!==x.id).concat(x);D.validateMeasurementFinances(next);audited(next,'projects',x.id,record,x)}
@@ -330,7 +438,13 @@ if(kind==='receivableEntries')return [field('project','Obra (opcional)','select'
    if(A&&cloud&&!A.canRead('visitreports'))return toast('Sem permissão para consultar relatórios de visitas.');
    const report=state.visitReports?.find(entry=>entry.id===id);
    if(!report)return toast('Relatório de visita não encontrado.');
-   const checks=D.visitChecks.map(([key,label])=>`<tr><td>${h(label)}</td><td>${report[key]?'Conferido':'A conferir'}</td><td class="wrap">${br(report[key+'Note']||'—')}</td></tr>`).join('');
+   const checks=D.visitChecks.map(([key,label])=>{
+    const issue=state.issues.find(entry=>entry.id===report.id+'-'+key);
+    const task=issue?.title||report[key+'Action'];
+    const owner=issue?nameOfResponsible(issue):state.responsibles?.find(person=>person.id===report[key+'Owner'])?.name;
+    const files=(report.itemPhotos?.[key]?.photos||[]).map(photo=>button('download-file:'+photo.id,photo.caption||photo.name,'secondary')).join('');
+    return `<tr><td>${h(label)}</td><td>${report[key]?'Conferido':'A conferir'}</td><td class="wrap">${br(report[key+'Note']||'—')}${task?'<p><strong>'+h(task)+'</strong><br>'+h(owner||'Responsável da providência')+'</p>':''}${files?'<div class="actions">'+files+'</div>':''}</td></tr>`;
+   }).join('');
    $('#readerTitle').textContent='Relatório de Visita';
    $('#readerContent').innerHTML=`<article class="reader-page visit-report">
     <h2>Relatório de Visita</h2>
