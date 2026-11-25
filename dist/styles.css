@@ -577,3 +577,21 @@ body:has(.hr-hero) .hr-actions-cell>.button svg{display:block}
 @media(max-width:1120px){.dash-metric{padding:16px}.dash-metric-label{font-size:11px}.dash-main-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:14px}.dash-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}.dash-panel-head,.dash-issue,.dash-task{padding-inline:17px}.dash-event{padding-inline:17px}.dash-item-heading{gap:8px}}
 @media(max-width:760px){.dash-welcome{align-items:flex-start;flex-direction:column;gap:16px;margin-bottom:20px}.dash-welcome h1{font-size:27px}.dash-welcome p{font-size:12px;line-height:1.7}.dash-welcome-actions{width:100%}.dash-welcome-actions .button{flex:1;font-size:12px}.dash-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:16px}.dash-metric{padding:14px;border-radius:11px}.dash-metric>strong{font-size:28px;margin-top:8px}.dash-metric-label{font-size:10px}.dash-metric>small{font-size:9px}.dash-metric-icon{width:25px;height:25px}.dash-metric-icon svg{width:14px;height:14px}.dash-main-grid{grid-template-columns:minmax(0,1fr);gap:16px;margin-bottom:16px}.dash-panel{border-radius:12px}.dash-panel-head{padding:16px}.dash-panel-head h2{font-size:14px}.dash-panel-head p{font-size:10px}.dash-issue,.dash-task{padding:16px;gap:9px}.dash-item-heading{flex-wrap:wrap;gap:3px}.dash-item-heading>strong{font-size:12px;flex:1 1 180px}.dash-deadline{font-size:10px}.dash-item-main>p{font-size:10px;line-height:1.6}.dash-item-tags{font-size:9px;gap:6px}.dash-event{padding:14px 16px}.dash-tasks-panel{margin-bottom:16px}.dash-shortcuts{gap:9px}.dash-shortcuts>a{padding:13px 10px;gap:8px}.dash-shortcuts>a>svg{width:17px;height:17px}.dash-shortcuts strong{font-size:10px}.dash-shortcuts span{font-size:9px;line-height:1.5}.dash-shortcuts b{display:none}.dash-personal-note{font-size:9px}}
 
+
+@media print {
+ body:has(#reader[open] .visit-report) > :not(#reader),
+ body:has(#reader[open] .visit-report) #reader > :not(#readerContent),
+ .visit-report .actions,
+ .visit-report .table-scroll-tip {display:none!important}
+ #reader[open]:has(.visit-report) {
+  position:static; width:100%; max-width:none; height:auto; max-height:none;
+  overflow:visible; padding:0; margin:0; border:0; box-shadow:none;
+ }
+ #reader:has(.visit-report)::backdrop {display:none}
+ #readerContent:has(.visit-report), .visit-report, .visit-report .table-wrap {
+  max-height:none; overflow:visible;
+ }
+ .visit-report table {width:100%; min-width:0}
+ .visit-report .panel {break-inside:auto}
+ .visit-report tr {break-inside:avoid}
+}
