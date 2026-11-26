@@ -16,7 +16,7 @@ function parsePages(pages,name='Orçamento Tipo 3'){
     const rows=pdf.lines(page.items);
     const header=rows.find(row=>normalize(row.text)===labels.join(' '));
     if(!header||header.items.length!==labels.length){
-      fail('Cabeçalho do modelo Engefex não reconhecido. Use o PDF original com texto selecionável.');
+      fail('Cabeçalho do modelo Gustavo não reconhecido. Use o PDF original com texto selecionável.');
       continue;
     }
     const [item,quantity,,unit,price,total]=header.items;
