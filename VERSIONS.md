@@ -1,3 +1,8 @@
+## v4.18.68 — Novo logo Engefex (26/11/2026)
+
+- Substitui o logo compartilhado pelo PNG fornecido, preservando proporções e transparência.
+- Atualiza o cache e o ícone de acesso no iOS para carregar a nova imagem.
+
 ## v4.18.67 — Importar ordem do Revit na Fábrica (26/11/2026)
 
 - Importação inicial da caracterização, ordem, revisão, peças, operações e referências de pranchas do XLSX VERTIX.
