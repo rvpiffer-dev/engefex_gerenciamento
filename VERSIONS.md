@@ -1,3 +1,9 @@
+## v4.18.65 — Subabas de Projetos no menu lateral (26/11/2026)
+
+- Executivos, Telhas, Chapas, Quantitativos e Referências e outros ficam diretamente dentro da categoria Projetos no menu lateral.
+- Cada subaba tem endereço próprio e mantém a obra selecionada. O endereço anterior abre Executivos.
+- A seleção horizontal foi retirada da área de conteúdo. Dados, revisões e permissões preservados.
+
 ## v4.18.64 — Categoria Projetos no menu (26/11/2026)
 
 - Projetos passa a ter uma categoria própria logo abaixo de Gerenciamento de obras.
