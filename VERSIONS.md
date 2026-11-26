@@ -1,3 +1,12 @@
+## v4.18.63 — Projetos por obra (26/11/2026)
+
+- Nova aba Projetos com Executivos, Telhas, Chapas, Quantitativos e Referências e outros.
+- Conjuntos completos de revisões, arquivos associados, revisão própria por desenho, responsável, data e resumo.
+- Revisão liberada permanece em destaque enquanto a próxima está em análise; liberação por administrador e revisões liberadas bloqueadas para edição nesta interface.
+- Visualização de PDF, download individual e ZIP da categoria liberada. Arquivos existentes são reaproveitados por referência.
+- Integração na coleção documental e armazenamento privado existentes, sem migração ou alteração de políticas do banco. Permissões herdadas de Documentos.
+- Verificação: 463 testes automatizados aprovados; navegador local com dados fictícios para cadastro, anexo PDF, liberação, criação de nova revisão e download ZIP. Sem gravações de demonstração no banco de produção.
+
 ## v4.18.62 — Reprogramação automática do cronograma
 
 - Alterar início, término, duração ou predecessoras recalcula sucessoras diretas e indiretas, em dias corridos, respeitando a última predecessora e preservando folgas existentes quando possível.
