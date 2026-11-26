@@ -34,7 +34,7 @@ test('agenda pessoal mostra os próximos sete dias, eventos da equipe e sobrepos
  {id:'other',title:'Outra pessoa',startDate:today,participants:['C2']},
  {id:'past',startDate:'2026-11-10',participants:[]},
  {id:'late',startDate:'2026-11-18',participants:[]},
- {id:'cancelled',startDate:today,participants:[],status:'Cancelado'}];
+ {id:'cancelled',startDate:today,startTime:'08:00',participants:[],status:'Cancelado'}];
  const m=build(s);assert.deepEqual(m.events.map(r=>r.id),['ongoing','today','team']);
  assert.equal(m.events[0].date,today);assert.equal(m.events[2].shared,true);assert.equal(m.events[2].time,'Dia inteiro');
  assert.equal(m.summary.events,3);assert.equal(build(s,null).events.length,0);
@@ -57,4 +57,20 @@ test('somente novas tarefas registram autoria sem reatribuir itens antigos nem a
  assert.equal(next.boardTasks[2].createdById,'U2');assert.equal(JSON.stringify(old),serialized);
  assert.deepEqual(build(next).tasks.map(r=>r.id).sort(),['new','newBoard']);
  const anonymous=base();anonymous.tasks=[{id:'anon'}];dashboard.prepare(base(),anonymous,null);assert.equal(anonymous.tasks[0].createdById,undefined);
+});
+
+test('Minha agenda inclui os compromissos privados da sessão no resumo de sete dias',()=>{
+ const s=base();
+ s.calendarEvents=[{id:'team',title:'Reunião da equipe',startDate:today,startTime:'08:00',participants:[]}];
+ const personalEvents=[
+  {id:'mine',title:'Compromisso privado',startDate:today,allDay:true},
+  {id:'later',title:'Fora do período',startDate:'2026-11-18'}
+ ];
+ const model=build(s,user,'all',{personalEvents});
+ assert.deepEqual(model.events.map(event=>event.id),['mine','team']);
+ assert.equal(model.events[0].private,true);
+ assert.equal(model.events[0].shared,false);
+ assert.equal(model.summary.events,2);
+ assert.equal(build(s,null,'all',{personalEvents}).events.length,0);
+ assert.equal(build(s,user,'all',{personalEvents,canRead:()=>false}).events.length,0);
 });

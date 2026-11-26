@@ -32,7 +32,10 @@ function build(state,user,project='all',options={}){
  tasks.sort(order);
  const lastDay=new Date(today+'T12:00:00');lastDay.setDate(lastDay.getDate()+6);
  const end=root.Obras?.addDays?.(today,6)||lastDay.toLocaleDateString('sv-SE');
- const events=ctx.authenticated&&canRead('sharedcalendar')?(state.calendarEvents||[]).filter(row=>relevant(row)&&!done(row)&&row.startDate<=end&&(row.endDate||row.startDate)>=today&&(!(row.participants||[]).length||row.participants.some(id=>ctx.ids.has(text(id))))).map(row=>({id:text(row.id),title:text(row.title),project:work(row.project),date:row.startDate<today?today:row.startDate,startDate:row.startDate,endDate:row.endDate||row.startDate,time:row.allDay?'Dia inteiro':text(row.startTime),endTime:row.allDay?'':text(row.endTime),location:text(row.location),shared:!(row.participants||[]).length})).sort((a,b)=>a.date.localeCompare(b.date)||(a.time==='Dia inteiro'?'00:00':a.time).localeCompare(b.time==='Dia inteiro'?'00:00':b.time)||a.title.localeCompare(b.title,'pt-BR')):[];
+ const events=ctx.authenticated&&canRead('sharedcalendar')?[
+  ...(state.calendarEvents||[]).filter(row=>!(row.participants||[]).length||row.participants.some(id=>ctx.ids.has(text(id)))),
+  ...(options.personalEvents||[]).map(row=>({...row,private:true}))
+ ].filter(row=>relevant(row)&&!done(row)&&row.startDate<=end&&(row.endDate||row.startDate)>=today).map(row=>({id:text(row.id),title:text(row.title),project:work(row.project),date:row.startDate<today?today:row.startDate,startDate:row.startDate,endDate:row.endDate||row.startDate,time:row.allDay?'Dia inteiro':text(row.startTime),endTime:row.allDay?'':text(row.endTime),location:text(row.location),shared:!row.private&&!(row.participants||[]).length,...(row.private?{private:true}:{})})).sort((a,b)=>a.date.localeCompare(b.date)||(a.time==='Dia inteiro'?'00:00':a.time).localeCompare(b.time==='Dia inteiro'?'00:00':b.time)||a.title.localeCompare(b.title,'pt-BR')):[];
  const operational=issues.concat(tasks);
  return {authenticated:ctx.authenticated,name:ctx.displayName,linked:ctx.linked,today,issues,tasks,events,summary:{issues:issues.length,tasks:tasks.length,today:operational.filter(row=>row.date===today).length,overdue:operational.filter(row=>row.date&&row.date<today).length,events:events.length}};
 }

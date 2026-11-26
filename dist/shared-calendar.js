@@ -2,7 +2,7 @@
 (function(root){'use strict';
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clone=x=>JSON.parse(JSON.stringify(x)),today=()=>{let d=new Date();return dateKey(d)},dateKey=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
 let api,month=today().slice(0,7),mode='month',person='',busy=false;
-let scope='team',personalOwner='',personalWorkspace='',privateEvents=[],personalError='',loadingPersonal=false;
+let scope='team',personalOwner='',personalWorkspace='',privateEvents=[],personalError='',loadingPersonal=false,personalLoaded=false;
 function syncOwner(){
   const owner=api?.owner?.()||'', workspace=api?.workspace?.()||'';
   if(owner===personalOwner&&workspace===personalWorkspace)return;
@@ -12,14 +12,15 @@ function syncOwner(){
   privateEvents=[];
   personalError='';
   loadingPersonal=false;
+  personalLoaded=false;
 }
-async function refreshPersonal(){
+async function refreshPersonal(renderLoading=true){
   syncOwner();
   if(!personalOwner||loadingPersonal)return;
   const owner=personalOwner, workspace=personalWorkspace;
   loadingPersonal=true;
   personalError='';
-  api.render();
+  if(renderLoading)api.render();
   try{
     const rows=await api.loadPersonal(owner);
     if(owner===api.owner()&&workspace===api.workspace()){
@@ -30,9 +31,15 @@ async function refreshPersonal(){
   }finally{
     if(owner===api.owner()&&workspace===api.workspace()){
       loadingPersonal=false;
+      personalLoaded=true;
       api.render();
     }
   }
+}
+function personalSummary(){
+  syncOwner();
+  if(personalOwner&&!personalLoaded&&!loadingPersonal)refreshPersonal(false);
+  return {events:privateEvents,loading:loadingPersonal,error:personalError};
 }
 function validDate(v){let d=new Date(v+'T12:00:00');return /^\d{4}-\d{2}-\d{2}$/.test(v)&&!isNaN(d)&&dateKey(d)===v}
 function validate(s,e){if(!e.id||!e.title?.trim())throw Error('Informe o título do compromisso.');if(!validDate(e.startDate)||!validDate(e.endDate)||e.endDate<e.startDate)throw Error('Confira as datas de início e término.');if(!e.allDay){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(e.startTime)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(e.endTime)||e.startDate===e.endDate&&e.endTime<=e.startTime)throw Error('O horário final deve ser posterior ao inicial.');}if(e.project&&!s.projects.some(p=>p.id===e.project))throw Error('Obra não encontrada.');if(!Array.isArray(e.participants)||new Set(e.participants).size!==e.participants.length||e.participants.some(id=>!(s.responsibles||[]).some(p=>p.id===id)))throw Error('Confira os participantes.');return true}
@@ -58,5 +65,5 @@ function open(id,day){syncOwner();const personal=scope==='personal',owner=person
   api.render();
 }api.toast('Agenda atualizada.')}catch(err){document.querySelector('#calendarError').textContent=err.message}finally{busy=false;form.querySelectorAll('button').forEach(b=>b.disabled=false)}}form.onsubmit=ev=>{ev.preventDefault();let next={...e};for(let key of ['title','startDate','endDate','startTime','endTime','location','project','description','status'])next[key]=form.elements[key].value;next.allDay=all.checked;next.participants=[...form.querySelectorAll('[name=participant]:checked')].map(i=>i.value);commit(s=>save(s,next,old||null),next)};let del=document.querySelector('#calendarDelete');if(del)del.onclick=()=>{if(confirm('Excluir este compromisso?'))commit(s=>remove(s,e.id,old),e,true)}}
 function handle(action){if(!action?.startsWith('shared-calendar:'))return false;let a=action.slice(16);syncOwner();if(a==='team'){scope='team';api.render()}else if(a==='personal'&&personalOwner){scope='personal';refreshPersonal()}else if(a==='new')open();else if(a.startsWith('edit:'))open(a.slice(5));else if(a.startsWith('day:'))open(null,a.slice(4));else{if(a==='today')month=today().slice(0,7);else{let d=new Date(month+'-01T12:00:00');d.setMonth(d.getMonth()+(a==='prev'?-1:1));month=dateKey(d).slice(0,7)}api.render()}return true}
-root.EngefexSharedCalendar={init:a=>api=a,render,bind,handle,validate,save,remove,events,busy:()=>busy};
+root.EngefexSharedCalendar={init:a=>api=a,render,bind,handle,personalSummary,validate,save,remove,events,busy:()=>busy};
 })(typeof window==='undefined'?globalThis:window);
