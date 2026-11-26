@@ -1,3 +1,8 @@
+## v4.18.64 — Categoria Projetos no menu (26/11/2026)
+
+- Projetos passa a ter uma categoria própria logo abaixo de Gerenciamento de obras.
+- Subabas, revisões, permissões e dados existentes preservados.
+
 ## v4.18.63 — Projetos por obra (26/11/2026)
 
 - Nova aba Projetos com Executivos, Telhas, Chapas, Quantitativos e Referências e outros.
