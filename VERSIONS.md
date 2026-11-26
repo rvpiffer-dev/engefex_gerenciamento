@@ -1,3 +1,9 @@
+## v4.18.67 — Importar ordem do Revit na Fábrica (26/11/2026)
+
+- Importação inicial da caracterização, ordem, revisão, peças, operações e referências de pranchas do XLSX VERTIX.
+- A conferência identifica a obra de destino e os totais antes de aplicar à ficha. A gravação usa o botão Salvar da Fábrica.
+- Ordens com peças ou lançamentos são protegidas contra nova importação. Marcas com roteiros diferentes são separadas mantendo a referência da marca e os IDs originais.
+
 ## v4.18.66 — Nomes livres e arquivos separados (26/11/2026)
 
 - Nome da revisão editável, com texto livre e renomeação de conjuntos existentes, inclusive liberados. A ordem interna permanece estável.
