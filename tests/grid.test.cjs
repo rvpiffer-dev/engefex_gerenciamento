@@ -10,3 +10,21 @@ test('colar bloco do Excel recalcula totais, salva lote e recusa bloco fora da g
 
 test('carinhas comparam execução atual e planejado, incluindo grupos e dados ausentes',()=>{let {w,s,g}=setup(),D=w.Obras,a=s.activities[0],b=s.activities[1];a.schedulePlannedPercent=50;a.executed=4;b.schedulePlannedPercent=20;b.executed=2;assert.equal(D.scheduleHealth(s,a).status,'behind');a.executed=5;assert.equal(D.scheduleHealth(s,a).status,'on-track');a.executed=10;assert.equal(D.scheduleHealth(s,a).status,'on-track');assert.equal(D.scheduleHealth(s,{kind:'stage',record:s.stages[0]}).planned,35);b.schedulePlannedPercent=null;assert.equal(D.scheduleHealth(s,{kind:'stage',record:s.stages[0]}).status,'unknown');assert.equal(D.scheduleHealth(s,b).status,'unknown');let html=g.render('timeline',s,'p');assert.match(html,/schedule-face/);assert.match(html,/aria-label="Em dia ou adiantado · Planejado 50% · Concluído 100%"/);assert.match(html,/Sem comparação/);a.start='2026-10-19';a.finish='2026-10-20';assert.match(g.gantt(s,'p'),/schedule-face/);assert.equal(g.apply('timeline',s,g.model('timeline',s,'p')).activities[0].schedulePlannedPercent,50)});
 test('PDF da planilha oferece A4 e A1 e impede exportar edição pendente',async()=>{let {w,s,g}=setup(),nodes=new Map(),inputs=[{dataset:{gridRow:'0',gridKey:'name'},value:'Nome editado',events:{},addEventListener(k,f){this.events[k]=f}}];function node(id){if(!nodes.has(id))nodes.set(id,{value:id==='gridPDFFormat'?'A1':'',textContent:'',hidden:true,addEventListener(){}});return nodes.get(id)}w.document={getElementById:node,querySelectorAll:()=>inputs,querySelector:()=>null,addEventListener(){}};w.addEventListener=()=>{};let calls=[];w.EngefexSchedulePDF={download:async(...args)=>calls.push(args)};g.init({getState:()=>s,getProject:()=> 'p',render(){}});let html=g.render('timeline',s,'p');assert.match(html,/Salvar PDF do cronograma/);assert.match(html,/A1 paisagem/);g.bind();await node('gridPDF').onclick();assert.equal(calls.length,1);assert.equal(calls[0][2],'A1');inputs[0].events.input();await node('gridPDF').onclick();assert.equal(calls.length,1);assert.match(node('gridError').textContent,/Salve as alterações/);assert.equal(node('gridPDF').disabled,false)});
+
+test('reprogramação em cadeia preserva duração, folga e outras obras; considera múltiplas predecessoras',()=>{
+ let {g,s,w}=setup(),M=w.EngefexManager,a=s.activities[0],b=s.activities[1];
+ Object.assign(a,{start:'2026-11-01',finish:'2026-11-03'});
+ Object.assign(b,{start:'2026-11-06',finish:'2026-11-08',dependencies:['a'],actualStart:'2026-11-06',executed:2});
+ s.activities.push({...M.defaults('activities','p'),id:'d',stage:'e',name:'Final',start:'2026-11-09',finish:'2026-11-10',dependencies:['b']},{...M.defaults('activities','p'),id:'e2',stage:'e',name:'Paralela',start:'2026-11-01',finish:'2026-11-07'});
+ s.activities[3].dependencies.push('e2');
+ const draft=g.model('timeline',s,'p');draft[0].start='05/11/2026';
+ const n=g.apply('timeline',s,draft),get=id=>n.activities.find(x=>x.id===id);
+ assert.equal(get('a').finish,'2026-11-07');assert.equal(get('b').start,'2026-11-10');assert.equal(get('b').finish,'2026-11-12');assert.equal(get('d').start,'2026-11-13');assert.equal(get('d').finish,'2026-11-14');assert.equal(get('b').actualStart,'2026-11-06');assert.equal(get('b').executed,2);assert.equal(JSON.stringify(get('c')),JSON.stringify(s.activities[2]));assert.equal(get('e2').finish,'2026-11-07');
+ const back=g.model('timeline',n,'p');back[0].start='01/11/2026';const restored=g.apply('timeline',n,back);assert.equal(restored.activities.find(x=>x.id==='d').start,'2026-11-09');
+ assert.match(g.render('timeline',n,'p'),/value="05\/11\/2026"/);
+});
+test('edição individual preserva duração e antecipa sucessoras, sem modificar datas reais',()=>{
+ let {w,s}=setup(),M=w.EngefexManager,D=w.Obras;
+ Object.assign(s.activities[0],{start:'2026-11-10',finish:'2026-11-12'});Object.assign(s.activities[1],{start:'2026-11-13',finish:'2026-11-14',dependencies:['a']});
+ let a=M.normalizeScheduleDates(s.activities[0],{...s.activities[0],start:'2026-11-08'}),n=M.propagateSchedule(s,D.saveRecord(s,'activities',a));assert.equal(n.activities.find(x=>x.id==='b').start,'2026-11-11');assert.equal(n.activities.find(x=>x.id==='b').finish,'2026-11-12');assert.equal(n.history[0].action,'Reprogramada por dependências');
+});

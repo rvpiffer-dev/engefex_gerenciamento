@@ -1,3 +1,8 @@
+## v4.18.62 — Reprogramação automática do cronograma
+
+- Alterar início, término, duração ou predecessoras recalcula sucessoras diretas e indiretas, em dias corridos, respeitando a última predecessora e preservando folgas existentes quando possível.
+- Datas previstas são exibidas no padrão DD/MM/AAAA. Datas reais, execução e financeiro não são alterados pelo recálculo. A importação PDF continua preservando as datas do arquivo.
+
 ## v4.18.61 — Visibilidade da exclusão do cronograma
 
 - O botão Excluir cronograma completo fica visível nas telas Cronograma e Etapas e atividades, inclusive em Todas as obras.

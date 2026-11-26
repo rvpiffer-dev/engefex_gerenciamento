@@ -50,7 +50,75 @@ function clearSchedule(state,project){
  return s;
 }
 
-root.EngefexManager={clearSchedule,toggleActivityDone,separate,nextProjectCode,ensureProjectCodes,defaults,reconcile,save,remove,migrate,importBudget,fromGenericBackup,restoreFiles};
+
+/* Cronograma: datas previstas em dias corridos; relações término-início. */
+function scheduleDays(a){return a?.start&&a?.finish?D.diff(a.start,a.finish)+1:Number(a?.duration)||0}
+function normalizeScheduleDates(old,row){
+ const priorDays=scheduleDays(old),startChanged=(row.start||'')!==(old?.start||''),endChanged=(row.finish||'')!==(old?.finish||''),days=Number(row.duration)||0;
+ const daysChanged=days!==priorDays&&row.duration!==undefined&&row.duration!==null&&row.duration!=='';
+ if(daysChanged&&(!Number.isInteger(days)||days<1))throw Error('Duração deve ser um número inteiro positivo.');
+ if(row.start&&!endChanged&&((startChanged&&(days||priorDays))||daysChanged))row.finish=D.addDays(row.start,(daysChanged?days:priorDays||days)-1);
+ if(row.start&&row.finish){
+  const actual=D.diff(row.start,row.finish)+1;
+  if(actual<1)throw Error('Término previsto anterior ao início.');
+  if(daysChanged&&days!==actual)throw Error('Duração não corresponde às datas.');
+  row.duration=actual;
+ }
+ return row;
+}
+function propagateSchedule(before,next,{audit=true}={}){
+ const old=new Map(before.activities.map(a=>[a.id,a])),now=new Map(next.activities.map(a=>[a.id,a]));
+ const links=a=>[...new Set(a?.dependencies||[])].sort().join('|'),changed=new Set();
+ for(const a of next.activities){
+  const b=old.get(a.id);
+  if(!b||(a.start||'')!==(b.start||'')||(a.finish||'')!==(b.finish||'')||links(a)!==links(b))changed.add(a.id);
+ }
+ if(!changed.size)return next;
+ const successors=new Map();
+ for(const a of next.activities)for(const dep of a.dependencies||[]){
+  if(!successors.has(dep))successors.set(dep,[]);
+  successors.get(dep).push(a.id);
+ }
+ const affected=new Set(changed),queue=[...changed];
+ for(let i=0;i<queue.length;i++)for(const id of successors.get(queue[i])||[])if(!affected.has(id)){affected.add(id);queue.push(id)}
+ const done=new Set(),path=new Set();
+ function latest(a,map){
+  const deps=a?.dependencies||[];
+  if(!deps.length)return '';
+  const ends=deps.map(id=>{const p=map.get(id);return p?.project===a.project?p.finish||'':''});
+  return ends.every(Boolean)?ends.sort().at(-1):'';
+ }
+ function visit(id){
+  if(done.has(id)||!affected.has(id))return;
+  if(path.has(id))throw Error('Dependências formam um ciclo.');
+  path.add(id);
+  const a=now.get(id),b=old.get(id);
+  for(const dep of a.dependencies||[]){
+   if(now.get(dep)?.project!==a.project||dep===id)throw Error('Dependência inválida ou de outra obra.');
+   visit(dep);
+  }
+  const prevEnd=latest(b,old),newEnd=latest(a,now),manual=changed.has(id),sameLinks=!!b&&links(a)===links(b);
+  const prior={...a},days=scheduleDays(a);
+  if(newEnd&&days>0&&Number.isInteger(days)){
+   let start=a.start||'';
+   if(!manual&&sameLinks&&prevEnd&&newEnd!==prevEnd){
+    const gap=b.start?Math.max(0,D.diff(prevEnd,b.start)-1):0;
+    start=D.addDays(newEnd,1+gap);
+   }else if((manual||newEnd!==prevEnd)&&(!start||start<=newEnd))start=D.addDays(newEnd,1);
+   if(start&&start!==a.start){a.start=start;a.finish=D.addDays(start,days-1);a.duration=days;}
+  }
+  if(a.start!==prior.start||a.finish!==prior.finish){
+   D.validateActivity(next,a);
+   if(audit)next.history.unshift({id:idForHistory(),time:new Date().toISOString(),kind:'activities',record:a.id,action:'Reprogramada por dependências',before:prior,after:clone(a)});
+  }
+  path.delete(id);done.add(id);
+ }
+ for(const id of affected)visit(id);
+ return next;
+}
+function idForHistory(){return id('H')}
+
+root.EngefexManager={scheduleDays,normalizeScheduleDates,propagateSchedule,clearSchedule,toggleActivityDone,separate,nextProjectCode,ensureProjectCodes,defaults,reconcile,save,remove,migrate,importBudget,fromGenericBackup,restoreFiles};
 })(window);
 
 
