@@ -1,3 +1,9 @@
+## v4.18.60 — Exclusão completa do cronograma
+
+- Administradores podem excluir etapas e atividades de uma única obra, após confirmação, nas telas Cronograma e Etapas e atividades.
+- Orçamento, medições, recebimentos, custos e estoque permanecem intactos. Regras de previsão ligadas ao cronograma são removidas; diário, tarefas, pendências e checklist são preservados e desvinculados quando necessário. O histórico registra a operação.
+- A importação de um novo PDF fica disponível após a confirmação do salvamento.
+
 ## v4.18.37 — Fechamentos de fornecedor e integridade de IDs
 
 - Agrupamentos de compras e notas enviam listas financeiras completas no patch, evitando divergência por índices em operações com várias notas.

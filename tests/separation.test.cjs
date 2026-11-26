@@ -18,3 +18,28 @@ test('check respeita validações e permite reabrir conclusão feita no formulá
 test('materiais e movimentos usam orçamento sem depender de cronograma',()=>{let {s,M,D}=setup();s=M.importBudget(s,'p',budget(),false,true);let item=s.budgetItems[0],plan=s.activities[0];let material={id:'m',retentionRate:0,project:'p',activity:item.id,name:'Cimento',unit:'kg',opening:20,onOrder:0,planned:100,leadDays:null};D.validateRecord(s,'materials',material);assert.throws(()=>D.validateRecord(s,'materials',{...material,activity:plan.id}));s.materials.push(material);let move={id:'mov',project:'p',material:'m',activity:item.id,date:'2026-10-17',quantity:2,type:'Consumo'};D.validateRecord(s,'stockMoves',move);assert.throws(()=>D.validateRecord(s,'stockMoves',{...move,activity:plan.id}));assert.throws(()=>D.validateRecord(s,'materials',{...material,project:'outra'}));s.stockMoves.push(move);s=M.remove(s,'stages',s.stages[0].id);assert.equal(s.materials.length,1);assert.equal(s.stockMoves.length,1);assert.equal(s.stockMoves[0].activity,item.id);assert.equal(D.stock(s,s.materials[0]).available,18);assert.throws(()=>M.remove(s,'budgetItems',item.id),/insumos/);assert.throws(()=>M.remove(s,'budgetStages',item.stage),/insumos/);D.validateRecord(s,'materials',s.materials[0]);D.backupValid(s)});
 test('vínculos antigos migram pelo item de origem e pendências preservam histórico e estoque',()=>{let {s,M,D}=setup();s=M.importBudget(s,'p',budget(),false,true);delete s.materialsBudgetLinked;s.materials=[{id:'m',retentionRate:0,project:'p',activity:s.activities[0].id,name:'Cimento',opening:10,onOrder:0,planned:null}];s.stockMoves=[{id:'mov',project:'p',material:'m',activity:s.activities[0].id,type:'Consumo',quantity:2},{id:'old',project:'p',material:'m',activity:'pdf-sem-orcamento',type:'Entrada',quantity:1}];let out=M.separate(s);assert.equal(out.materials[0].activity,s.budgetItems[0].id);assert.equal(out.stockMoves[0].activity,s.budgetItems[0].id);assert.equal(out.stockMoves[1].activity,'');assert.equal(out.stockMoves[1].legacyScheduleActivity,'pdf-sem-orcamento');assert.equal(D.stock(out,out.materials[0]).available,9);assert.equal(JSON.stringify(M.separate(out)),JSON.stringify(out));assert.equal(s.materials[0].activity,s.activities[0].id)});
 
+
+test('excluir cronograma completo preserva financeiro e outras obras, desvincula registros e permite nova importação',()=>{
+ let {s,M,D,w}=setup();
+ s.projects.push({...M.defaults('projects'),id:'q',name:'Outra obra'});
+ s=M.importBudget(s,'p',budget(),false,true);
+ s=M.importBudget(s,'q',budget(),false,true);
+ const a=s.activities.find(x=>x.project==='p'),e=s.stages.find(x=>x.project==='p'),b=s.budgetItems.find(x=>x.project==='p');
+ s=D.saveRecord(s,'measurements',{id:'m',retentionRate:0,project:'p',activity:b.id,number:'01',date:'2026-11-26',quantity:1,status:'Preparada'});
+ s.diary.push({id:'d',project:'p',activity:a.id,quantity:2,date:'2026-11-26',description:'Registro'});
+ s.tasks.push({id:'t',project:'p',activity:a.id,title:'Tarefa'});
+ s.issues.push({id:'i',project:'p',stage:e.id,title:'Pendência'});
+ s.checklists.push({id:'c',project:'p',stage:e.id,title:'Checklist'});
+ s.measurementForecastLinks.push({id:'l',project:'p',scheduleStage:e.id,budgetStage:b.stage,share:100,rule:'linear'});
+ const before=money(s),other=JSON.stringify([s.activities.filter(x=>x.project==='q'),s.stages.filter(x=>x.project==='q')]),original=JSON.stringify(s);
+ assert.throws(()=>M.clearSchedule(s,'all'),/única obra/);
+ const n=M.clearSchedule(s,'p');
+ assert.equal(n.activities.filter(x=>x.project==='p').length,0);assert.equal(n.stages.filter(x=>x.project==='p').length,0);
+ assert.equal(money(n),before);assert.equal(JSON.stringify([n.activities,n.stages]),other);
+ assert.equal(n.diary[0].activity,'');assert.equal(n.diary[0].previousScheduleQuantity,2);assert.equal(n.diary[0].description,'Registro');
+ assert.equal(n.tasks[0].activity,'');assert.equal(n.issues[0].stage,'');assert.equal(n.checklists[0].stage,'');assert.equal(n.measurementForecastLinks.length,0);
+ assert.equal(n.history[0].action,'Cronograma completo excluído');assert.equal(JSON.stringify(s),original);D.backupValid(n);
+ assert.throws(()=>M.clearSchedule(n,'p'),/não possui/);
+ const r=pdf(),out=w.EngefexScheduleImport.apply(n,'p',r,w.EngefexScheduleImport.suggest(r,n,'p'),'novo.pdf').state;
+ assert.equal(out.activities.filter(x=>x.project==='p').length,1);assert.equal(money(out),before);D.backupValid(out);
+});

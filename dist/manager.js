@@ -19,7 +19,38 @@ function importBudget(state,project,result,updateValue=false,createSchedule=stat
 function toggleActivityDone(state,activityId){let a=state.activities.find(r=>r.id===activityId);if(!a)throw Error('Atividade não encontrada.');let r=clone(a),complete=!!r.actualFinish&&D.pct(r)>=1;if(complete){let prior=r.quickCompletion;if(prior&&Number(r.quantity)===prior.quantity&&Number(r.executed)===prior.quantity&&r.actualFinish===prior.completedOn){r.executed=prior.executed;r.actualFinish=prior.actualFinish||'';}else r.actualFinish='';delete r.quickCompletion;}else{if(!D.num(r.quantity)||Number(r.quantity)<=0)throw Error('Informe uma quantidade prevista maior que zero antes de concluir.');let today=D.today();r.quickCompletion={executed:Number(r.executed||0),actualFinish:r.actualFinish||'',quantity:Number(r.quantity),completedOn:today};r.executed=Number(r.quantity);r.actualFinish=today;}let next=D.saveRecord(state,'activities',r);next.history[0].action=complete?'Conclusão rápida desfeita':'Concluída pelo check';return reconcile(next)}
 function fromGenericBackup(bundle){let s=migrate(bundle.state),files=bundle.files||[];return {...s,fileFiles:files,photoFiles:files.filter(f=>s.diary.some(d=>d.photos?.some(p=>p.id===f.id)))}}
 async function restoreFiles(bundle){let data=clone(bundle),files=[...(data.fileFiles||[]),...(data.photoFiles||[])],unique=[...new Map(files.map(f=>[f.id,f])).values()];if(unique.some(f=>!f||typeof f.id!=='string'||typeof f.dataURL!=='string'||!/^data:[\w.+/-]+;base64,[A-Za-z0-9+/]*={0,2}$/.test(f.dataURL)))throw Error('Anexos inválidos.');let map=new Map(unique.map(f=>[f.id,id('FILE')]));let photoIds=new Set();function remap(r){if(!r||typeof r!=='object')return;if(Array.isArray(r)){for(let x of r)remap(x);return}for(let f of Array.isArray(r.photos)?r.photos:[])photoIds.add(map.get(f.id)||f.id);for(let k of ['photos','attachments'])if(Array.isArray(r[k]))r[k]=r[k].map(m=>({...m,id:map.get(m.id)||m.id}));for(let [k,value]of Object.entries(r))if(!['fileFiles','photoFiles'].includes(k)&&(!['photos','attachments'].includes(k)||!Array.isArray(value)))remap(value);}for(let list of Object.values(data).filter(Array.isArray))for(let r of list){remap(r);if(r.before)remap(r.before);if(r.after)remap(r.after);if(r.removed)for(let x of r.removed)remap(x.record)}let rewritten=unique.map(f=>({...f,id:map.get(f.id)}));await root.LocalFiles.put(rewritten);data.photoFiles=rewritten.filter(f=>photoIds.has(f.id));delete data.fileFiles;return data}
-root.EngefexManager={toggleActivityDone,separate,nextProjectCode,ensureProjectCodes,defaults,reconcile,save,remove,migrate,importBudget,fromGenericBackup,restoreFiles};
+
+function clearSchedule(state,project){
+ if(state.dataModel!==2||state._accessFiltered===true)throw Error('É necessária uma base completa com orçamento separado.');
+ if(!project||project==='all'||!state.projects.some(p=>p.id===project))throw Error('Selecione uma única obra.');
+ const s=clone(state),stages=new Set(s.stages.filter(r=>r.project===project).map(r=>r.id)),activities=new Set(s.activities.filter(r=>r.project===project).map(r=>r.id));
+ if(!stages.size&&!activities.size)throw Error('Esta obra não possui cronograma.');
+ if(s.stages.some(r=>r.project!==project&&stages.has(r.parent))||s.activities.some(r=>r.project!==project&&(stages.has(r.stage)||stages.has(r.scheduleStage)||(r.dependencies||[]).some(id=>activities.has(id)))))throw Error('Há vínculos de planejamento em outra obra. Revise-os antes de excluir.');
+ const removed=[],unlinked=[];
+ for(const kind of ['activities','stages','measurementForecastLinks']){
+  const matches=r=>r.project===project&&(kind!=='measurementForecastLinks'||stages.has(r.scheduleStage));
+  removed.push(...(s[kind]||[]).filter(matches).map(record=>({kind,record})));
+  s[kind]=(s[kind]||[]).filter(r=>!matches(r));
+ }
+ for(const kind of ['diary','tasks','issues','checklists']){
+  for(const r of s[kind]||[]){
+   if(r.project!==project)continue;
+   const stage=stages.has(r.stage),activity=activities.has(r.activity);
+   if(!stage&&!activity)continue;
+   const before=clone(r);
+   if(stage)r.stage='';
+   if(activity){
+    if(kind==='diary'){r.previousScheduleActivity=r.activity;r.previousScheduleActivityName=state.activities.find(a=>a.id===r.activity)?.name||'';r.previousScheduleQuantity=r.quantity;r.quantity=0;}
+    r.activity='';
+   }
+   unlinked.push({kind,record:before});
+  }
+ }
+ s.history.unshift({id:id('H'),time:new Date().toISOString(),kind:'stages',record:project,action:'Cronograma completo excluído',before:{project,stages:stages.size,activities:activities.size,unlinked},after:null,removed});
+ return s;
+}
+
+root.EngefexManager={clearSchedule,toggleActivityDone,separate,nextProjectCode,ensureProjectCodes,defaults,reconcile,save,remove,migrate,importBudget,fromGenericBackup,restoreFiles};
 })(window);
 
 
