@@ -4,3 +4,20 @@ test('cria, edita e exclui com histórico sem alterar outros módulos',()=>{let 
 test('valida datas reais, horários e participantes',()=>{for(let patch of [{startDate:'2026-02-30'},{endTime:'07:00'},{participants:['missing']},{project:'missing'}])assert.throws(()=>C.save(state(),{...event(),...patch},null));assert.doesNotThrow(()=>C.save(state(),{...event(),allDay:true,startTime:'',endTime:'',project:'',participants:[]},null))});
 test('não sobrescreve edição concorrente',()=>{let n=C.save(state(),event(),null);assert.throws(()=>C.save(n,{...event(),title:'Outra'},event()),/outro acesso/);assert.throws(()=>C.remove(n,'e',event()),/mudou/)});
 test('compromisso de vários dias aparece nos meses abrangidos',()=>{let n=C.save(state(),{...event(),startDate:'2026-10-30',endDate:'2026-11-02'},null);assert.equal(C.events(n,'2026-11-01','2026-11-30').length,1);assert.equal(C.events(n,'2026-12-01','2026-12-31').length,0)});
+test('Minha agenda mostra só os eventos da sessão e limpa a lista ao trocar de usuário',async()=>{
+  const date=new Date();
+  const day=[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),'15'].join('-');
+  const personal={...event(),title:'Compromisso privado',startDate:day,endDate:day};
+  const shared={...personal,title:'Reunião da equipe'};
+  const s={...state(),calendarEvents:[shared]};
+  let owner='user-a';
+  C.init({owner:()=>owner,workspace:()=>'workspace',render:()=>{},loadPersonal:async()=>[{event:personal,revision:'rev'}]});
+  assert.match(C.render(s),/Reunião da equipe/);
+  C.handle('shared-calendar:personal');
+  await Promise.resolve();
+  assert.match(C.render(s),/Compromisso privado/);
+  assert.doesNotMatch(C.render(s),/Reunião da equipe/);
+  owner='user-b';
+  assert.doesNotMatch(C.render(s),/Compromisso privado/);
+  assert.match(C.render(s),/Reunião da equipe/);
+});
