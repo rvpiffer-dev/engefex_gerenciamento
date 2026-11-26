@@ -16,5 +16,66 @@ let unitCosts={},totals={};for(let [key,uc,tc] of [['labor','F','I'],['material'
 let total=value(r,'L'),computed=numeric(q)?q*Object.values(unitCosts).reduce((a,b)=>a+(numeric(b)?b:0),0):null;if(!numeric(total))errors.push('Total ausente ou inválido no item '+id);else if(numeric(computed)&&Math.abs(total-computed)>.02)warnings.push('Item '+id+': total da planilha diverge do cálculo pelos unitários.');services.push({...item,unit:u,quantity:q,unitCosts,totals,total});}
 for(let item of [...stages,...services]){let segments=item.code.split('.');segments.pop();item.parentCode=segments.join('.');if(item.parentCode&&!stages.some(s=>s.code===item.parentCode))warnings.push('Item '+item.code+': etapa '+item.parentCode+' não está neste arquivo. Será importado sem esse vínculo.');}
 let sum=services.reduce((a,b)=>a+(numeric(b.total)?b.total:0),0);if(numeric(controls.subtotal)&&Math.abs(sum-controls.subtotal)>.02)warnings.push('A soma dos serviços difere do subtotal da planilha. Confira antes de importar.');if(!services.length)errors.push('Nenhum serviço reconhecido. Confira a aba e as colunas de unidade e quantidade.');return {sheet:sheet.name,stages,services,warnings,errors,metadata,controls,sum,mapping:{unit,quantity}};}
-const api={readWorkbook,cells,analyze};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.BudgetImport=api;
+function analyzeType4(sheet){
+  const stages=[],services=[],warnings=[],errors=[],metadata={},controls={},ids=new Set();
+  const mapping={unit:'C',quantity:'D'};
+  const normalize=text=>String(text??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase();
+  const headers=['ITEM','DESCRICAO DO SERVICO / ESPECIFICACAO TECNICA','UNID.','QUANT.','UNIT. MAT. (S/ BDI)','UNIT. M.O. (S/ BDI)','UNIT. MAT. (C/ BDI)','UNIT. M.O. (C/ BDI)','UNIT. TOTAL (C/ BDI)','TOTAL MAT. (C/ BDI)','TOTAL M.O. (C/ BDI)','TOTAL GERAL (C/ BDI)'];
+  const header=sheet.rows.findIndex(row=>headers.every((label,i)=>normalize(value(row,'ABCDEFGHIJKL'[i]))===label));
+  const result={type:'4',sheet:sheet.name,stages,services,warnings,errors,metadata,controls,sum:0,mapping};
+  if(header<0){
+    errors.push('Cabeçalho do Tipo 04 - Matheus nova não reconhecido. Selecione a aba da planilha nova com os preços com e sem BDI.');
+    return result;
+  }
+  for(const row of sheet.rows.slice(header+1)){
+    const raw=value(row,'A'),id=code(raw),label=normalize(raw),description=String(value(row,'B')??'').trim();
+    if(label.startsWith('TOTAL GERAL')){
+      if(controls.total!==undefined)errors.push('Total geral repetido.');
+      controls.total=value(row,'L');
+      continue;
+    }
+    if(!/^\d+(?:\.\d+)*$/.test(id)){
+      if(description||value(row,'C')||value(row,'D'))errors.push('Linha '+(row.A?.address||row.B?.address||'sem código')+': código de item inválido.');
+      continue;
+    }
+    if(ids.has(id))errors.push('Código repetido: '+id);
+    ids.add(id);
+    if(!description)errors.push('Descrição ausente no item '+id+'.');
+    const item={code:id,name:description,sourceRow:row.A.address};
+    const unit=value(row,'C'),quantity=value(row,'D');
+    if(unit===null&&quantity===null&&!row.D?.formula&&value(row,'L')===null){
+      stages.push({...item,parentCode:''});
+      continue;
+    }
+    if(typeof unit!=='string'||!unit.trim())errors.push('Unidade inválida no item '+id+'.');
+    if(!numeric(quantity)||quantity<0)errors.push('Quantidade inválida no item '+id+'.');
+    for(const col of ['E','F','J','K','L']){
+      const amount=value(row,col);
+      const optional=col==='E'||col==='F';
+      if(!(optional&&amount===null&&!row[col]?.formula&&!row[col]?.error)&&(!numeric(amount)||amount<0||row[col]?.error)){
+        errors.push('Valor ausente ou inválido em '+(row[col]?.address||col+' do item '+id)+'.');
+      }
+    }
+    const material=value(row,'J'),labor=value(row,'K'),total=value(row,'L');
+    if([material,labor,total].every(numeric)&&Math.abs(material+labor-total)>.005){
+      errors.push('Os totais de materiais e mão de obra divergem do total do item '+id+'.');
+    }
+    services.push({...item,unit,quantity,total,unitCosts:{material:value(row,'E'),labor:value(row,'F'),equipment:null}});
+  }
+  for(const item of [...stages,...services]){
+    const segments=item.code.split('.');
+    segments.pop();
+    const prefix=segments.join('.');
+    const parent=stages.find(stage=>stage!==item&&(stage.code===prefix||stage.code===prefix+'.0'));
+    item.parentCode=parent?.code||'';
+    if(prefix&&!parent&&!(stages.includes(item)&&item.code===prefix+'.0'))errors.push('Etapa não reconhecida para o item '+item.code+'.');
+  }
+  result.sum=services.reduce((sum,item)=>sum+(numeric(item.total)?Math.round(item.total*100):0),0)/100;
+  if(!services.length)errors.push('Nenhum serviço reconhecido.');
+  if(!numeric(controls.total)||Math.abs(result.sum-controls.total)>.005){
+    errors.push('A soma dos serviços não confere com o total geral com BDI da planilha.');
+  }
+  return result;
+}
+const api={readWorkbook,cells,analyze,analyzeType4};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.BudgetImport=api;
 })(typeof window==='undefined'?globalThis:window);

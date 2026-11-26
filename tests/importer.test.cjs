@@ -5,3 +5,28 @@ test('importação mantém hierarquia sem somar subtotal de etapa novamente',()=
 test('quantidade e unidade trocadas são reconhecidas pelo conteúdo',()=>{let a=I.analyze({name:'Teste',rows:[row('1','Serviço',10,'kg',2,20)]});assert.deepEqual(a.mapping,{unit:'E',quantity:'D'});assert.equal(a.errors.length,0)});
 test('fórmula sem cache e total ausente bloqueiam importação',()=>{let r=row('1','Serviço','kg',null,2);r.E.formula='2*3';let a=I.analyze({name:'Teste',rows:[r]});assert.ok(a.errors.length>=2);assert.ok(a.errors.some(e=>/Total/.test(e)))});
 test('conferência sinaliza subtotal diferente sem alterar valores originais',()=>{let total=row(null,'TOTAL');total.L={value:999};let a=I.analyze({name:'Teste',rows:[row('1','Serviço','kg',10,2,20),total]});assert.equal(a.sum,20);assert.equal(a.controls.subtotal,999);assert.ok(a.warnings.length)});
+
+test('Tipo 04 associa etapas terminadas em .0 e usa custos diretos e vendas com BDI',()=>{
+  const {analyzeType4}=require('../dist/importer.js');
+  function row(index,values){
+    return Object.fromEntries(values.map((value,col)=>{
+      const letter='ABCDEFGHIJKL'[col];
+      return [letter,{value,address:letter+index}];
+    }));
+  }
+  const sheet={name:'Planilha Quantitativa',rows:[
+    row(11,['ITEM','DESCRIÇÃO DO SERVIÇO / ESPECIFICAÇÃO TÉCNICA','UNID.','QUANT.','UNIT. MAT.\n(S/ BDI)','UNIT. M.O. (S/ BDI)','UNIT. MAT. (C/ BDI)','UNIT. M.O. (C/ BDI)','UNIT. TOTAL (C/ BDI)','TOTAL MAT. (C/ BDI)','TOTAL M.O. (C/ BDI)','TOTAL GERAL (C/ BDI)']),
+    row(12,['1.0','Drenagem']),
+    row(13,['1.1','Canaleta','m',2,10,20,12,25,37,24,50,74]),
+    row(14,['SUBTOTAL ETAPA 1.0',null,null,null,null,null,null,null,null,24,50,74]),
+    row(15,['TOTAL GERAL - COM BDI',null,null,null,null,null,null,null,null,null,null,74])
+  ]};
+  const result=analyzeType4(sheet);
+  assert.deepEqual(result.errors,[]);
+  assert.equal(result.services[0].parentCode,'1.0');
+  assert.deepEqual(result.services[0].unitCosts,{material:10,labor:20,equipment:null});
+  assert.equal(result.services[0].total,74);
+  assert.equal(result.controls.total,74);
+  sheet.rows[4].L.value=75;
+  assert.match(analyzeType4(sheet).errors.join(' '),/não confere/);
+});
