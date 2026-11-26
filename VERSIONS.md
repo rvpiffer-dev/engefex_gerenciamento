@@ -1,3 +1,8 @@
+## v4.18.61 — Visibilidade da exclusão do cronograma
+
+- O botão Excluir cronograma completo fica visível nas telas Cronograma e Etapas e atividades, inclusive em Todas as obras.
+- A ação continua restrita a administradores e a uma única obra; ao clicar sem selecionar uma obra, o sistema orienta a seleção no topo.
+
 ## v4.18.60 — Exclusão completa do cronograma
 
 - Administradores podem excluir etapas e atividades de uma única obra, após confirmação, nas telas Cronograma e Etapas e atividades.

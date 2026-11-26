@@ -249,9 +249,9 @@ test('relatório de visitas salva checklist por obra e permite consultar, editar
  assert.equal(saved().visitReports.length,0);
 });
 
-test('exclusão completa aparece somente para uma obra com cronograma',()=>{
+test('exclusão completa fica visível inclusive em Todas as obras, sem permitir exclusão global',()=>{
  let h=harness({version:1,projects:[{id:'p',name:'Obra'}],stages:[{id:'e',project:'p',name:'Etapa'}],services:[{id:'a',project:'p',stage:'e',name:'Existente',quantity:1,total:0}]});
- h.route('timeline');assert.doesNotMatch(h.el('#main').innerHTML,/data-action="schedule-delete"/);
+ h.route('timeline');assert.match(h.el('#main').innerHTML,/data-action="schedule-delete"/);h.click({action:'schedule-delete'});assert.match(h.el('#toast').textContent,/Selecione uma única obra/);
  h.el('#project').onchange({target:{value:'p'}});
  for(let value of ['grid','gantt','monthly']){h.click({tab:'timeline',value});assert.match(h.el('#main').innerHTML,/data-action="schedule-delete"/);}
  h.route('activities');assert.match(h.el('#main').innerHTML,/data-action="schedule-delete"/);

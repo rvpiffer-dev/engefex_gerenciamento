@@ -130,9 +130,8 @@
 
  let scheduleClearing=false;
  function scheduleDeleteButton(){
-  if(cloud&&!A?.isAdmin)return '';
-  if(project==='all'||!getP(project)||!state.stages.some(r=>r.project===project)&&!state.activities.some(r=>r.project===project))return '';
-  return '<button type="button" class="button secondary red-text" data-action="schedule-delete"'+(scheduleClearing?' disabled':'')+'>Excluir cronograma completo</button>';
+  const title=cloud&&!A?.isAdmin?'Somente administradores podem excluir o cronograma completo.':project==='all'?'Selecione uma obra no topo antes de excluir.':'Excluir apenas o cronograma da obra selecionada.';
+  return '<button type="button" class="button secondary red-text" data-action="schedule-delete" title="'+h(title)+'"'+(scheduleClearing?' disabled':'')+'>Excluir cronograma completo</button>';
  }
  async function deleteSchedule(){
   if(scheduleClearing)return;
