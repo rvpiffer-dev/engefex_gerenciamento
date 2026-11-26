@@ -7,3 +7,24 @@ test('salvar, visualizar, editar e excluir diário preserva efetivo e fotos',asy
 test('revisão antiga é rejeitada sem sobrescrever o registro',async()=>{let f=fixture(),w=await f.bridge.save({kind:'work',data:work});await f.bridge.save({kind:'work',id:w.id,revision:w.revision,data:{...work,name:'Atual'}});await assert.rejects(f.bridge.save({kind:'work',id:w.id,revision:w.revision,data:{...work,name:'Antiga'}}),/mudou/);assert.equal(f.state.projects[0].name,'Atual')});
 test('editar diário no módulo completo mantém avanço lançado no gerenciador',async()=>{let f=fixture(),w=await f.bridge.save({kind:'work',data:work});f.state.stages=[{...f.c.EngefexManager.defaults('stages',w.id),id:'et',name:'Etapa'}];f.state.activities=[{...f.c.EngefexManager.defaults('activities',w.id),id:'at',stage:'et',name:'Serviço',quantity:10,sale:100,executed:2}];f.state.diary=[{id:'dr',project:w.id,date:'2026-10-17',number:'1',description:'Execução',activity:'at',quantity:2,hours:4,photos:[]}];let row=(await f.bridge.list()).find(x=>x.kind==='report');await f.bridge.save({kind:'report',id:row.id,revision:row.revision,data:{...row.data,observations:'Conferida'}});assert.equal(f.state.activities[0].executed,2);assert.equal(f.state.diary[0].quantity,2);assert.equal(f.state.diary[0].hours,4)});
 test('diário completo preserva atividades em branco e separa os campos do modelo',async()=>{let f=fixture(),w=await f.bridge.save({kind:'work',data:work});let data={...report(w.id),activities:'',crew:[],equipment:[],other:''};let row=await f.bridge.save({kind:'report',data});assert.equal(row.data.activities,'');assert.equal(f.state.diary[0].description,'');assert.equal(row.data.morning,'Sol');assert.equal(row.data.observations,'Ocorrência')});
+test('histórico carrega dez resumos por página e busca no acervo inteiro sem abrir fotos',async()=>{
+ const f=fixture();
+ f.state.projects=[{id:'work',name:'Obra teste'}];
+ f.state.diary=Array.from({length:23},(_,i)=>({
+  id:'r'+(i+1),project:'work',number:String(i+1),date:'2026-10-'+String(i+1).padStart(2,'0'),
+  description:i===0?'Serviço raro':'Montagem',photos:[{id:'foto-ausente'}]
+ }));
+ const first=await f.bridge.listPage();
+ assert.equal(first.total,23);
+ assert.equal(first.reports.length,10);
+ assert.equal(first.reports[0].number,'23');
+ assert.equal(first.reports[0].photos,1);
+ assert.equal(first.stats.work.lastNumber,23);
+ const last=await f.bridge.listPage({page:9});
+ assert.equal(last.page,3);
+ assert.equal(last.reports.length,3);
+ const found=await f.bridge.listPage({workId:'work',search:'raro'});
+ assert.equal(found.total,1);
+ assert.equal(found.reports[0].id,'r1');
+ assert.equal((await f.bridge.getReport('r1')).data.activities,'Serviço raro');
+});

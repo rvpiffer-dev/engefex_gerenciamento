@@ -2,7 +2,53 @@
 function create({getState,persist,files,domain:D,manager:M}){const clone=D.clone,id=()=>globalThis.crypto.randomUUID();
 const workRow=p=>({id:p.id,kind:'work',revision:p.diaryRevision||0,updated:p.updated||'1970-01-01',data:{name:p.name||'',client:p.client||'',address:p.location||'',technical:p.owner||'',crea:p.crea||'',company:p.company||'ENGEFEX'}});
 function reportRow(r){let names=['Munck','Caminhão','Máquina de Solda','Betoneira','Rompedor'],text=String(r.equipment||'');return {id:r.id,kind:'report',revision:r.diaryRevision||0,updated:r.updated||r.date||'1970-01-01',data:{workId:r.project,date:r.date||'',number:r.number||'',morning:['Sol','Chuva','Nublado'].includes(r.morning)?r.morning:'',afternoon:['Sol','Chuva','Nublado'].includes(r.afternoon)?r.afternoon:'',crew:(r.staff||[]).map(p=>({role:p.role||'',qty:String(p.qty??p.quantity??''),company:p.company||'',hours:p.hours||''})),activities:r.description||'',equipment:names.filter(x=>text.split(';').map(v=>v.trim()).includes(x)),other:r.diaryOtherEquipment??text.split(';').map(x=>x.trim()).filter(x=>x&&!names.includes(x)).join('; '),observations:r.observations||'',photos:clone(r.photos||[]).map(p=>({id:p.id,caption:p.caption||'',width:p.width||1600,height:p.height||1200})),author:r.author||'',engineer:r.engineer||'',inspector:r.inspector||''}}}
-return {async list(){let s=getState(),rows=[...s.projects.map(workRow),...s.diary.map(reportRow)];for(let row of rows.filter(r=>r.kind==='report')){if(!row.data.photos.length)continue;let photos=await files.load(row.data.photos.map(f=>f.id));row.data.photos=row.data.photos.map((p,i)=>({...p,width:photos[i].width||p.width,height:photos[i].height||p.height}))}return rows},async save(input){let s=getState(),kind=input.kind;if(!['work','report'].includes(kind))throw Error('Tipo de registro inválido.');let rows=kind==='work'?s.projects:s.diary,old=input.id?rows.find(r=>r.id===input.id):null;if(input.id&&!old)throw Error('Registro não encontrado. Atualize a lista.');if(old&&(old.diaryRevision||0)!==input.revision)throw Error('O registro mudou. Atualize a lista antes de salvar.');let r=old?clone(old):kind==='work'?{...M.defaults('projects'),id:id()}:{id:id(),project:input.data.workId,activity:'',quantity:0,hours:null,conditions:'',team:''};let d=input.data;if(kind==='work'){if(!d.name?.trim())throw Error('Informe o nome da obra.');Object.assign(r,{name:d.name,client:d.client,location:d.address,owner:d.technical,crea:d.crea,company:d.company});}else{if(!s.projects.some(p=>p.id===d.workId)||!d.date||!d.number?.trim())throw Error('Informe obra, data e número.');if(d.photos.length>30||d.crew.length>40)throw Error('Limite de fotos ou funções excedido.');let stored=d.photos.length?await files.load(d.photos.map(p=>p.id)):[];Object.assign(r,{project:d.workId,date:d.date,number:d.number,morning:d.morning,afternoon:d.afternoon,staff:d.crew.map(p=>({role:p.role,quantity:p.qty,company:p.company,hours:p.hours})),description:d.activities,diaryAllowsEmpty:true,observations:d.observations,equipment:[...d.equipment,...(d.other?[d.other]:[])].join('; '),diaryOtherEquipment:d.other,photos:d.photos.map((p,i)=>({...p,name:stored[i].name||'Foto da obra',width:stored[i].width||p.width,height:stored[i].height||p.height})),author:d.author,engineer:d.engineer,inspector:d.inspector});}
+const pageSize=10;
+return {
+async list(){const s=getState();return [...s.projects.map(workRow),...s.diary.map(reportRow)]},
+async listPage({workId='',search='',page=1}={}){
+ const s=getState(),works=s.projects.map(workRow),names=new Map(works.map(w=>[w.id,w.data.name]));
+ const stats=Object.create(null),matches=[];
+ let totalPhotos=0;
+ const query=search.toLowerCase();
+ for(const report of s.diary){
+  const count=report.photos?.length||0;
+  totalPhotos+=count;
+  const work=stats[report.project]??={count:0,lastNumber:0};
+  work.count++;
+  const number=Number(report.number);
+  if(Number.isFinite(number))work.lastNumber=Math.max(work.lastNumber,number);
+  if((!workId||report.project===workId)&&
+     `${names.get(report.project)||''} ${report.number||''} ${report.description||''} ${report.date||''}`.toLowerCase().includes(query)){
+   matches.push(report);
+  }
+ }
+ matches.sort((a,b)=>String(b.date||'').localeCompare(a.date||'')||
+   String(b.updated||b.date||'').localeCompare(a.updated||a.date||'')||String(a.id).localeCompare(b.id));
+ const pages=Math.max(1,Math.ceil(matches.length/pageSize));
+ const current=Math.min(pages,Math.max(1,Math.floor(Number(page)||1)));
+ const reports=matches.slice((current-1)*pageSize,current*pageSize).map(r=>({
+  id:r.id,workId:r.project,date:r.date||'',number:r.number||'',activities:String(r.description||'').split('\n').find(Boolean)||'',photos:r.photos?.length||0
+ }));
+ return {works,stats,totalPhotos,totalReports:s.diary.length,total:matches.length,page:current,pages,reports};
+},
+async getReport(id){
+ const record=getState().diary.find(r=>r.id===id);
+ if(!record)throw Error('Diário não encontrado. Atualize a lista.');
+ const row=reportRow(record);
+ const missing=(record.photos||[]).filter(p=>!p.width||!p.height);
+ if(missing.length){
+  try{
+   const photos=await files.load(missing.map(p=>p.id));
+   const sizes=new Map(missing.map((p,i)=>[p.id,photos[i]]));
+   for(const p of row.data.photos){
+    const photo=sizes.get(p.id);
+    if(photo){p.width=photo.width||p.width;p.height=photo.height||p.height}
+   }
+  }catch{/* A prévia continua disponível quando um anexo antigo está ausente. */}
+ }
+ return row;
+},
+async save(input){let s=getState(),kind=input.kind;if(!['work','report'].includes(kind))throw Error('Tipo de registro inválido.');let rows=kind==='work'?s.projects:s.diary,old=input.id?rows.find(r=>r.id===input.id):null;if(input.id&&!old)throw Error('Registro não encontrado. Atualize a lista.');if(old&&(old.diaryRevision||0)!==input.revision)throw Error('O registro mudou. Atualize a lista antes de salvar.');let r=old?clone(old):kind==='work'?{...M.defaults('projects'),id:id()}:{id:id(),project:input.data.workId,activity:'',quantity:0,hours:null,conditions:'',team:''};let d=input.data;if(kind==='work'){if(!d.name?.trim())throw Error('Informe o nome da obra.');Object.assign(r,{name:d.name,client:d.client,location:d.address,owner:d.technical,crea:d.crea,company:d.company});}else{if(!s.projects.some(p=>p.id===d.workId)||!d.date||!d.number?.trim())throw Error('Informe obra, data e número.');if(d.photos.length>30||d.crew.length>40)throw Error('Limite de fotos ou funções excedido.');let stored=d.photos.length?await files.load(d.photos.map(p=>p.id)):[];Object.assign(r,{project:d.workId,date:d.date,number:d.number,morning:d.morning,afternoon:d.afternoon,staff:d.crew.map(p=>({role:p.role,quantity:p.qty,company:p.company,hours:p.hours})),description:d.activities,diaryAllowsEmpty:true,observations:d.observations,equipment:[...d.equipment,...(d.other?[d.other]:[])].join('; '),diaryOtherEquipment:d.other,photos:d.photos.map((p,i)=>({...p,name:stored[i].name||'Foto da obra',width:stored[i].width||p.width,height:stored[i].height||p.height})),author:d.author,engineer:d.engineer,inspector:d.inspector});}
 r.diaryRevision=(old?.diaryRevision||0)+1;r.updated=new Date().toISOString();/* Releitura após os anexos para não substituir registros alterados durante o carregamento. */s=getState();let current=(kind==='work'?s.projects:s.diary).find(x=>x.id===r.id);if(old&&(current?.diaryRevision||0)!==(old.diaryRevision||0))throw Error('O registro mudou. Atualize a lista.');let next=kind==='work'?M.save(s,'projects',r):D.saveRecord(s,'diary',r);await persist(next);return kind==='work'?workRow(r):reportRow(r)},async remove(kind,recordId,revision){let s=getState(),collection=kind==='work'?'projects':'diary',r=s[collection].find(r=>r.id===recordId);if(!r)throw Error('Registro não encontrado.');if((r.diaryRevision||0)!==revision)throw Error('O registro mudou. Atualize a lista.');await persist(M.remove(s,collection,recordId));return {ok:true}},async upload(file){let f=await files.prepare(file,{optimizeImage:true});await files.put([f]);return {id:f.id,width:f.width,height:f.height}},async photo(photoId){return (await files.load([photoId]))[0]}};
 }
 const api={create};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EngefexDiaryAdapter=api;

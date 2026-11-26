@@ -17,3 +17,5 @@
  .report-photo-row figure.landscape img{width:190mm!important;aspect-ratio:19/13!important}
  .report-photo-row figcaption{margin:1mm 0 0!important;line-height:4mm;overflow-wrap:anywhere;break-before:avoid}
 }
+
+.diary-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:16px;flex-wrap:wrap}
