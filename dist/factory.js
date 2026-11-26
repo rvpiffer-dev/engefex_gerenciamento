@@ -48,9 +48,11 @@ function pane(){if(current==='factory-data')return characterization();if(current
 function notices(){let old=draft.fields?.length||draft.lots?.length||draft.preparation?.length;return old?'<details class="wf-archive"><summary>Informações preservadas da versão anterior</summary><p>O cadastro antigo permanece salvo. Os novos checklists começam a conferir e não aprovam informações anteriores automaticamente.</p><dl>'+draft.fields.map(f=>'<div><dt>'+h(f.group)+' · '+h(f.name)+'</dt><dd>'+h(f.value||'—')+'</dd></div>').join('')+'</dl><p>'+draft.lots.length+' registros anteriores de produção preservados. Os saldos fabricados e pintados aparecem no acompanhamento.</p></details>':''}
 function revitPanel(){
  const imported=draft.workflow.revitImport;
- if(imported)return '<details class="wf-archive"><summary>Ordem importada do Revit · '+h(draft.sourceName)+'</summary><p>'+h(imported.buildingCode)+' · '+h(draft.number)+' · '+h(draft.revision)+'</p>'+(imported.documents.length?'<ul>'+imported.documents.map(doc=>'<li>'+h(doc.number)+' · '+h(doc.title)+'</li>').join('')+'</ul>':'')+'</details>';
- if(api.canImport?.(current)===false||locked()||draft.parts.length||draft.lots.length||draft.loads.length||draft.workflow.events.length)return '';
- return '<div class="wf-toolbar"><button type="button" class="button secondary" id="wfRevitImport">Importar ordem do Revit (.xlsx)</button><input type="file" id="wfRevitFile" accept=".xlsx" hidden></div>';
+ const source=imported?'<details class="wf-archive"><summary>Ordem importada do Revit · '+h(draft.sourceName)+'</summary><p>'+h(imported.buildingCode)+' · '+h(draft.number)+' · '+h(draft.revision)+'</p>'+(imported.documents.length?'<ul>'+imported.documents.map(doc=>'<li>'+h(doc.number)+' · '+h(doc.title)+'</li>').join('')+'</ul>':'')+'</details>':'';
+ if(api.canImport?.(current)===false||!['factory-overview','factory-data','factory-quantities'].includes(current))return source;
+ const previous=root.EngefexFactoryRevit?.hasPrevious(snapshot,draft);
+ const label=previous?'Substituir fabricação com XLSX do Revit':'Importar ordem do Revit (.xlsx)';
+ return source+'<div class="wf-toolbar"><button type="button" class="button secondary" id="wfRevitImport">'+label+'</button><input type="file" id="wfRevitFile" accept=".xlsx" hidden></div>';
 }
 function bindRevitImport(){
  const button=$('#wfRevitImport'),input=$('#wfRevitFile');
@@ -66,19 +68,32 @@ function bindRevitImport(){
    if(!/\.xlsx$/i.test(file.name)||file.size>15*1024*1024)throw Error('Selecione um arquivo XLSX de até 15 MB.');
    const sheets=await root.BudgetImport.readWorkbook(await file.arrayBuffer());
    if(!active||pending||api.canImport?.(current)===false||draft!==before||snapshot!==context||JSON.stringify(draft)!==initial)return;
-   const result=root.EngefexFactoryRevit.prepare(snapshot,draft,sheets,file.name);
+   const importer=root.EngefexFactoryRevit;
+   const replacing=importer.hasPrevious(snapshot,draft);
+   const result=importer.prepare(snapshot,draft,sheets,file.name,{replace:replacing});
    const work=snapshot.projects.find(p=>p.id===draft.project);
    const order=result.order;
    const details=['Obra de destino: '+work.name,'Ordem '+order.number+' · '+order.revision,
      result.quantity+' peças individuais · '+order.parts.length+' itens · '+order.workflow.revitImport.documents.length+' referências de pranchas'];
    if(result.split)details.push(result.split+' marcas foram separadas por sequência de operações.');
-   details.push('Aplicar a caracterização e as peças à ficha aberta? Confira os dados e clique em Salvar para gravar.');
+   if(replacing){
+    const previous=(snapshot.factoryOrders||[]).filter(item=>item.project===before.project&&item.id!==before.id).concat(before);
+    const count=read=>previous.reduce((total,item)=>total+read(item),0);
+    details.push('', 'Toda a fabricação anterior desta obra sairá da ordem ativa, incluindo peças, lançamentos, lotes, cargas, anexos e conferências.');
+    details.push(previous.length+' registros anteriores · '+count(item=>item.parts.length)+' itens · '+count(item=>item.workflow?.events?.length||0)+' lançamentos de produção · '+count(item=>item.lots.length)+' lotes · '+count(item=>item.loads.length)+' cargas.');
+   }
+   details.push('',replacing?'Substituir e salvar agora?':'Importar e salvar agora?');
    if(!root.confirm(details.join('\n')))return;
+   const previousBatch=batchText,previousDirty=dirty;
+   batchText='';
    draft=order;
    mark();
-   const paneHost=$('#wfPane');
-   if(paneHost)paneHost.innerHTML=revitPanel()+pane();
-   bind();
+   if(!await save('factory-data',replacing)){
+    draft=before;
+    batchText=previousBatch;
+    dirty=previousDirty;
+    if(!dirty&&$('#wfSaveStatus'))$('#wfSaveStatus').textContent='A importação não foi salva.';
+   }
   }catch(err){if(active&&draft===before&&snapshot===context)error(err)}
   finally{button.disabled=false}
  };
@@ -93,7 +108,7 @@ function redraw(){let parent=$('#wfPane');if(parent){parent.innerHTML=revitPanel
 function quickEntry(order,button){let panel=button.closest('.wf-inline-operation'),field=key=>panel.querySelector('[data-wf-quick-field="'+key+'"]').value;return F.record(order,{part:button.dataset.wfQuickPart,stage:button.dataset.wfQuickStage,quantity:field('quantity'),date:field('date'),owner:field('owner'),note:field('note')})}
 function refreshQuickTotals(){for(let button of all('[data-wf-quick-part]')){let panel=button.closest('.wf-inline-operation'),p=draft.parts.find(p=>p.id===button.dataset.wfQuickPart),stage=button.dataset.wfQuickStage;let total=panel.querySelector('summary strong'),available=panel.querySelector('.wf-inline-entry>p strong');if(total)total.textContent=q(F.total(draft,p,stage))+' / '+q(M.num(p.planned))+' '+p.unit;if(available)available.textContent=q(F.available(draft,p,stage))+' '+p.unit;let complete=panel.querySelector('[data-wf-complete-part]');if(complete){let status=F.operationStatus(draft,p,stage);complete.disabled=false;complete.title=status.key==='done'?'Clique para desfazer a conclusão desta etapa':'Clique para concluir o saldo desta etapa';complete.dataset.wfState=status.key;complete.textContent=status.label;let caption=panel.querySelector('summary small'),latest=draft.workflow.events.filter(e=>e.part===p.id&&e.stage===stage).at(-1);if(caption)caption.textContent=(latest?.date?latest.date+' · ':'')+'Alterar data / quantidade'}}for(let el of all('[data-wf-piece-state]')){let p=draft.parts.find(p=>p.id===el.dataset.wfPieceState);if(p)el.textContent=F.complete(draft,p)?'Todas as operações concluídas':'Em fabricação'}}
 function collectQuickEntries(){if(current!=='factory-progress')return;let value=draft,applied=[];for(let button of all('[data-wf-quick-part]')){let panel=button.closest('.wf-inline-operation');if(!panel.querySelector('[data-wf-quick-field="quantity"]').value.trim())continue;try{value=quickEntry(value,button);applied.push(panel)}catch(err){let p=draft.parts.find(p=>p.id===button.dataset.wfQuickPart);throw Error((p?.code||p?.name||'Peça')+' / '+F.stages.find(([k])=>k===button.dataset.wfQuickStage)[1]+': '+err.message)}}if(applied.length){draft=value;for(let panel of applied){panel.querySelector('[data-wf-quick-field="quantity"]').value='';panel.querySelector('[data-wf-quick-field="note"]').value=''}mark();refreshQuickTotals()}}
-async function save(nextRoute=null){if(pending)return false;let controls=[];try{if(current==='factory-quantities'&&batchText.trim())throw Error('Inclua a lista colada na grade antes de salvar.');if(JSON.stringify(api.getState())!==JSON.stringify(snapshot))throw Error('Os dados mudaram em outra sessão. Mantenha suas anotações e reabra esta obra antes de salvar.');collectQuickEntries();F.validate(draft);let next=M.save(snapshot,clone(draft));pending=true;for(let el of all('.wf-app input,.wf-app select,.wf-app textarea,.wf-app button')){controls.push([el,el.disabled]);el.disabled=true}if($('#wfSaveStatus'))$('#wfSaveStatus').textContent='Aguardando confirmação do salvamento…';if(await api.save(next)===false)throw Error('O servidor não confirmou o salvamento. Suas alterações continuam nesta tela.');pending=false;dirty=false;snapshot=clone(api.getState());selected=draft.id;api.toast('Fábrica salva.');if(nextRoute&&root.location.hash!=='#'+nextRoute)root.location.hash='#'+nextRoute;else api.render();return true}catch(err){pending=false;for(let [el,prior]of controls)el.disabled=prior;error(err);return false}}
+async function save(nextRoute=null,replacing=false){if(pending)return false;let controls=[];try{if(current==='factory-quantities'&&batchText.trim())throw Error('Inclua a lista colada na grade antes de salvar.');if(JSON.stringify(api.getState())!==JSON.stringify(snapshot))throw Error('Os dados mudaram em outra sessão. Mantenha suas anotações e reabra esta obra antes de salvar.');collectQuickEntries();F.validate(draft);let next=replacing?root.EngefexFactoryRevit.saveReplacement(snapshot,clone(draft)):M.save(snapshot,clone(draft));pending=true;for(let el of all('.wf-app input,.wf-app select,.wf-app textarea,.wf-app button')){controls.push([el,el.disabled]);el.disabled=true}if($('#wfSaveStatus'))$('#wfSaveStatus').textContent='Aguardando confirmação do salvamento…';if(await api.save(next)===false)throw Error('O servidor não confirmou o salvamento. Suas alterações continuam nesta tela.');pending=false;dirty=false;snapshot=clone(api.getState());selected=draft.id;api.toast('Fábrica salva.');if(nextRoute&&root.location.hash!=='#'+nextRoute)root.location.hash='#'+nextRoute;else api.render();return true}catch(err){pending=false;for(let [el,prior]of controls)el.disabled=prior;error(err);return false}}
 function progressBind(){if(current!=='factory-progress'||!draft||locked())return;let partSelect=$('#wfProductionPart'),stageSelect=$('#wfProductionStage');if(!partSelect||!stageSelect||!$('#wfRecord'))return;const refresh=change=>{piece=partSelect.value;let p=draft.parts.find(p=>p.id===piece);if(change){stageSelect.innerHTML='<option value="">Selecionar operação…</option>'+(p?optionRows(F.stages.filter(([k])=>F.route(draft,p).includes(k)),phase):'')}phase=stageSelect.value;$('#wfAvailable').textContent=p&&F.route(draft,p).includes(phase)?'Previsto: '+q(M.num(p.planned))+' '+p.unit+' · Nesta operação: '+q(F.total(draft,p,phase))+' · Disponível agora: '+q(F.available(draft,p,phase))+' '+p.unit:'Selecione a peça e a operação para conferir o saldo disponível.'};partSelect.onchange=()=>{refresh(true);mark()};stageSelect.onchange=()=>{refresh(false);mark()};for(let key of ['Quantity','Date','Owner','Note'])if($('#wfProduction'+key))$('#wfProduction'+key).oninput=mark;refresh(true);$('#wfRecord').onclick=()=>{if(pending)return;let before=draft;try{draft=F.record(draft,{part:partSelect.value,stage:stageSelect.value,quantity:$('#wfProductionQuantity').value,date:$('#wfProductionDate').value,owner:$('#wfProductionOwner').value,note:$('#wfProductionNote').value});$('#wfProductionQuantity').value='';$('#wfProductionNote').value='';mark();refresh(false);refreshQuickTotals()}catch(err){draft=before;error(err)}}}
 function bind(){
  if(!active||!draft)return;

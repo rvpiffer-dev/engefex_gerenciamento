@@ -94,12 +94,20 @@ function analyze(sheets){
  return {fields,parts:imported,documents,split,quantity:individuals.size};
 }
 
-function prepare(state,order,sheets,filename){
+function hasPrevious(state,order){
+ const flow=order.workflow||{};
+ return (state.factoryOrders||[]).some(item=>item.project===order.project)||order.parts.length>0||
+  order.lots.length>0||order.loads.length>0||!!flow.closedAt||!!flow.events?.length||!!flow.revitImport;
+}
+
+function prepare(state,order,sheets,filename,{replace=false}={}){
  const F=root.EngefexFactoryFlow,M=root.EngefexFactoryModel;
- const o=F.ensure(order);
- if(o.workflow.closedAt||o.parts.length||o.lots.length||o.loads.length||o.workflow.events.length||o.workflow.revitImport){
-  throw Error('A importação inicial exige uma ordem sem peças ou lançamentos. Os dados existentes foram preservados.');
- }
+ const replacing=hasPrevious(state,order);
+ if(replacing&&!replace)throw Error('Confirme a substituição da fabricação existente.');
+ const project=state.projects.find(item=>item.id===order.project);
+ if(!project)throw Error('Selecione uma obra para a fabricação.');
+ const o=F.fresh(project);
+ o.id=order.id;
  const data=analyze(sheets);
  const get=key=>data.fields.get(key)||'';
  for(const key of ['number','revision','owner','start','due'])o[key]=get(key);
@@ -115,9 +123,22 @@ function prepare(state,order,sheets,filename){
   o.workflow.routes[item.id]=route;
  }
  F.resetQuality(o);
- M.validate(state,o);
+ M.validate(replacing?withoutOtherOrders(state,o):state,o);
  return {order:o,quantity:data.quantity,split:data.split};
 }
 
-root.EngefexFactoryRevit={prepare};
+function withoutOtherOrders(state,order){
+ return {...state,factoryOrders:(state.factoryOrders||[]).filter(item=>item.project!==order.project||item.id===order.id)};
+}
+
+function saveReplacement(state,order){
+ const M=root.EngefexFactoryModel;
+ let next=state;
+ for(const previous of state.factoryOrders||[]){
+  if(previous.project===order.project&&previous.id!==order.id)next=M.remove(next,previous.id);
+ }
+ return M.save(next,order);
+}
+
+root.EngefexFactoryRevit={prepare,hasPrevious,saveReplacement};
 })(typeof window==='undefined'?globalThis:window);

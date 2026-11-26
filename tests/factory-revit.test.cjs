@@ -46,7 +46,7 @@ test('ordem do Revit preserva IDs, operação por peça e separa roteiros difere
  assert.equal(order.workflow.events.length,0);
  assert.equal(draft.parts.length,0);
  assert.doesNotThrow(()=>w.EngefexFactoryModel.save(state,order));
- assert.throws(()=>prepare(state,order,sheets,'revit.xlsx'),/ordem sem peças/);
+ assert.throws(()=>prepare(state,order,sheets,'revit.xlsx'),/Confirme a substituição/);
 });
 test('ordem com operações divergentes ou quantidades inconsistentes não altera a ficha',()=>{
  const {state,draft,sheets,prepare}=fixture();
@@ -58,4 +58,26 @@ test('ordem com operações divergentes ou quantidades inconsistentes não alter
  sheets[2].rows[3].D.value=3;
  assert.throws(()=>prepare(state,draft,sheets,'revit.xlsx'),/Sequência inválida/);
  assert.equal(JSON.stringify(draft),initial);
+});
+
+test('substituição mantém a identidade da ordem, grava o antes no histórico e começa a produção do zero',()=>{
+ const {w,state,draft,sheets,prepare}=fixture();
+ const initial=prepare(state,draft,sheets,'old.xlsx').order;
+ initial.workflow.ready[0].status='ok';
+ initial.attachments=[{id:'old-pdf',name:'Prancha.pdf'}];
+ const saved=w.EngefexFactoryModel.save(state,initial);
+ const prior={...initial,id:'old-order',number:'002'};
+ const other={...initial,id:'other-order',project:'another'};
+ saved.factoryOrders.push(prior,other);
+ const result=prepare(saved,saved.factoryOrders[0],sheets,'new.xlsx',{replace:true}).order;
+ const updated=w.EngefexFactoryRevit.saveReplacement(saved,result);
+ assert.equal(updated.factoryOrders.length,2);
+ assert.equal(updated.factoryOrders.find(item=>item.project==='work').id,initial.id);
+ assert.equal(updated.factoryOrders.find(item=>item.project==='another').id,'other-order');
+ assert.ok(updated.history.some(entry=>entry.before?.id==='old-order'));
+ assert.equal(result.workflow.ready[0].status,'pending');
+ assert.equal(result.workflow.events.length,0);
+ assert.equal(result.attachments.length,0);
+ assert.equal(updated.history[0].before.attachments[0].id,'old-pdf');
+ assert.equal(updated.history[0].before.parts.length,2);
 });

@@ -1,3 +1,8 @@
+## v4.18.69 — Substituir fabricação pelo Excel do Revit (26/11/2026)
+
+- A importação pode substituir toda a fabricação ativa da obra. A conferência indica a revisão de destino e os registros que sairão da ordem atual.
+- O Excel é validado antes da confirmação. A gravação substitui a ordem em uma operação e usa o histórico da fábrica para registrar os dados anteriores.
+
 ## v4.18.68 — Novo logo Engefex (26/11/2026)
 
 - Substitui o logo compartilhado pelo PNG fornecido, preservando proporções e transparência.
