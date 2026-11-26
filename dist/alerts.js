@@ -16,10 +16,20 @@
   return (s.issues||[]).filter(x=>(project==='all'||x.project===project||x.project==='Geral')&&mine(x,s,user));
  }
  function unassigned(s){return(s.issues||[]).filter(x=>!x.createdByEmail&&!assignedIds(x).length)}
+ function newestFirst(notifications){
+  return notifications.map(notification=>{
+   const timestamp=Date.parse(notification.createdAt);
+   return {notification,timestamp:Number.isFinite(timestamp)?timestamp:-Infinity};
+  }).sort((a,b)=>b.timestamp-a.timestamp).map(({notification})=>notification);
+ }
+ function reminderDate(due,daysBefore=0){
+  const date=new Date(due+'T00:00:00-03:00');
+  date.setUTCDate(date.getUTCDate()-daysBefore);
+  return Number.isFinite(date.getTime())?date.toISOString():undefined;
+ }
  function inbox(s,user){
   const email=actorEmail(user);if(!email)return [];
-  return(s.notifications||[]).filter(n=>lower(n.recipientEmail)===email)
-   .slice().sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+  return newestFirst((s.notifications||[]).filter(n=>lower(n.recipientEmail)===email));
  }
  function unread(s,user){const email=actorEmail(user);return inbox(s,user).filter(n=>!(n.readBy||[]).some(x=>lower(x)===email))}
  function prepare(previous,next,user){
@@ -62,7 +72,7 @@
    n.readBy=Array.from(new Set([...(n.readBy||[]).map(lower),email]));
   return next;
  }
- const api={ensure,member,assignedIds,mine,personal,unassigned,inbox,unread,prepare,read,readAll};
+ const api={ensure,member,assignedIds,mine,personal,unassigned,newestFirst,reminderDate,inbox,unread,prepare,read,readAll};
  if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.EngefexAlerts=api;
 })(typeof window==='undefined'?globalThis:window);
 

@@ -25,16 +25,16 @@
  function nameOfResponsible(issue){return (E?.assignedIds(issue)||issue.responsibleIds||(issue.responsibleId?[issue.responsibleId]:[])).map(id=>state.responsibles?.find(r=>r.id===id)?.name).filter(Boolean).join(', ')||issue.responsible||'Não atribuído'}
  let birthdayNames=[],birthdayDate='',birthdayLoading=false;
  async function refreshBirthdays(){if(!cloud?.ready||birthdayLoading)return;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());if(today===birthdayDate)return;birthdayLoading=true;try{birthdayNames=await cloud.birthdaysToday();birthdayDate=today;updateBell();}catch(err){console.warn('Aniversários indisponíveis',err)}finally{birthdayLoading=false}}
- function birthdayAlerts(){return birthdayNames.map((name,i)=>({id:'birthday-'+birthdayDate+'-'+i,title:'🎉 Aniversário: '+name,detail:'Hoje é aniversário de '+name+'! 🎂',project:'Geral',priority:'Celebração',createdAt:new Date().toISOString(),birthday:true}));}
+ function birthdayAlerts(){return birthdayNames.map((name,i)=>({id:'birthday-'+birthdayDate+'-'+i,title:'🎉 Aniversário: '+name,detail:'Hoje é aniversário de '+name+'! 🎂',project:'Geral',priority:'Celebração',createdAt:E.reminderDate(birthdayDate),birthday:true}));}
  function alerts(){
   // Inclui notificações lidas: elas permanecem no histórico visual do sininho.
-  return [
+  return E.newestFirst([
    ...(window.EngefexVacationControl?.alerts(state)||[]).map(n=>({...n,project:'Geral'})),
    ...birthdayAlerts(),
    ...(cloud?.stockAlerts||[]),
    ...(E?.inbox(state,identity())||[]),
-   ...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>({...n,project:'Geral',priority:'Atenção',createdAt:new Date().toISOString()}))
-  ];
+   ...(window.EngefexRH?.myAlerts(state,identity()?.email)||[]).map(n=>({...n,project:'Geral',priority:'Atenção'}))
+  ]);
  }
  function alertIsRead(n){
   // Compatibilidade com leituras antigas gravadas em notifications.readBy.

@@ -71,3 +71,20 @@ test('o aplicativo oferece o sininho, cadastro e escopo pessoal no dashboard',()
 
 test('pendência com vários responsáveis aparece para todos e avisa cada e-mail uma única vez',()=>{let old=base();old.responsibles.push({id:'C2',name:'Produção',email:outsider.email},{id:'C3',name:'Mesmo comprador',email:buyer.email});let next=structuredClone(old);next.issues.push({id:'I',title:'Conferir telhas',project:'p',status:'Aberta',responsibleIds:['C1','C2','C1','C3']});alerts.prepare(old,next,actor);assert.deepEqual(next.issues[0].responsibleIds,['C1','C2','C3']);assert.equal(next.issues[0].responsibleId,'C1');assert.equal(next.notifications.length,2);for(let user of [actor,buyer,outsider])assert.equal(alerts.personal(next,user).length,1);let changed=structuredClone(next);changed.notifications=[];changed.issues[0].status='Em tratamento';alerts.prepare(next,changed,buyer);assert.equal(changed.notifications.length,3);let removed=structuredClone(changed);removed.notifications=[];removed.issues[0].responsibleIds=['C1'];alerts.prepare(changed,removed,actor);assert.equal(alerts.personal(removed,outsider).length,0);assert.equal(removed.notifications.length,0);removed.issues[0].responsibleIds=[];alerts.prepare(changed,removed,actor);assert.equal(removed.issues[0].responsibleId,'');assert.equal(removed.issues[0].responsible,'');assert.equal(alerts.personal(removed,buyer).length,0)});
 test('cadastro antigo mantém responsável ao receber o novo formato e rejeita ID inexistente',()=>{let old=base();old.issues=[{id:'I',responsibleId:'C1',status:'Aberta',createdByEmail:actor.email}];let next=structuredClone(old);alerts.prepare(old,next,actor);assert.deepEqual(next.issues[0].responsibleIds,['C1']);assert.equal(next.notifications.length,0);next.issues[0].responsibleIds=['não-cadastrado'];assert.throws(()=>alerts.prepare(old,next,actor),/não cadastrado/)});
+
+test('o sininho ordena avisos de todos os tipos pela data, inclusive os lidos',()=>{
+ const app=fs.readFileSync(path.join(__dirname,'../dist/app.js'),'utf8');
+ const vm=require('node:vm');
+ const state=base();
+ state.notifications=[{id:'issue',recipientEmail:buyer.email,createdAt:'2026-11-26T09:00:00-03:00',readBy:[buyer.email]}];
+ const items=vm.runInNewContext(app.slice(app.indexOf(' function alerts(){'),app.indexOf(' function alertIsRead('))+'\nalerts()',{
+  E:alerts,state,identity:()=>buyer,
+  cloud:{stockAlerts:[{id:'stock',createdAt:'2026-11-26T13:00:00Z'},{id:'old'}]},
+  birthdayAlerts:()=>[{id:'birthday',createdAt:alerts.reminderDate('2026-11-26')}],
+  window:{
+   EngefexVacationControl:{alerts:()=>[{id:'vacation',createdAt:alerts.reminderDate('2026-12-01',7)}]},
+   EngefexRH:{myAlerts:()=>[{id:'rh',createdAt:alerts.reminderDate('2026-11-25')}]}
+  }
+ });
+ assert.deepEqual(Array.from(items,n=>n.id),['stock','issue','birthday','rh','vacation','old']);
+});

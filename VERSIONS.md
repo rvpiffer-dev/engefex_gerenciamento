@@ -1,3 +1,7 @@
+## v4.18.70 — Notificações mais recentes no topo (26/11/2026)
+
+- O sininho ordena todos os tipos de aviso pela data da notificação. Lembretes usam a data de ativação, preservada ao reabrir o histórico.
+
 ## v4.18.69 — Substituir fabricação pelo Excel do Revit (26/11/2026)
 
 - A importação pode substituir toda a fabricação ativa da obra. A conferência indica a revisão de destino e os registros que sairão da ordem atual.
