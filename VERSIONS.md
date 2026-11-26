@@ -1,3 +1,9 @@
+## v4.18.66 — Nomes livres e arquivos separados (26/11/2026)
+
+- Nome da revisão editável, com texto livre e renomeação de conjuntos existentes, inclusive liberados. A ordem interna permanece estável.
+- Cada projeto tem cabeçalho próprio; arquivos aparecem em cartões verticais, com nome em destaque e ações separadas.
+- Renomear preserva documentos, anexos, situação e dados da liberação, com histórico e controle de concorrência.
+
 ## v4.18.65 — Subabas de Projetos no menu lateral (26/11/2026)
 
 - Executivos, Telhas, Chapas, Quantitativos e Referências e outros ficam diretamente dentro da categoria Projetos no menu lateral.
